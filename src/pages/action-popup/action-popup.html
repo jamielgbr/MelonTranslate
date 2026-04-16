@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Action Popup</title>
+    <link rel="stylesheet" href="../../shared/custom-dropdown.css">
+    <link rel="stylesheet" href="./action-popup.css">
+</head>
+
+<body>
+    <main class="panel">
+        <header class="top">
+            <div>
+                <p class="eyebrow">Melon Translate</p>
+                <h1>Translate</h1>
+            </div>
+            <div class="top-actions">
+                <button id="open-options" class="icon-button" type="button" title="Open Settings"
+                    aria-label="Open Settings">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                            d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.04 7.04 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.49-.42h-3.84a.5.5 0 0 0-.49.42l-.36 2.54c-.58.23-1.13.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.82 14.52a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.4 1.05.71 1.63.94l.36 2.54a.5.5 0 0 0 .49.42h3.84a.5.5 0 0 0 .49-.42l.36-2.54c.58-.23 1.13-.54 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"
+                            fill="currentColor" />
+                    </svg>
+                </button>
+                <button id="open-compare" class="icon-button" type="button" title="Compare Results"
+                    aria-label="Compare Results">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                            d="M12 3a1 1 0 0 1 1 1v1.18l4.55 1.14A2 2 0 0 1 19 8.26V10h1a1 1 0 0 1 .89 1.45l-2 4A1 1 0 0 1 18 16h-4a1 1 0 0 1-.89-1.45l2-4A1 1 0 0 1 16 10h1V8.26l-4-.99v10.96A3 3 0 1 1 11 18.23V7.27l-4 .99V10h1a1 1 0 0 1 .89.55l2 4A1 1 0 0 1 10 16H6a1 1 0 0 1-.89-.55l-2-4A1 1 0 0 1 4 10h1V8.26a2 2 0 0 1 1.45-1.94L11 5.18V4a1 1 0 0 1 1-1zm-5.38 9L7.62 14h.76l1-2zm9 0 1 2h.76l1-2z"
+                            fill="currentColor" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+        <section class="block collapsible-block">
+            <div class="block-header">
+                <button id="popup-toggle-input" class="section-toggle" type="button" aria-expanded="true"
+                    aria-controls="popup-input-content">Input</button>
+                <button id="popup-speak-source" class="icon-button" type="button" disabled
+                    title="Read source text aloud" aria-label="Read source text aloud">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                            d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"
+                            fill="currentColor" />
+                    </svg>
+                </button>
+            </div>
+            <div id="popup-input-content" class="collapsible-content">
+                <textarea id="popup-source-text" rows="3" placeholder="Enter text to translate."></textarea>
+                <section class="block two-col">
+                    <div>
+                        <label for="popup-source-language-select">Source language</label>
+                        <div id="popup-source-language-wrap"></div>
+                        <input id="popup-source-language-custom" type="text" placeholder="Enter a language code"
+                            class="hidden">
+                    </div>
+                    <div>
+                        <label for="popup-target-language-select">Target language</label>
+                        <div id="popup-target-language-wrap"></div>
+                        <input id="popup-target-language-custom" type="text" placeholder="Enter a language code"
+                            class="hidden">
+                    </div>
+                </section>
+                <section class="block">
+                    <label for="popup-model">Model</label>
+                    <div id="popup-model-wrap"></div>
+                </section>
+            </div>
+        </section>
+        <section class="actions">
+            <button id="popup-translate" class="primary" type="button">Translate</button>
+            <button id="popup-copy" class="secondary" type="button">Copy</button>
+        </section>
+        <section class="block result-block">
+            <div class="block-header">
+                <label for="popup-result">Result</label>
+                <button id="popup-speak" class="icon-button" type="button" disabled title="Read translation aloud"
+                    aria-label="Read translation aloud">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                            d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"
+                            fill="currentColor" />
+                    </svg>
+                </button>
+            </div>
+            <div class="result-wrap">
+                <p id="popup-status" class="status hidden" aria-live="polite"></p>
+                <p id="popup-metrics" class="metrics hidden"></p>
+                <details id="popup-reasoning-wrap" class="reasoning hidden">
+                    <summary>Model reasoning</summary>
+                    <pre id="popup-reasoning" class="reasoning-text"></pre>
+                </details>
+                <pre id="popup-result" class="result placeholder">No translation yet.</pre>
+            </div>
+        </section>
+    </main>
+    <script src="../../shared/constants.js"></script>
+    <script src="../../shared/messages.js"></script>
+    <script src="../../shared/model-params.js"></script>
+    <script src="../../platform/firefox.js"></script>
+    <script src="../../platform/chromium.js"></script>
+    <script src="../../platform/browser-api.js"></script>
+    <script src="../../shared/custom-dropdown.js"></script>
+    <script src="../../shared/page-utils.js"></script>
+    <script src="../../shared/read-aloud.js"></script>
+    <script src="./action-popup.js"></script>
+</body>
+
+</html>

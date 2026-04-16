@@ -1,0 +1,18 @@
+importScripts(
+  '../shared/constants.js',
+  '../shared/messages.js',
+  '../shared/model-params.js',
+  '../platform/firefox.js',
+  '../platform/chromium.js',
+  '../platform/browser-api.js',
+  '../storage/encryption.js',
+  '../providers/provider-catalog.js',
+  '../storage/config-manager.js',
+  '../providers/base.js',
+  '../providers/openai-compatible.js',
+  '../providers/anthropic.js',
+  '../providers/google-translate.js',
+  '../providers/provider-registry.js',
+  '../shared/page-utils.js',
+  './service-worker.js'
+);

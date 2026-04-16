@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings</title>
+    <link rel="stylesheet" href="../../shared/custom-dropdown.css">
+    <link rel="stylesheet" href="../../shared/page-base.css">
+    <link rel="stylesheet" href="./options.css">
+</head>
+
+<body>
+    <main class="shell">
+        <header class="hero">
+            <div class="hero-identity">
+                <img src="../../../assets/icons/icon-128.png" alt="MelonTranslate" class="hero-logo">
+                <div>
+                    <p class="eyebrow">Melon Translate</p>
+                    <h1>Settings</h1>
+                </div>
+            </div>
+            <button id="save-button" class="primary icon-action-button" type="button" aria-label="Save settings"
+                title="Save">
+                <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                    <path
+                        d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.83a2 2 0 0 0-.59-1.42l-1.82-1.82A2 2 0 0 0 17.17 4H17v4a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V3H5zm3 0h6v4H8V3zm1 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6z" />
+                </svg>
+                <span class="visually-hidden">Save</span>
+            </button>
+        </header>
+        <section class="panel settings-panel">
+            <div class="section-header">
+                <h2>General</h2>
+            </div>
+            <input id="import-config-file" type="file" accept="application/json,.json" class="visually-hidden"
+                aria-hidden="true">
+            <div class="settings-group">
+                <h3 class="settings-group-title">Interaction</h3>
+                <div class="settings-row">
+                    <div class="settings-copy">
+                        <label for="selection-trigger">Select to translate</label>
+                        <p class="setting-desc">Choose how translation is triggered when you select text.</p>
+                    </div>
+                    <div class="settings-control">
+                        <div id="selection-trigger-wrap"></div>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-copy">
+                        <label for="modifier-key">Modifier Key</label>
+                        <p class="setting-desc">Choose the key to hold when using the "Translate while holding modifier
+                            key" option.</p>
+                    </div>
+                    <div class="settings-control">
+                        <div id="modifier-key-wrap"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="settings-group">
+                <h3 class="settings-group-title">Translation</h3>
+                <div class="settings-row">
+                    <div class="settings-copy">
+                        <label for="default-translation-model">Default model</label>
+                        <p class="setting-desc">Used by the select to translate.</p>
+                    </div>
+                    <div class="settings-control">
+                        <div id="default-translation-model-wrap"></div>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-copy">
+                        <label for="target-language">Default target language</label>
+                        <p class="setting-desc">Main language for translation output.</p>
+                    </div>
+                    <div class="settings-control">
+                        <div id="target-language-wrap"></div>
+                        <input id="target-language-custom" type="text" placeholder="Enter a language code"
+                            style="display: none; margin-top: 8px;">
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-copy">
+                        <label for="second-target-language">Second target language</label>
+                        <p class="setting-desc">Used when the source text is already in your main target language.</p>
+                    </div>
+                    <div class="settings-control">
+                        <div id="second-target-language-wrap"></div>
+                        <input id="second-target-language-custom" type="text" placeholder="Enter a language code"
+                            style="display: none; margin-top: 8px;">
+                    </div>
+                </div>
+                <div class="settings-row settings-row-switch">
+                    <div class="settings-copy">
+                        <label for="auto-switch-second-target">Switch to the second target automatically</label>
+                        <p class="setting-desc">If the source matches your main target language, use the second one
+                            instead.</p>
+                    </div>
+                    <label class="provider-switch" for="auto-switch-second-target"
+                        aria-label="Switch to the second target automatically">
+                        <input id="auto-switch-second-target" type="checkbox">
+                        <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                    </label>
+                </div>
+                <div class="settings-row settings-row-switch">
+                    <div class="settings-copy">
+                        <label for="dictionary-mode-for-single-word">Use dictionary mode for single words</label>
+                        <p class="setting-desc">Return a short dictionary entry with meaning, pronunciation, and an
+                            example.</p>
+                    </div>
+                    <label class="provider-switch" for="dictionary-mode-for-single-word"
+                        aria-label="Use dictionary mode for single words">
+                        <input id="dictionary-mode-for-single-word" type="checkbox">
+                        <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                    </label>
+                </div>
+            </div>
+            <div class="settings-group">
+                <h3 class="settings-group-title">Data</h3>
+                <div class="settings-row settings-row-switch">
+                    <div class="settings-copy">
+                        <label for="persist-history">Save translation history locally</label>
+                        <p class="setting-desc">Keep recent translations in this browser profile.</p>
+                    </div>
+                    <label class="provider-switch" for="persist-history" aria-label="Save translation history locally">
+                        <input id="persist-history" type="checkbox">
+                        <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                    </label>
+                </div>
+                <div class="settings-row settings-row-data-actions">
+                    <div class="settings-copy">
+                        <label>Import or export settings</label>
+                        <p class="setting-desc">Move your settings and provider setup between browser profiles.</p>
+                    </div>
+                    <div class="settings-control settings-actions">
+                        <button id="import-config" class="secondary icon-action-button" type="button"
+                            aria-label="Import settings" title="Import settings">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path
+                                    d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 3.99a1 1 0 0 1-1.4 0l-4-3.99a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1zm-6 14a1 1 0 0 1 1 1v1h10v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1z"
+                                    fill="currentColor" transform="rotate(180 12 12)" />
+                            </svg>
+                            <span class="visually-hidden">Import settings</span>
+                        </button>
+                        <button id="export-config" class="secondary icon-action-button" type="button"
+                            aria-label="Export settings" title="Export settings">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path
+                                    d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 3.99a1 1 0 0 1-1.4 0l-4-3.99a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1zm-6 14a1 1 0 0 1 1 1v1h10v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1z"
+                                    fill="currentColor" />
+                            </svg>
+                            <span class="visually-hidden">Export settings</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="panel">
+            <div class="section-header">
+                <h2>Providers and models</h2>
+            </div>
+            <div id="providers" class="providers"></div>
+        </section>
+        <section class="panel">
+            <div class="section-header">
+                <h2>Model parameters</h2>
+            </div>
+            <p class="hint">Adjust parameters for models from enabled providers.</p>
+            <div id="model-parameters" class="model-parameters"></div>
+        </section>
+        <section class="panel">
+            <div class="section-header">
+                <h2>Translation history</h2>
+                <button id="clear-history" class="secondary icon-action-button" type="button" aria-label="Clear history"
+                    title="Clear">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                        <path
+                            d="M9 3h6a1 1 0 0 1 1 1v1h4a1 1 0 1 1 0 2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7H4a1 1 0 0 1 0-2h4V4a1 1 0 0 1 1-1zm0 2h6V5H9v1zM7 7v12h10V7H7zm3 2a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" />
+                    </svg>
+                    <span class="visually-hidden">Clear</span>
+                </button>
+            </div>
+            <div id="history" class="history"></div>
+        </section>
+        <p id="status" class="status" aria-live="polite"></p>
+    </main>
+    <script src="../../shared/constants.js"></script>
+    <script src="../../shared/messages.js"></script>
+    <script src="../../shared/model-params.js"></script>
+    <script src="../../platform/firefox.js"></script>
+    <script src="../../platform/chromium.js"></script>
+    <script src="../../platform/browser-api.js"></script>
+    <script src="../../shared/custom-dropdown.js"></script>
+    <script src="../../shared/page-utils.js"></script>
+    <script src="./options.js"></script>
+</body>
+
+</html>

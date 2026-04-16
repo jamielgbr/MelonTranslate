@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Compare</title>
+    <link rel="stylesheet" href="../../shared/custom-dropdown.css">
+    <link rel="stylesheet" href="../../shared/page-base.css">
+    <link rel="stylesheet" href="./compare.css">
+</head>
+
+<body>
+    <main class="shell">
+        <header class="hero">
+            <div class="hero-identity">
+                <img src="../../../assets/icons/icon-128.png" alt="MelonTranslate" class="hero-logo">
+                <div>
+                    <p class="eyebrow">Melon Translate</p>
+                    <h1>Compare</h1>
+                </div>
+            </div>
+        </header>
+        <section class="composer panel">
+            <label for="source-text">Source text</label>
+            <textarea id="source-text" rows="8" placeholder="Enter text to compare."></textarea>
+            <div class="toolbar">
+                <div>
+                    <label>Source language</label>
+                    <div id="source-language-wrap"></div>
+                    <input id="source-language-custom" type="text" placeholder="Enter a language code"
+                        style="display: none; margin-top: 8px;">
+                </div>
+                <div>
+                    <label>Target language</label>
+                    <div id="target-language-wrap"></div>
+                    <input id="target-language-custom" type="text" placeholder="Enter a language code"
+                        style="display: none; margin-top: 8px;">
+                </div>
+                <button id="translate-button" class="primary" type="button">Translate</button>
+            </div>
+        </section>
+        <section class="panel">
+            <div class="section-header">
+                <div>
+                    <p class="eyebrow">Providers</p>
+                    <h2>Choose providers</h2>
+                </div>
+            </div>
+            <div id="provider-selector" class="provider-selector"></div>
+        </section>
+        <section class="panel">
+            <div class="section-header">
+                <div>
+                    <p class="eyebrow">Results</p>
+                    <h2>Results</h2>
+                </div>
+                <p id="status" class="status" aria-live="polite"></p>
+            </div>
+            <div id="results" class="results"></div>
+        </section>
+    </main>
+    <script src="../../shared/constants.js"></script>
+    <script src="../../shared/messages.js"></script>
+    <script src="../../shared/model-params.js"></script>
+    <script src="../../shared/custom-dropdown.js"></script>
+    <script src="../../platform/firefox.js"></script>
+    <script src="../../platform/chromium.js"></script>
+    <script src="../../platform/browser-api.js"></script>
+    <script src="../../shared/page-utils.js"></script>
+    <script src="./compare.js"></script>
+</body>
+
+</html>

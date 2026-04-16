@@ -1,0 +1,170 @@
+/* ── Custom Dropdown Component (cdd-*) ────────────────────────────────────
+   Theming via CSS custom properties. Pages can override:
+     --cdd-accent        (default: inherits --accent or amber #b45309)
+     --cdd-border        (default: inherits --border)
+     --cdd-text          (default: inherits --text)
+     --cdd-muted         (default: inherits --muted)
+     --cdd-trigger-bg    (default: rgba(255,255,255,.7))
+     --cdd-panel-bg      (default: #fff)
+     --cdd-item-hover    (default: soft amber tint)
+     --cdd-search-bg     (default: soft warm grey)
+     --cdd-shadow        (default: standard drop shadow)
+─────────────────────────────────────────────────────────────────────────── */
+
+.cdd-wrapper {
+  position: relative;
+  min-width: 0;
+}
+
+.cdd-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid var(--cdd-border, var(--border, rgba(113, 92, 67, 0.18)));
+  background: var(--cdd-trigger-bg, rgba(255, 255, 255, 0.7));
+  color: var(--cdd-text, var(--text, #1e293b));
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+  transition: border-color 120ms ease;
+}
+
+.cdd-trigger:hover {
+  border-color: var(--cdd-border-hover, rgba(113, 92, 67, 0.4));
+}
+
+.cdd-trigger:focus-visible {
+  outline: 2px solid var(--cdd-accent, var(--accent, #b45309));
+  outline-offset: 2px;
+}
+
+.cdd-disabled .cdd-trigger {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: default;
+}
+
+.cdd-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cdd-chevron {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  color: var(--cdd-muted, var(--muted, #6b7280));
+  transition: transform 150ms ease;
+}
+
+.cdd-wrapper.cdd-open .cdd-chevron {
+  transform: rotate(180deg);
+}
+
+/* Panel */
+.cdd-panel {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 200;
+  background: var(--cdd-panel-bg, #fff);
+  border: 1px solid var(--cdd-border, var(--border, rgba(113, 92, 67, 0.18)));
+  border-radius: 12px;
+  box-shadow: var(--cdd-shadow, 0 8px 32px rgba(71, 85, 105, 0.16));
+  overflow: hidden;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 48px));
+  max-height: 260px;
+  flex-direction: column;
+}
+
+.cdd-wrapper.cdd-open .cdd-panel {
+  display: flex;
+}
+
+/* Search */
+.cdd-search-wrap {
+  padding: 8px 8px 6px;
+  border-bottom: 1px solid var(--cdd-border, var(--border, rgba(113, 92, 67, 0.18)));
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cdd-search {
+  width: 100%;
+  padding: 6px 8px 6px 28px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid var(--cdd-border, var(--border, rgba(113, 92, 67, 0.18)));
+  background: var(--cdd-search-bg, rgba(245, 243, 238, 0.5));
+  color: var(--cdd-text, var(--text, #1e293b));
+  outline: none;
+}
+
+.cdd-search:focus {
+  border-color: var(--cdd-accent, var(--accent, #b45309));
+}
+
+.cdd-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--cdd-muted, var(--muted, #6b7280));
+  pointer-events: none;
+}
+
+/* List */
+.cdd-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.cdd-item {
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  display: block;
+  color: var(--cdd-text, var(--text, #1e293b));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background 80ms ease;
+}
+
+.cdd-item:hover {
+  background: var(--cdd-item-hover, rgba(180, 83, 9, 0.06));
+}
+
+.cdd-item-selected {
+  color: var(--cdd-accent, var(--accent, #b45309));
+  font-weight: 600;
+}
+
+.cdd-item-hidden {
+  display: none;
+}
+
+.cdd-item-custom {
+  border-top: 1px solid var(--cdd-border, var(--border, rgba(113, 92, 67, 0.18)));
+  margin-top: 2px;
+  padding-top: 8px;
+  color: var(--cdd-muted, var(--muted, #6b7280));
+}

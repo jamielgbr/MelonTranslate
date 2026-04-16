@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Patch manifest versions
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" manifest.json
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" manifest.chromium.json
+
+      - name: Build browser variants
+        run: bash scripts/build-browser-variants.sh
+
+      - name: Package ZIPs
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          cd dist/chrome && zip -r "../../melontranslate-chromium-${VERSION}.zip" . && cd ../..
+          cd dist/firefox && zip -r "../../melontranslate-firefox-${VERSION}.zip" . && cd ../..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            melontranslate-chromium-${{ steps.version.outputs.VERSION }}.zip
+            melontranslate-firefox-${{ steps.version.outputs.VERSION }}.zip
