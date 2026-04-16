@@ -1,4 +1,4 @@
-# MelonTranslate - A browser extension for LLM-powered translation using your own API key
+# MelonTranslate
 
 Set up your own API key, select any text on the page → get translation.
 
