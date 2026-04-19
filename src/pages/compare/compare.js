@@ -107,7 +107,7 @@
     const favorites = pu.normalizeModels(config.favoriteModels || []);
     const current = String(config.model || "").trim();
     const models = Array.from(new Set([...favorites, current].filter(Boolean)));
-    const defaultLabel = `Use selected model${current ? `: ${current}` : ""}`;
+    const defaultLabel = `Default${current ? `: ${current}` : ""}`;
     return { defaultLabel, models };
   }
 
