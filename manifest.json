@@ -9,8 +9,7 @@
   "permissions": [
     "storage",
     "contextMenus",
-    "activeTab",
-    "tabs"
+    "activeTab"
   ],
   "host_permissions": [
     "<all_urls>"
