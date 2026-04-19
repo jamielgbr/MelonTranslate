@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="560"
+   height="160"
+   viewBox="0 0 560 160"
+   fill="none"
+   version="1.1"
+   id="svg81"
+   sodipodi:docname="Untitled.svg"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   inkscape:export-filename="Untitled.png"
+   inkscape:export-xdpi="216"
+   inkscape:export-ydpi="216"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview83"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="3.4875"
+     inkscape:cx="244.73118"
+     inkscape:cy="73.548387"
+     inkscape:window-width="2093"
+     inkscape:window-height="1473"
+     inkscape:window-x="4863"
+     inkscape:window-y="267"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg81" />
+  <defs
+     id="defs31">
+    <radialGradient
+       id="i-rind"
+       cx="74.399999"
+       cy="66.559999"
+       r="69.440001"
+       fx="74.399999"
+       fy="66.559999"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-11.182796,12.903226)">
+      <stop
+         offset="0%"
+         stop-color="#38a062"
+         id="stop9" />
+      <stop
+         offset="60%"
+         stop-color="#25844a"
+         id="stop11" />
+      <stop
+         offset="100%"
+         stop-color="#1a6636"
+         id="stop13" />
+    </radialGradient>
+    <radialGradient
+       id="i-flesh"
+       cx="36%"
+       cy="30%"
+       r="70%">
+      <stop
+         offset="0%"
+         stop-color="#b8e8c4"
+         id="stop16" />
+      <stop
+         offset="42%"
+         stop-color="#80c89a"
+         id="stop18" />
+      <stop
+         offset="100%"
+         stop-color="#50aa72"
+         id="stop20" />
+    </radialGradient>
+    <linearGradient
+       id="i-gloss"
+       x1="30%"
+       y1="0%"
+       x2="70%"
+       y2="60%">
+      <stop
+         offset="0%"
+         stop-color="rgba(255,255,255,0.28)"
+         id="stop23" />
+      <stop
+         offset="100%"
+         stop-color="rgba(255,255,255,0)"
+         id="stop25" />
+    </linearGradient>
+    <clipPath
+       id="i-clip">
+      <circle
+         cx="80"
+         cy="80"
+         r="56"
+         id="circle28" />
+    </clipPath>
+    <clipPath
+       id="a-clip">
+      <circle
+         cx="60"
+         cy="60"
+         r="54"
+         id="circle456" />
+    </clipPath>
+    <radialGradient
+       id="a-flesh"
+       cx="50.400001"
+       cy="45.599999"
+       r="62.399998"
+       fx="50.400001"
+       fy="45.599999"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(22.293907,17.706093)">
+      <stop
+         offset="0%"
+         stop-color="#f0fff4"
+         id="stop449" />
+      <stop
+         offset="60%"
+         stop-color="#d4f5dd"
+         id="stop451" />
+      <stop
+         offset="100%"
+         stop-color="#6fd98a"
+         stop-opacity="0.3"
+         id="stop453" />
+    </radialGradient>
+  </defs>
+  <rect
+     width="560"
+     height="160"
+     rx="16"
+     fill="#ffffff"
+     id="rect33" />
+  <circle
+     cx="80"
+     cy="83"
+     r="54"
+     fill="rgba(0,0,0,0.08)"
+     id="circle35" />
+  <circle
+     cx="80"
+     cy="80"
+     r="56"
+     fill="none"
+     stroke="rgba(0,0,0,0.06)"
+     stroke-width="1"
+     id="circle71" />
+  <text
+     x="162"
+     y="95"
+     font-family="Inter, system-ui, sans-serif"
+     font-size="48"
+     letter-spacing="-1.5"
+     id="text77"><tspan
+       font-weight="300"
+       fill="#0a2a14"
+       id="tspan73">melon</tspan><tspan
+       font-weight="800"
+       fill="#1e8048"
+       id="tspan75">translate</tspan></text>
+  <circle
+     cx="82.293907"
+     cy="77.706093"
+     r="57"
+     fill="#6fd98a"
+     id="circle461" />
+  <circle
+     cx="82.293907"
+     cy="77.706093"
+     r="54"
+     fill="#4caf72"
+     id="circle463" />
+  <circle
+     cx="82.293907"
+     cy="77.706093"
+     r="50"
+     fill="#ffffff"
+     id="circle465" />
+  <circle
+     cx="82.293907"
+     cy="77.706093"
+     r="48"
+     fill="url(#a-flesh)"
+     id="circle467"
+     style="fill:url(#a-flesh)" />
+  <g
+     clip-path="url(#a-clip)"
+     id="g487"
+     transform="translate(22.293907,17.706093)">
+    <circle
+       cx="60"
+       cy="60"
+       r="26"
+       fill="none"
+       stroke="#4caf72"
+       stroke-width="2.2"
+       opacity="0.9"
+       id="circle477" />
+    <ellipse
+       cx="60"
+       cy="60"
+       rx="26"
+       ry="10"
+       fill="none"
+       stroke="#4caf72"
+       stroke-width="1.8"
+       opacity="0.7"
+       id="ellipse479" />
+    <line
+       x1="60"
+       y1="34"
+       x2="60"
+       y2="86"
+       stroke="#4caf72"
+       stroke-width="1.8"
+       opacity="0.7"
+       id="line481" />
+    <path
+       d="M 34,60 Q 47,46 60,42 73,46 86,60"
+       fill="none"
+       stroke="#4caf72"
+       stroke-width="1.5"
+       opacity="0.5"
+       id="path483" />
+    <path
+       d="M 34,60 Q 47,74 60,78 73,74 86,60"
+       fill="none"
+       stroke="#4caf72"
+       stroke-width="1.5"
+       opacity="0.5"
+       id="path485" />
+  </g>
+  <line
+     x1="42.293907"
+     y1="77.706093"
+     x2="52.293907"
+     y2="77.706093"
+     stroke="#4caf72"
+     stroke-width="2"
+     stroke-linecap="round"
+     id="line489" />
+  <polyline
+     points="43,57 46,60 43,63"
+     fill="none"
+     stroke="#4caf72"
+     stroke-width="2"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="polyline491"
+     transform="translate(6.293907,17.706093)" />
+  <line
+     x1="112.29391"
+     y1="77.706093"
+     x2="122.29391"
+     y2="77.706093"
+     stroke="#4caf72"
+     stroke-width="2"
+     stroke-linecap="round"
+     id="line493" />
+  <polyline
+     points="81,57 84,60 81,63"
+     fill="none"
+     stroke="#4caf72"
+     stroke-width="2"
+     stroke-linecap="round"
+     stroke-linejoin="round"
+     id="polyline495"
+     transform="translate(38.293907,17.706093)" />
+  <circle
+     cx="82.293907"
+     cy="77.706093"
+     r="57"
+     fill="none"
+     stroke="rgba(255,255,255,0.08)"
+     stroke-width="1"
+     id="circle497" />
+</svg>
