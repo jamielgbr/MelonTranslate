@@ -109,6 +109,11 @@
         return false;
       }
 
+      // Sentence-ending/interrogative punctuation indicates a phrase, not a word
+      if (/[…．、※×！？。!?—ー（）；【】,，]/.test(normalized)) {
+        return false;
+      }
+
       return /[\p{L}\p{N}]/u.test(normalized);
     }
 
