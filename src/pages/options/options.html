@@ -29,207 +29,263 @@
                 <span class="visually-hidden">Save</span>
             </button>
         </header>
-        <section class="panel settings-panel">
-            <div class="section-header">
-                <h2>General</h2>
-            </div>
-            <input id="import-config-file" type="file" accept="application/json,.json" class="visually-hidden"
-                aria-hidden="true">
-            <div class="settings-group">
-                <h3 class="settings-group-title">Interaction</h3>
-                <div class="settings-row">
-                    <div class="settings-copy">
-                        <label for="selection-trigger">Select to translate</label>
-                        <p class="setting-desc">Choose how translation is triggered when you select text.</p>
+
+        <input id="import-config-file" type="file" accept="application/json,.json" class="visually-hidden"
+            aria-hidden="true">
+
+        <div class="settings-layout">
+            <nav class="settings-nav" aria-label="Settings sections">
+                <a href="#translation-defaults">Language &amp; model</a>
+                <a href="#selection">Selection</a>
+                <a href="#input-button">Input button</a>
+                <a href="#providers-section">Providers</a>
+                <a href="#model-parameters-section">Model parameters</a>
+                <a href="#data-history">Data &amp; history</a>
+            </nav>
+
+            <div class="settings-content">
+                <section id="translation-defaults" class="panel settings-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">Translation</p>
+                            <h2>Language &amp; model</h2>
+                        </div>
                     </div>
-                    <div class="settings-control">
-                        <div id="selection-trigger-wrap"></div>
+                    <div class="settings-group">
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="default-translation-model">Default model</label>
+                                <p class="setting-desc">Used by the select to translate.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="default-translation-model-wrap"></div>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="target-language">Default target language</label>
+                                <p class="setting-desc">Main language for translation output.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="target-language-wrap"></div>
+                                <input id="target-language-custom" type="text" placeholder="Enter a language code"
+                                    style="display: none; margin-top: 8px;">
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="second-target-language">Second target language</label>
+                                <p class="setting-desc">Used when the source text is already in your main target
+                                    language.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="second-target-language-wrap"></div>
+                                <input id="second-target-language-custom" type="text"
+                                    placeholder="Enter a language code" style="display: none; margin-top: 8px;">
+                            </div>
+                        </div>
+                        <div class="settings-row settings-row-switch">
+                            <div class="settings-copy">
+                                <label for="auto-switch-second-target">Switch to the second target automatically</label>
+                                <p class="setting-desc">If the source matches your main target language, use the second
+                                    one instead.</p>
+                            </div>
+                            <label class="provider-switch" for="auto-switch-second-target"
+                                aria-label="Switch to the second target automatically">
+                                <input id="auto-switch-second-target" type="checkbox">
+                                <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                            </label>
+                        </div>
+                        <div class="settings-row settings-row-switch">
+                            <div class="settings-copy">
+                                <label for="dictionary-mode-for-single-word">Use dictionary mode for single words</label>
+                                <p class="setting-desc">Return a short dictionary entry with meaning, pronunciation, and
+                                    an example.</p>
+                            </div>
+                            <label class="provider-switch" for="dictionary-mode-for-single-word"
+                                aria-label="Use dictionary mode for single words">
+                                <input id="dictionary-mode-for-single-word" type="checkbox">
+                                <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                            </label>
+                        </div>
                     </div>
-                </div>
-                <div class="settings-row">
-                    <div class="settings-copy">
-                        <label for="modifier-key">Modifier Key</label>
-                        <p class="setting-desc">Choose the key to hold when using the "Translate while holding modifier
-                            key" option.</p>
+                </section>
+
+                <section id="selection" class="panel settings-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">Interaction</p>
+                            <h2>Selection</h2>
+                        </div>
                     </div>
-                    <div class="settings-control">
-                        <div id="modifier-key-wrap"></div>
+                    <div class="settings-group">
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="selection-trigger">Select to translate</label>
+                                <p class="setting-desc">Choose how translation is triggered when you select text.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="selection-trigger-wrap"></div>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="modifier-key">Modifier Key</label>
+                                <p class="setting-desc">Choose the key to hold when using the "Translate while holding
+                                    modifier key" option.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="modifier-key-wrap"></div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="settings-row settings-row-switch">
-                    <div class="settings-copy">
-                        <label for="input-inline-button-enabled">Show input translation button</label>
-                        <p class="setting-desc">Display a translate button beside editable text fields.</p>
+                </section>
+
+                <section id="input-button" class="panel settings-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">Writing</p>
+                            <h2>Input button</h2>
+                        </div>
                     </div>
-                    <label class="provider-switch" for="input-inline-button-enabled"
-                        aria-label="Show input translation button">
-                        <input id="input-inline-button-enabled" type="checkbox">
-                        <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
-                    </label>
-                </div>
-                <div class="settings-row">
-                    <div class="settings-copy">
-                        <label for="input-site-mode">Input button site rules</label>
-                        <p class="setting-desc">Choose whether the domain list hides or allows the input button.</p>
+                    <div class="settings-group">
+                        <div class="settings-row settings-row-switch">
+                            <div class="settings-copy">
+                                <label for="input-inline-button-enabled">Show input translation button</label>
+                                <p class="setting-desc">Display a translate button beside editable text fields.</p>
+                            </div>
+                            <label class="provider-switch" for="input-inline-button-enabled"
+                                aria-label="Show input translation button">
+                                <input id="input-inline-button-enabled" type="checkbox">
+                                <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                            </label>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="input-site-mode">Input button site rules</label>
+                                <p class="setting-desc">Choose whether the domain list hides or allows the input button.
+                                </p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="input-site-mode-wrap"></div>
+                            </div>
+                        </div>
+                        <div class="settings-row" id="input-blocked-hosts-row">
+                            <div class="settings-copy">
+                                <label for="input-blocked-hosts">Blocked domains</label>
+                                <p class="setting-desc">One domain per line. A rule like youtube.com also matches
+                                    www.youtube.com.</p>
+                            </div>
+                            <div class="settings-control">
+                                <textarea id="input-blocked-hosts" spellcheck="false"></textarea>
+                            </div>
+                        </div>
+                        <div class="settings-row" id="input-allowed-hosts-row">
+                            <div class="settings-copy">
+                                <label for="input-allowed-hosts">Allowed domains</label>
+                                <p class="setting-desc">Used when the site rule mode is allowlist.</p>
+                            </div>
+                            <div class="settings-control">
+                                <textarea id="input-allowed-hosts" spellcheck="false"></textarea>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="input-context-style">Default input style</label>
+                                <p class="setting-desc">Tone used when translating text you are writing into an input
+                                    field.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="input-context-style-wrap"></div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="settings-control">
-                        <div id="input-site-mode-wrap"></div>
+                </section>
+
+                <section id="providers-section" class="panel settings-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">Services</p>
+                            <h2>Providers</h2>
+                        </div>
                     </div>
-                </div>
-                <div class="settings-row" id="input-blocked-hosts-row">
-                    <div class="settings-copy">
-                        <label for="input-blocked-hosts">Blocked domains</label>
-                        <p class="setting-desc">One domain per line. A rule like youtube.com also matches
-                            www.youtube.com.</p>
+                    <div id="providers" class="providers"></div>
+                </section>
+
+                <section id="model-parameters-section" class="panel settings-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">Tuning</p>
+                            <h2>Model parameters</h2>
+                        </div>
                     </div>
-                    <div class="settings-control">
-                        <textarea id="input-blocked-hosts" spellcheck="false"></textarea>
-                    </div>
-                </div>
-                <div class="settings-row" id="input-allowed-hosts-row">
-                    <div class="settings-copy">
-                        <label for="input-allowed-hosts">Allowed domains</label>
-                        <p class="setting-desc">Used when the site rule mode is allowlist.</p>
-                    </div>
-                    <div class="settings-control">
-                        <textarea id="input-allowed-hosts" spellcheck="false"></textarea>
-                    </div>
-                </div>
-                <div class="settings-row">
-                    <div class="settings-copy">
-                        <label for="input-context-style">Default input style</label>
-                        <p class="setting-desc">Tone used when translating text you are writing into an input field.</p>
-                    </div>
-                    <div class="settings-control">
-                        <div id="input-context-style-wrap"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="settings-group">
-                <h3 class="settings-group-title">Translation</h3>
-                <div class="settings-row">
-                    <div class="settings-copy">
-                        <label for="default-translation-model">Default model</label>
-                        <p class="setting-desc">Used by the select to translate.</p>
-                    </div>
-                    <div class="settings-control">
-                        <div id="default-translation-model-wrap"></div>
-                    </div>
-                </div>
-                <div class="settings-row">
-                    <div class="settings-copy">
-                        <label for="target-language">Default target language</label>
-                        <p class="setting-desc">Main language for translation output.</p>
-                    </div>
-                    <div class="settings-control">
-                        <div id="target-language-wrap"></div>
-                        <input id="target-language-custom" type="text" placeholder="Enter a language code"
-                            style="display: none; margin-top: 8px;">
-                    </div>
-                </div>
-                <div class="settings-row">
-                    <div class="settings-copy">
-                        <label for="second-target-language">Second target language</label>
-                        <p class="setting-desc">Used when the source text is already in your main target language.</p>
-                    </div>
-                    <div class="settings-control">
-                        <div id="second-target-language-wrap"></div>
-                        <input id="second-target-language-custom" type="text" placeholder="Enter a language code"
-                            style="display: none; margin-top: 8px;">
-                    </div>
-                </div>
-                <div class="settings-row settings-row-switch">
-                    <div class="settings-copy">
-                        <label for="auto-switch-second-target">Switch to the second target automatically</label>
-                        <p class="setting-desc">If the source matches your main target language, use the second one
-                            instead.</p>
-                    </div>
-                    <label class="provider-switch" for="auto-switch-second-target"
-                        aria-label="Switch to the second target automatically">
-                        <input id="auto-switch-second-target" type="checkbox">
-                        <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
-                    </label>
-                </div>
-                <div class="settings-row settings-row-switch">
-                    <div class="settings-copy">
-                        <label for="dictionary-mode-for-single-word">Use dictionary mode for single words</label>
-                        <p class="setting-desc">Return a short dictionary entry with meaning, pronunciation, and an
-                            example.</p>
-                    </div>
-                    <label class="provider-switch" for="dictionary-mode-for-single-word"
-                        aria-label="Use dictionary mode for single words">
-                        <input id="dictionary-mode-for-single-word" type="checkbox">
-                        <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
-                    </label>
-                </div>
-            </div>
-            <div class="settings-group">
-                <h3 class="settings-group-title">Data</h3>
-                <div class="settings-row settings-row-switch">
-                    <div class="settings-copy">
-                        <label for="persist-history">Save translation history locally</label>
-                        <p class="setting-desc">Keep recent translations in this browser profile.</p>
-                    </div>
-                    <label class="provider-switch" for="persist-history" aria-label="Save translation history locally">
-                        <input id="persist-history" type="checkbox">
-                        <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
-                    </label>
-                </div>
-                <div class="settings-row settings-row-data-actions">
-                    <div class="settings-copy">
-                        <label>Import or export settings</label>
-                        <p class="setting-desc">Move your settings and provider setup between browser profiles.</p>
-                    </div>
-                    <div class="settings-control settings-actions">
-                        <button id="import-config" class="secondary icon-action-button" type="button"
-                            aria-label="Import settings" title="Import settings">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <p class="hint">Adjust parameters for models from enabled providers.</p>
+                    <div id="model-parameters" class="model-parameters"></div>
+                </section>
+
+                <section id="data-history" class="panel settings-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">Local data</p>
+                            <h2>Data &amp; history</h2>
+                        </div>
+                        <button id="clear-history" class="secondary icon-action-button" type="button"
+                            aria-label="Clear history" title="Clear">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
                                 <path
-                                    d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 3.99a1 1 0 0 1-1.4 0l-4-3.99a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1zm-6 14a1 1 0 0 1 1 1v1h10v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1z"
-                                    fill="currentColor" transform="rotate(180 12 12)" />
+                                    d="M9 3h6a1 1 0 0 1 1 1v1h4a1 1 0 1 1 0 2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7H4a1 1 0 0 1 0-2h4V4a1 1 0 0 1 1-1zm0 2h6V5H9v1zM7 7v12h10V7H7zm3 2a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" />
                             </svg>
-                            <span class="visually-hidden">Import settings</span>
-                        </button>
-                        <button id="export-config" class="secondary icon-action-button" type="button"
-                            aria-label="Export settings" title="Export settings">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path
-                                    d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 3.99a1 1 0 0 1-1.4 0l-4-3.99a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1zm-6 14a1 1 0 0 1 1 1v1h10v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1z"
-                                    fill="currentColor" />
-                            </svg>
-                            <span class="visually-hidden">Export settings</span>
+                            <span class="visually-hidden">Clear</span>
                         </button>
                     </div>
-                </div>
+                    <div class="settings-group">
+                        <div class="settings-row settings-row-switch">
+                            <div class="settings-copy">
+                                <label for="persist-history">Save translation history locally</label>
+                                <p class="setting-desc">Keep recent translations in this browser profile.</p>
+                            </div>
+                            <label class="provider-switch" for="persist-history"
+                                aria-label="Save translation history locally">
+                                <input id="persist-history" type="checkbox">
+                                <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                            </label>
+                        </div>
+                        <div class="settings-row settings-row-data-actions">
+                            <div class="settings-copy">
+                                <label>Import or export settings</label>
+                                <p class="setting-desc">Move your settings and provider setup between browser profiles.
+                                </p>
+                            </div>
+                            <div class="settings-control settings-actions">
+                                <button id="import-config" class="secondary icon-action-button" type="button"
+                                    aria-label="Import settings" title="Import settings">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path
+                                            d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 3.99a1 1 0 0 1-1.4 0l-4-3.99a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1zm-6 14a1 1 0 0 1 1 1v1h10v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1z"
+                                            fill="currentColor" transform="rotate(180 12 12)" />
+                                    </svg>
+                                    <span class="visually-hidden">Import settings</span>
+                                </button>
+                                <button id="export-config" class="secondary icon-action-button" type="button"
+                                    aria-label="Export settings" title="Export settings">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path
+                                            d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 3.99a1 1 0 0 1-1.4 0l-4-3.99a1 1 0 1 1 1.4-1.42l2.3 2.3V4a1 1 0 0 1 1-1zm-6 14a1 1 0 0 1 1 1v1h10v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1z"
+                                            fill="currentColor" />
+                                    </svg>
+                                    <span class="visually-hidden">Export settings</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="history-section">
+                        <h3 class="settings-group-title">Translation history</h3>
+                        <div id="history" class="history"></div>
+                    </div>
+                </section>
             </div>
-        </section>
-        <section class="panel">
-            <div class="section-header">
-                <h2>Providers and models</h2>
-            </div>
-            <div id="providers" class="providers"></div>
-        </section>
-        <section class="panel">
-            <div class="section-header">
-                <h2>Model parameters</h2>
-            </div>
-            <p class="hint">Adjust parameters for models from enabled providers.</p>
-            <div id="model-parameters" class="model-parameters"></div>
-        </section>
-        <section class="panel">
-            <div class="section-header">
-                <h2>Translation history</h2>
-                <button id="clear-history" class="secondary icon-action-button" type="button" aria-label="Clear history"
-                    title="Clear">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
-                        <path
-                            d="M9 3h6a1 1 0 0 1 1 1v1h4a1 1 0 1 1 0 2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7H4a1 1 0 0 1 0-2h4V4a1 1 0 0 1 1-1zm0 2h6V5H9v1zM7 7v12h10V7H7zm3 2a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1z" />
-                    </svg>
-                    <span class="visually-hidden">Clear</span>
-                </button>
-            </div>
-            <div id="history" class="history"></div>
-        </section>
+        </div>
+
         <p id="status" class="status" aria-live="polite"></p>
     </main>
     <script src="../../shared/constants.js"></script>
