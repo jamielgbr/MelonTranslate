@@ -56,6 +56,54 @@
                         <div id="modifier-key-wrap"></div>
                     </div>
                 </div>
+                <div class="settings-row settings-row-switch">
+                    <div class="settings-copy">
+                        <label for="input-inline-button-enabled">Show input translation button</label>
+                        <p class="setting-desc">Display a translate button beside editable text fields.</p>
+                    </div>
+                    <label class="provider-switch" for="input-inline-button-enabled"
+                        aria-label="Show input translation button">
+                        <input id="input-inline-button-enabled" type="checkbox">
+                        <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                    </label>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-copy">
+                        <label for="input-site-mode">Input button site rules</label>
+                        <p class="setting-desc">Choose whether the domain list hides or allows the input button.</p>
+                    </div>
+                    <div class="settings-control">
+                        <div id="input-site-mode-wrap"></div>
+                    </div>
+                </div>
+                <div class="settings-row" id="input-blocked-hosts-row">
+                    <div class="settings-copy">
+                        <label for="input-blocked-hosts">Blocked domains</label>
+                        <p class="setting-desc">One domain per line. A rule like youtube.com also matches
+                            www.youtube.com.</p>
+                    </div>
+                    <div class="settings-control">
+                        <textarea id="input-blocked-hosts" spellcheck="false"></textarea>
+                    </div>
+                </div>
+                <div class="settings-row" id="input-allowed-hosts-row">
+                    <div class="settings-copy">
+                        <label for="input-allowed-hosts">Allowed domains</label>
+                        <p class="setting-desc">Used when the site rule mode is allowlist.</p>
+                    </div>
+                    <div class="settings-control">
+                        <textarea id="input-allowed-hosts" spellcheck="false"></textarea>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-copy">
+                        <label for="input-context-style">Default input style</label>
+                        <p class="setting-desc">Tone used when translating text you are writing into an input field.</p>
+                    </div>
+                    <div class="settings-control">
+                        <div id="input-context-style-wrap"></div>
+                    </div>
+                </div>
             </div>
             <div class="settings-group">
                 <h3 class="settings-group-title">Translation</h3>

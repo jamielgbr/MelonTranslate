@@ -91,6 +91,105 @@
       .filter(Boolean)));
   }
 
+  function normalizeLanguageTag(tag) {
+    return String(tag || "").trim().toLowerCase();
+  }
+
+  function getBaseLanguage(tag) {
+    return normalizeLanguageTag(tag).split("-")[0];
+  }
+
+  function looksLikeTraditionalChinese(text) {
+    return /[體萬與為國臺學龍門關觀歷頭醫廣語電畫]/.test(text);
+  }
+
+  function detectTextLanguage(text) {
+    var sample = String(text || "");
+    if (/[\u0600-\u06FF]/.test(sample)) return "ar";
+    if (/[\u0400-\u04FF]/.test(sample)) return "ru";
+    if (/[\uAC00-\uD7AF]/.test(sample)) return "ko";
+    if (/[\u3040-\u30FF]/.test(sample)) return "ja";
+    if (/[\u4E00-\u9FFF]/.test(sample)) return looksLikeTraditionalChinese(sample) ? "zh-TW" : "zh-CN";
+    return "en";
+  }
+
+  function resolveInputTargetLanguage(settings, text, requestedTargetLanguage) {
+    var cfg = settings || {};
+    var defaultTarget = String(cfg.targetLanguage || "en").trim();
+    var primary = String(requestedTargetLanguage || defaultTarget || "en").trim();
+    if (!cfg.autoSwitchToSecondTarget || !cfg.secondTargetLanguage) {
+      return primary;
+    }
+
+    var detected = detectTextLanguage(text);
+    var primaryMatchesDefault = getBaseLanguage(primary) === getBaseLanguage(defaultTarget);
+    if (primaryMatchesDefault && getBaseLanguage(detected) === getBaseLanguage(defaultTarget)) {
+      return cfg.secondTargetLanguage;
+    }
+    return primary;
+  }
+
+  function normalizeHostRule(value) {
+    var raw = String(value || "").trim().toLowerCase();
+    if (!raw) return "";
+
+    var candidate = raw;
+    try {
+      var url = candidate.includes("://") ? new URL(candidate) : new URL("https://" + candidate);
+      candidate = url.hostname || candidate;
+    } catch (_) {
+      candidate = candidate.split(/[/?#]/)[0];
+    }
+
+    candidate = candidate.replace(/^\*\./, "").replace(/\.$/, "");
+    if (candidate.includes(":")) {
+      candidate = candidate.split(":")[0];
+    }
+    return candidate;
+  }
+
+  function normalizeHostRuleList(value) {
+    var rawItems = Array.isArray(value)
+      ? value
+      : String(value || "").split(/[\s,]+/);
+    return Array.from(new Set(rawItems
+      .map(normalizeHostRule)
+      .filter(Boolean)));
+  }
+
+  function hostMatchesRule(host, rule) {
+    var normalizedHost = normalizeHostRule(host);
+    var normalizedRule = normalizeHostRule(rule);
+    return !!normalizedHost && !!normalizedRule
+      && (normalizedHost === normalizedRule || normalizedHost.endsWith("." + normalizedRule));
+  }
+
+  function normalizeInputSiteMode(value) {
+    var modes = namespace.constants.inputSiteModes || {};
+    return value === modes.whitelist ? modes.whitelist : modes.blacklist;
+  }
+
+  function getInputContextStyle(value) {
+    var style = String(value || "").trim();
+    var options = namespace.constants.inputContextStyles || [];
+    return options.some(function(item) { return item.id === style; }) ? style : "auto";
+  }
+
+  function isHostAllowedForInputButton(settings, host) {
+    var cfg = settings || {};
+    if (cfg.inputInlineButtonEnabled === false) {
+      return false;
+    }
+
+    var siteModes = namespace.constants.inputSiteModes || {};
+    var mode = normalizeInputSiteMode(cfg.inputInlineButtonSiteMode);
+    var list = mode === siteModes.whitelist
+      ? normalizeHostRuleList(cfg.inputInlineButtonAllowedHosts)
+      : normalizeHostRuleList(cfg.inputInlineButtonBlockedHosts);
+    var matches = list.some(function(rule) { return hostMatchesRule(host, rule); });
+    return mode === siteModes.whitelist ? matches : !matches;
+  }
+
   function getProviderIconHtml(provider, imgClassName) {
     if (PROVIDER_ICON_SVG.has(provider.id)) {
       var src = api.runtime.getURL("assets/icons/" + provider.id + ".svg");
@@ -165,6 +264,16 @@
     parseDefaultModelKey: parseDefaultModelKey,
     buildDefaultModelKey: buildDefaultModelKey,
     normalizeModels: normalizeModels,
+    normalizeLanguageTag: normalizeLanguageTag,
+    getBaseLanguage: getBaseLanguage,
+    detectTextLanguage: detectTextLanguage,
+    resolveInputTargetLanguage: resolveInputTargetLanguage,
+    normalizeHostRule: normalizeHostRule,
+    normalizeHostRuleList: normalizeHostRuleList,
+    hostMatchesRule: hostMatchesRule,
+    normalizeInputSiteMode: normalizeInputSiteMode,
+    getInputContextStyle: getInputContextStyle,
+    isHostAllowedForInputButton: isHostAllowedForInputButton,
     getProviderIconHtml: getProviderIconHtml,
     renderLanguageDropdown: renderLanguageDropdown,
     getLanguageValue: getLanguageValue,

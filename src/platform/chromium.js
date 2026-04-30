@@ -61,7 +61,10 @@
       async create(createProperties) {
         return promisify((done) => chrome.tabs.create(createProperties, done));
       },
-      async sendMessage(tabId, message) {
+      async sendMessage(tabId, message, options) {
+        if (options) {
+          return promisify((done) => chrome.tabs.sendMessage(tabId, message, options, done));
+        }
         return promisify((done) => chrome.tabs.sendMessage(tabId, message, done));
       },
       async query(queryInfo) {

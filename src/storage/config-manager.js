@@ -13,6 +13,11 @@
       secondTargetLanguage: "en",
       autoSwitchToSecondTarget: true,
       dictionaryModeForSingleWord: true,
+      inputInlineButtonEnabled: true,
+      inputInlineButtonSiteMode: namespace.constants.inputSiteModes.blacklist,
+      inputInlineButtonBlockedHosts: [],
+      inputInlineButtonAllowedHosts: [],
+      defaultInputContextStyle: "auto",
       persistHistory: false,
       maxHistoryItems: namespace.constants.historyLimit
     };

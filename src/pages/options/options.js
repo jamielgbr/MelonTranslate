@@ -40,6 +40,27 @@
     return pu.getLanguageValue(document.getElementById(selectId), document.getElementById(customId), "en");
   }
 
+  function formatHostRuleList(value) {
+    return pu.normalizeHostRuleList(value).join("\n");
+  }
+
+  function updateInputSiteRuleVisibility() {
+    const modeEl = document.getElementById("input-site-mode");
+    if (!modeEl) {
+      return;
+    }
+    const mode = pu.normalizeInputSiteMode(modeEl.value);
+    const modes = namespace.constants.inputSiteModes || {};
+    const blockedRow = document.getElementById("input-blocked-hosts-row");
+    const allowedRow = document.getElementById("input-allowed-hosts-row");
+    if (blockedRow) {
+      blockedRow.classList.toggle("is-hidden", mode === modes.whitelist);
+    }
+    if (allowedRow) {
+      allowedRow.classList.toggle("is-hidden", mode !== modes.whitelist);
+    }
+  }
+
   function formatTemperatureInputValue(value) {
     const normalized = mp.normalizeTemperature(value, namespace.constants.modelTemperatureMax);
     const resolved = normalized === null ? namespace.constants.modelTemperatureDefault : normalized;
@@ -166,6 +187,11 @@
       secondTargetLanguage: getLanguageValue("second-target-language", "second-target-language-custom"),
       autoSwitchToSecondTarget: document.getElementById("auto-switch-second-target").checked,
       dictionaryModeForSingleWord: document.getElementById("dictionary-mode-for-single-word").checked,
+      inputInlineButtonEnabled: document.getElementById("input-inline-button-enabled").checked,
+      inputInlineButtonSiteMode: pu.normalizeInputSiteMode(document.getElementById("input-site-mode").value),
+      inputInlineButtonBlockedHosts: pu.normalizeHostRuleList(document.getElementById("input-blocked-hosts").value),
+      inputInlineButtonAllowedHosts: pu.normalizeHostRuleList(document.getElementById("input-allowed-hosts").value),
+      defaultInputContextStyle: pu.getInputContextStyle(document.getElementById("input-context-style").value),
       persistHistory: document.getElementById("persist-history").checked
     };
   }
@@ -201,6 +227,21 @@
       dictionaryModeForSingleWord: incoming.dictionaryModeForSingleWord !== undefined
         ? !!incoming.dictionaryModeForSingleWord
         : !!current.dictionaryModeForSingleWord,
+      inputInlineButtonEnabled: incoming.inputInlineButtonEnabled !== undefined
+        ? !!incoming.inputInlineButtonEnabled
+        : current.inputInlineButtonEnabled !== false,
+      inputInlineButtonSiteMode: pu.normalizeInputSiteMode(incoming.inputInlineButtonSiteMode || current.inputInlineButtonSiteMode),
+      inputInlineButtonBlockedHosts: pu.normalizeHostRuleList(
+        incoming.inputInlineButtonBlockedHosts !== undefined
+          ? incoming.inputInlineButtonBlockedHosts
+          : (current.inputInlineButtonBlockedHosts || [])
+      ),
+      inputInlineButtonAllowedHosts: pu.normalizeHostRuleList(
+        incoming.inputInlineButtonAllowedHosts !== undefined
+          ? incoming.inputInlineButtonAllowedHosts
+          : (current.inputInlineButtonAllowedHosts || [])
+      ),
+      defaultInputContextStyle: pu.getInputContextStyle(incoming.defaultInputContextStyle || current.defaultInputContextStyle),
       persistHistory: incoming.persistHistory !== undefined
         ? !!incoming.persistHistory
         : !!current.persistHistory
@@ -260,20 +301,20 @@
         const stateConfig = state.providerConfigs[providerId] || {};
         const resolvedApiKey = String(config.apiKey || stateConfig.apiKey || "").trim();
         return [providerId, {
-        id: config.id,
-        enabled: !!config.enabled,
-        model: config.model || "",
-        baseUrl: config.baseUrl || "",
-        apiKey: resolvedApiKey,
-        favoriteModels: pu.normalizeModels(config.favoriteModels || []),
-        modelParameters: mp.getProviderModelParameters(config),
-        availableModels: pu.normalizeModels(config.availableModels || []),
-        modelsFetchedAt: Number.isFinite(Number(config.modelsFetchedAt)) ? Number(config.modelsFetchedAt) : 0,
-        modelListAccountId: config.modelListAccountId || "",
-        transport: config.transport || "openai-compatible",
-        experimental: !!config.experimental,
-        extraHeaders: config.extraHeaders || {}
-      }];
+          id: config.id,
+          enabled: !!config.enabled,
+          model: config.model || "",
+          baseUrl: config.baseUrl || "",
+          apiKey: resolvedApiKey,
+          favoriteModels: pu.normalizeModels(config.favoriteModels || []),
+          modelParameters: mp.getProviderModelParameters(config),
+          availableModels: pu.normalizeModels(config.availableModels || []),
+          modelsFetchedAt: Number.isFinite(Number(config.modelsFetchedAt)) ? Number(config.modelsFetchedAt) : 0,
+          modelListAccountId: config.modelListAccountId || "",
+          transport: config.transport || "openai-compatible",
+          experimental: !!config.experimental,
+          extraHeaders: config.extraHeaders || {}
+        }];
       })
     );
 
@@ -359,6 +400,29 @@
           { value: "Meta", label: "Meta" }
         ],
         selected: "Alt"
+      }
+    );
+    state.dropdowns["input-site-mode"] = namespace.customDropdown.create(
+      document.getElementById("input-site-mode-wrap"),
+      {
+        id: "input-site-mode",
+        items: [
+          { value: namespace.constants.inputSiteModes.blacklist, label: "Hide on blocked domains" },
+          { value: namespace.constants.inputSiteModes.whitelist, label: "Show only on allowed domains" }
+        ],
+        selected: namespace.constants.inputSiteModes.blacklist,
+        onChange: updateInputSiteRuleVisibility
+      }
+    );
+    state.dropdowns["input-context-style"] = namespace.customDropdown.create(
+      document.getElementById("input-context-style-wrap"),
+      {
+        id: "input-context-style",
+        items: (namespace.constants.inputContextStyles || []).map((item) => ({
+          value: item.id,
+          label: item.label
+        })),
+        selected: "auto"
       }
     );
   }
@@ -783,12 +847,18 @@
   function fillGeneralSettings() {
     state.dropdowns["selection-trigger"].setValue(state.settings.selectionTrigger);
     state.dropdowns["modifier-key"].setValue(state.settings.modifierKey);
+    state.dropdowns["input-site-mode"].setValue(pu.normalizeInputSiteMode(state.settings.inputInlineButtonSiteMode));
+    state.dropdowns["input-context-style"].setValue(pu.getInputContextStyle(state.settings.defaultInputContextStyle));
     renderDefaultModelSelect();
     renderModelParametersPanel();
     renderLanguageSelect("target-language", "target-language-custom", state.settings.targetLanguage);
     renderLanguageSelect("second-target-language", "second-target-language-custom", state.settings.secondTargetLanguage || "en-US");
     document.getElementById("auto-switch-second-target").checked = !!state.settings.autoSwitchToSecondTarget;
     document.getElementById("dictionary-mode-for-single-word").checked = !!state.settings.dictionaryModeForSingleWord;
+    document.getElementById("input-inline-button-enabled").checked = state.settings.inputInlineButtonEnabled !== false;
+    document.getElementById("input-blocked-hosts").value = formatHostRuleList(state.settings.inputInlineButtonBlockedHosts || []);
+    document.getElementById("input-allowed-hosts").value = formatHostRuleList(state.settings.inputInlineButtonAllowedHosts || []);
+    updateInputSiteRuleVisibility();
     document.getElementById("persist-history").checked = !!state.settings.persistHistory;
   }
 

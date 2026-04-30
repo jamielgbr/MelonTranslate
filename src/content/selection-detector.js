@@ -4,9 +4,11 @@
   const popupHostId = namespace.constants.popupId;
 
   function isEditable(target) {
-    return !!target && (
-      target.closest("input, textarea") ||
-      target.closest("[contenteditable=''], [contenteditable='true']")
+    const element = target && target.closest ? target : (target && target.parentElement);
+    return !!element && (
+      element.closest("input, textarea") ||
+      element.closest("[contenteditable]:not([contenteditable='false'])") ||
+      element.isContentEditable
     );
   }
 

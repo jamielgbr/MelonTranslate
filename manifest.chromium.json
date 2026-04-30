@@ -53,6 +53,8 @@
         "src/shared/read-aloud.js",
         "src/content/popup-renderer.js",
         "src/content/selection-detector.js",
+        "src/content/translation-client.js",
+        "src/content/input-translator.js",
         "src/content/content-main.js"
       ]
     }

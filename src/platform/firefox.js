@@ -43,8 +43,8 @@
       async create(createProperties) {
         return browser.tabs.create(createProperties);
       },
-      async sendMessage(tabId, message) {
-        return browser.tabs.sendMessage(tabId, message);
+      async sendMessage(tabId, message, options) {
+        return browser.tabs.sendMessage(tabId, message, options);
       },
       async query(queryInfo) {
         return browser.tabs.query(queryInfo);

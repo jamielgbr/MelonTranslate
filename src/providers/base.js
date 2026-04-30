@@ -78,13 +78,28 @@
       const sourceHint = sourceLanguage && sourceLanguage.toLowerCase() !== "auto"
         ? `Translate from ${sourceLanguage} into ${request.targetLanguage}.`
         : `Translate the user content into ${request.targetLanguage}.`;
+      const contextStyle = request.contextStyle || "auto";
+      const styleHint = this.buildContextStyleHint(contextStyle);
 
       return [
         "You are a precise translator.",
         sourceHint,
+        styleHint,
         "Preserve names, technical terms, and formatting where possible.",
         "Return only the translated text."
-      ].join(" ");
+      ].filter(Boolean).join(" ");
+    }
+
+    buildContextStyleHint(contextStyle) {
+      switch (contextStyle) {
+        case "casual-comment":
+          return "Use a natural, conversational tone suitable for social media comments, chats, and replies.";
+        case "formal-academic":
+          return "Use a formal, precise tone suitable for academic or professional communication.";
+        case "auto":
+        default:
+          return "";
+      }
     }
 
     buildPromptPreview(request) {

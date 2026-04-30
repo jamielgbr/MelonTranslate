@@ -4,7 +4,8 @@
   const messageTypes = namespace.messages.types;
   const getErrorCategory = namespace.providerBase.getErrorCategory;
   const mp = namespace.modelParams;
-  const contextMenuId = "melontranslate-selection";
+  const selectionContextMenuId = "melontranslate-selection";
+  const editableContextMenuId = "melontranslate-editable";
   const MODEL_CACHE_TTL_MS = namespace.constants.modelCacheTtlMs;
   const MODEL_TEMPERATURE_DEFAULT = namespace.constants.modelTemperatureDefault;
   const MODEL_TEMPERATURE_MAX = namespace.constants.modelTemperatureMax;
@@ -14,8 +15,10 @@
   const translationCache = new Map();
   const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
-  function cacheKey(text, sourceLanguage, targetLanguage, providerSignature) {
-    return `${sourceLanguage || "auto"}\0${targetLanguage}\0${providerSignature}\0${text}`;
+  function cacheKey(text, sourceLanguage, targetLanguage, providerSignature, contextStyle, dictionaryModeForSingleWord) {
+    const style = namespace.pageUtils.getInputContextStyle(contextStyle);
+    const dictionaryMode = dictionaryModeForSingleWord ? "dict" : "plain";
+    return `${sourceLanguage || "auto"}\0${targetLanguage}\0${style}\0${dictionaryMode}\0${providerSignature}\0${text}`;
   }
 
   function getCached(key) {
@@ -32,36 +35,14 @@
     translationCache.set(key, { results, expiresAt: Date.now() + CACHE_TTL_MS });
   }
 
-  function normalizeLanguageTag(tag) {
-    return String(tag || "").trim().toLowerCase();
-  }
-
-  function getBaseLanguage(tag) {
-    return normalizeLanguageTag(tag).split("-")[0];
-  }
-
-  function looksLikeTraditionalChinese(text) {
-    return /[體萬與為國臺學龍門關觀歷頭醫廣語電畫]/.test(text);
-  }
-
-  function detectSourceLanguage(text) {
-    const sample = String(text || "");
-    if (/[\u0600-\u06FF]/.test(sample)) return "ar";
-    if (/[\u0400-\u04FF]/.test(sample)) return "ru";
-    if (/[\uAC00-\uD7AF]/.test(sample)) return "ko";
-    if (/[\u3040-\u30FF]/.test(sample)) return "ja";
-    if (/[\u4E00-\u9FFF]/.test(sample)) return looksLikeTraditionalChinese(sample) ? "zh-TW" : "zh-CN";
-    return "en";
-  }
-
   function maybeSwitchTargetLanguage(settings, requestedTargetLanguage, text) {
     const primary = requestedTargetLanguage || settings.targetLanguage;
     if (!settings.autoSwitchToSecondTarget || !settings.secondTargetLanguage) {
       return { effectiveTargetLanguage: primary, detectedSourceLanguage: null };
     }
 
-    const detected = detectSourceLanguage(text);
-    if (getBaseLanguage(detected) === getBaseLanguage(primary)) {
+    const detected = namespace.pageUtils.detectTextLanguage(text);
+    if (namespace.pageUtils.getBaseLanguage(detected) === namespace.pageUtils.getBaseLanguage(primary)) {
       return { effectiveTargetLanguage: settings.secondTargetLanguage, detectedSourceLanguage: detected };
     }
 
@@ -218,6 +199,74 @@
     return {
       providerIds: [enabled[0].id],
       modelOverrides
+    };
+  }
+
+  function providerIsSelectableForContent(provider, config) {
+    if (!provider || !config || !config.enabled) {
+      return false;
+    }
+    if (provider.requiresApiKey === false) {
+      return true;
+    }
+    return !!String(config.encryptedApiKey || "").trim();
+  }
+
+  function selectDefaultModelKey(settings, modelOptions) {
+    const options = Array.isArray(modelOptions) ? modelOptions : [];
+    if (!options.length) {
+      return "";
+    }
+
+    const defaultModelKey = settings.defaultTranslationModelKey;
+    if (defaultModelKey && options.some((item) => item.key === defaultModelKey)) {
+      return defaultModelKey;
+    }
+
+    const parsedDefaultModel = parseDefaultModelKey(defaultModelKey);
+    if (parsedDefaultModel.providerId) {
+      const providerMatch = options.find((item) => item.providerId === parsedDefaultModel.providerId);
+      if (providerMatch) {
+        return providerMatch.key;
+      }
+    }
+
+    if (settings.defaultTranslationProviderId) {
+      const providerMatch = options.find((item) => item.providerId === settings.defaultTranslationProviderId);
+      if (providerMatch) {
+        return providerMatch.key;
+      }
+    }
+
+    return options[0].key;
+  }
+
+  async function getTranslationModelOptions() {
+    const [settings, providerConfigs] = await Promise.all([
+      namespace.configManager.getSettings(),
+      namespace.configManager.getProviderConfigs()
+    ]);
+    const modelOptions = namespace.providerRegistry.listProviders().flatMap((provider) => {
+      const config = providerConfigs[provider.id] || {};
+      if (!providerIsSelectableForContent(provider, config)) {
+        return [];
+      }
+      const models = namespace.pageUtils.normalizeModels([
+        ...(Array.isArray(config.favoriteModels) ? config.favoriteModels : []),
+        config.model || ""
+      ]);
+      return models.map((model) => ({
+        key: namespace.pageUtils.buildDefaultModelKey(provider.id, model),
+        providerId: provider.id,
+        providerName: provider.displayName || provider.id,
+        model,
+        label: `${provider.displayName || provider.id} · ${model}`
+      }));
+    });
+
+    return {
+      modelOptions,
+      selectedModelKey: selectDefaultModelKey(settings, modelOptions)
     };
   }
 
@@ -387,9 +436,14 @@
   async function ensureContextMenu() {
     await api.contextMenus.removeAll();
     await api.contextMenus.create({
-      id: contextMenuId,
+      id: selectionContextMenuId,
       title: "Translate selected text",
       contexts: ["selection"]
+    });
+    await api.contextMenus.create({
+      id: editableContextMenuId,
+      title: "Translate input text",
+      contexts: ["editable"]
     });
   }
 
@@ -398,6 +452,10 @@
     const explicitSourceLanguage = String(message.sourceLanguage || "").trim();
     const hasExplicitSource = !!explicitSourceLanguage && explicitSourceLanguage.toLowerCase() !== "auto";
     const targetDecision = maybeSwitchTargetLanguage(settings, message.targetLanguage, text);
+    const contextStyle = namespace.pageUtils.getInputContextStyle(message.contextStyle);
+    const dictionaryMode = message.dictionaryModeForSingleWord === false
+      ? false
+      : settings.dictionaryModeForSingleWord !== false;
     return {
       text,
       sourceLanguage: hasExplicitSource ? explicitSourceLanguage : "",
@@ -405,7 +463,8 @@
         ? (message.targetLanguage || settings.targetLanguage)
         : targetDecision.effectiveTargetLanguage,
       sourceLanguageDetected: hasExplicitSource ? explicitSourceLanguage : targetDecision.detectedSourceLanguage,
-      dictionaryModeForSingleWord: settings.dictionaryModeForSingleWord !== false,
+      dictionaryModeForSingleWord: dictionaryMode,
+      contextStyle,
       url: message.url || ""
     };
   }
@@ -427,7 +486,14 @@
     );
     const bypassCache = !!message.bypassCache;
     const providerSignature = buildProviderSignature(providerIds, modelOverrides, temperatureOverrides, configuredProviders);
-    const key = cacheKey(request.text, request.sourceLanguage || request.sourceLanguageDetected || "auto", request.targetLanguage, providerSignature);
+    const key = cacheKey(
+      request.text,
+      request.sourceLanguage || request.sourceLanguageDetected || "auto",
+      request.targetLanguage,
+      providerSignature,
+      request.contextStyle,
+      request.dictionaryModeForSingleWord
+    );
     const cached = bypassCache ? null : getCached(key);
     return { settings, configuredProviders, request, providerIds, modelOverrides, temperatureOverrides, key, cached };
   }
@@ -437,6 +503,7 @@
       id: crypto.randomUUID(),
       text: request.text,
       targetLanguage: request.targetLanguage,
+      contextStyle: request.contextStyle,
       url: request.url,
       createdAt: new Date().toISOString(),
       results
@@ -486,6 +553,62 @@
     }
   }
 
+  function applyDetectedSourceLanguage(event, detectedSourceLanguage) {
+    if (event.event !== "provider-complete" || !event.result || event.result.detectedSourceLanguage || !detectedSourceLanguage) {
+      return event;
+    }
+    return Object.assign({}, event, {
+      result: Object.assign({}, event.result, { detectedSourceLanguage })
+    });
+  }
+
+  function postCachedStreamResults(port, cachedResults, detectedSourceLanguage) {
+    cachedResults.forEach((result) => {
+      port.postMessage({
+        event: "provider-start",
+        providerId: result.providerId,
+        providerName: result.providerName,
+        model: result.model,
+        prompt: result.prompt || "",
+        fromCache: true
+      });
+
+      if (result.ok) {
+        port.postMessage({
+          event: "provider-chunk",
+          providerId: result.providerId,
+          providerName: result.providerName,
+          model: result.model,
+          chunk: result.translatedText,
+          thinkingChunk: result.thinkingText || "",
+          prompt: result.prompt || "",
+          outputTokens: result.outputTokens,
+          fromCache: true
+        });
+        port.postMessage({
+          event: "provider-complete",
+          providerId: result.providerId,
+          providerName: result.providerName,
+          model: result.model,
+          result: Object.assign({}, result, {
+            fromCache: true,
+            detectedSourceLanguage: result.detectedSourceLanguage || detectedSourceLanguage || ""
+          })
+        });
+        return;
+      }
+
+      port.postMessage({
+        event: "provider-error",
+        providerId: result.providerId,
+        providerName: result.providerName,
+        model: result.model,
+        error: Object.assign({}, result, { fromCache: true })
+      });
+    });
+    port.postMessage({ event: "stream-complete", fromCache: true });
+  }
+
   async function handleStreamingTranslation(port, message, signal) {
     const ctx = await prepareTranslationContext(message);
 
@@ -496,48 +619,27 @@
     }, 20000);
 
     try {
+      if (signal && signal.aborted) {
+        return;
+      }
 
-    if (signal && signal.aborted) { return; }
+      if (ctx.cached) {
+        postCachedStreamResults(port, ctx.cached, ctx.request.sourceLanguageDetected);
+        return;
+      }
 
-    if (ctx.cached) {
-      ctx.cached.forEach((result) => {
-        port.postMessage({ event: "provider-start", providerId: result.providerId, providerName: result.providerName, model: result.model, prompt: result.prompt || "", fromCache: true });
-        if (result.ok) {
-          port.postMessage({
-            event: "provider-chunk",
-            providerId: result.providerId,
-            providerName: result.providerName,
-            model: result.model,
-            chunk: result.translatedText,
-            thinkingChunk: result.thinkingText || "",
-            prompt: result.prompt || "",
-            outputTokens: result.outputTokens,
-            fromCache: true
-          });
-          port.postMessage({ event: "provider-complete", providerId: result.providerId, providerName: result.providerName, model: result.model, result: Object.assign({}, result, { fromCache: true, detectedSourceLanguage: result.detectedSourceLanguage || ctx.request.sourceLanguageDetected || "" }) });
-        } else {
-          port.postMessage({ event: "provider-error", providerId: result.providerId, providerName: result.providerName, model: result.model, error: Object.assign({}, result, { fromCache: true }) });
-        }
-      });
-      port.postMessage({ event: "stream-complete", fromCache: true });
-      return;
-    }
+      const results = await namespace.providerRegistry.streamTranslate(ctx.request, ctx.providerIds, ctx.modelOverrides, (event) => {
+        try {
+          port.postMessage(applyDetectedSourceLanguage(event, ctx.request.sourceLanguageDetected));
+        } catch (_) {}
+      }, ctx.temperatureOverrides, signal, ctx.configuredProviders);
 
-    const results = await namespace.providerRegistry.streamTranslate(ctx.request, ctx.providerIds, ctx.modelOverrides, (event) => {
-      try {
-        const outEvent = (event.event === "provider-complete" && event.result && !event.result.detectedSourceLanguage && ctx.request.sourceLanguageDetected)
-          ? Object.assign({}, event, { result: Object.assign({}, event.result, { detectedSourceLanguage: ctx.request.sourceLanguageDetected }) })
-          : event;
-        port.postMessage(outEvent);
-      } catch (_) {}
-    }, ctx.temperatureOverrides, signal, ctx.configuredProviders);
-
-    // Only cache and record history if the translation was not cancelled.
-    if (!signal || !signal.aborted) {
-      setCache(ctx.key, results);
-      await appendTranslationHistory(ctx.request, results, ctx.settings);
-      port.postMessage({ event: "stream-complete" });
-    }
+      // Only cache and record history if the translation was not cancelled.
+      if (!signal || !signal.aborted) {
+        setCache(ctx.key, results);
+        await appendTranslationHistory(ctx.request, results, ctx.settings);
+        port.postMessage({ event: "stream-complete" });
+      }
 
     } finally {
       clearInterval(keepAliveTimer);
@@ -576,6 +678,8 @@
           history
         });
       }
+      case messageTypes.getTranslationModelOptions:
+        return namespace.messages.ok(await getTranslationModelOptions());
       case messageTypes.saveOptions: {
         const [settings, persistedProviders] = await Promise.all([
           namespace.configManager.saveSettings(message.settings),
@@ -638,15 +742,23 @@
   });
 
   api.contextMenus.onClicked(async (info, tab) => {
-    if (info.menuItemId !== contextMenuId || !tab || typeof tab.id === "undefined") {
+    if (!tab || typeof tab.id === "undefined") {
+      return;
+    }
+
+    const frameOptions = Number.isFinite(info.frameId) ? { frameId: info.frameId } : undefined;
+    const message = info.menuItemId === selectionContextMenuId
+      ? { type: messageTypes.manualTranslateSelection, text: info.selectionText || "" }
+      : (info.menuItemId === editableContextMenuId
+        ? { type: messageTypes.manualTranslateEditable }
+        : null);
+
+    if (!message) {
       return;
     }
 
     try {
-      await api.tabs.sendMessage(tab.id, {
-        type: messageTypes.manualTranslateSelection,
-        text: info.selectionText || ""
-      });
+      await api.tabs.sendMessage(tab.id, message, frameOptions);
     } catch (error) {
       console.error("Failed to request manual translation", error);
     }

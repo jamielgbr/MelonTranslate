@@ -116,6 +116,19 @@ textarea:focus {
   align-self: start;
 }
 
+.settings-control textarea {
+  min-height: 92px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.settings-row.is-hidden {
+  display: none;
+}
+
 .settings-row-switch {
   grid-template-columns: minmax(260px, 1fr) auto;
   align-items: center;

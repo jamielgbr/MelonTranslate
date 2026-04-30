@@ -27,6 +27,15 @@
       modifier: "modifier",
       manual: "manual"
     },
+    inputSiteModes: {
+      blacklist: "blacklist",
+      whitelist: "whitelist"
+    },
+    inputContextStyles: [
+      { id: "auto", label: "Auto" },
+      { id: "casual-comment", label: "Casual chat/comment" },
+      { id: "formal-academic", label: "Formal academic/professional" }
+    ],
     modifierKeys: ["Alt", "Control", "Shift", "Meta"],
     modelCacheTtlMs: 24 * 60 * 60 * 1000,
     maxFavoriteModelsPerProvider: 50,

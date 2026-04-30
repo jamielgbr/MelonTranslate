@@ -5,11 +5,13 @@
     types: {
       getSettings: "GET_SETTINGS",
       getOptionsBootstrap: "GET_OPTIONS_BOOTSTRAP",
+      getTranslationModelOptions: "GET_TRANSLATION_MODEL_OPTIONS",
       saveOptions: "SAVE_OPTIONS",
       getProviderModels: "GET_PROVIDER_MODELS",
       translateStream: "TRANSLATE_STREAM",
       readAloud: "READ_ALOUD",
       manualTranslateSelection: "MANUAL_TRANSLATE_SELECTION",
+      manualTranslateEditable: "MANUAL_TRANSLATE_EDITABLE",
       openComparePage: "OPEN_COMPARE_PAGE",
       clearHistory: "CLEAR_HISTORY",
       getHistory: "GET_HISTORY"
