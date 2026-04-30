@@ -40,7 +40,7 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(180, 83, 9, 0.15);
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.14);
 }
 
 .cdd-trigger {
@@ -62,7 +62,7 @@ textarea:focus {
 }
 
 .hero .icon-action-button {
-  box-shadow: 0 10px 24px rgba(180, 83, 9, 0.2);
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.18);
 }
 
 .settings-layout {
@@ -81,9 +81,9 @@ textarea:focus {
   gap: 4px;
   padding: 10px;
   border: 1px solid var(--border);
-  border-radius: 14px;
-  background: rgba(255, 252, 247, 0.88);
-  box-shadow: 0 14px 34px rgba(71, 85, 105, 0.1);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
 }
 
 .settings-nav a {
@@ -101,7 +101,7 @@ textarea:focus {
 
 .settings-nav a:hover,
 .settings-nav a:focus-visible {
-  background: rgba(180, 83, 9, 0.08);
+  background: var(--accent-soft);
   color: var(--accent-dark);
   outline: none;
 }
@@ -141,7 +141,7 @@ textarea:focus {
 }
 
 .settings-group {
-  border-top: 1px solid rgba(113, 92, 67, 0.16);
+  border-top: 1px solid var(--border);
 }
 
 .settings-group + .settings-group {
@@ -162,7 +162,7 @@ textarea:focus {
   align-items: start;
   gap: 20px;
   padding: 18px 0;
-  border-top: 1px solid rgba(113, 92, 67, 0.12);
+  border-top: 1px solid var(--border);
 }
 
 .settings-group .settings-row:first-of-type {
@@ -240,7 +240,7 @@ textarea:focus {
 .history-section {
   margin-top: 22px;
   padding-top: 20px;
-  border-top: 1px solid rgba(113, 92, 67, 0.16);
+  border-top: 1px solid var(--border);
 }
 
 .checkbox-row {
@@ -306,7 +306,7 @@ textarea:focus {
 .icon-action-button {
   width: 40px;
   height: 40px;
-  border-radius: 999px;
+  border-radius: 10px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -346,7 +346,13 @@ textarea:focus {
 .history-card {
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface);
+}
+
+.model-parameter-provider:hover,
+.provider-card:hover,
+.history-card:hover {
+  border-color: var(--border-strong);
 }
 
 .model-parameter-provider {
@@ -477,7 +483,8 @@ textarea:focus {
 }
 
 .provider-icon-custom-openai {
-  background: linear-gradient(135deg, #64748b, #94a3b8);
+  background: #64748b;
+  color: #fff;
   font-size: 20px;
   line-height: 1;
 }
@@ -538,22 +545,11 @@ textarea:focus {
 }
 
 .provider-switch input:checked + .provider-switch-track {
-  background-color: #10b981;
+  background-color: var(--accent);
 }
 
 .provider-switch-track::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.45), transparent 60%);
-  opacity: 0;
-  transition: opacity 200ms ease;
-  pointer-events: none;
-}
-
-.provider-switch input:checked + .provider-switch-track::before {
-  opacity: 1;
+  content: none;
 }
 
 .provider-switch-thumb {
@@ -602,7 +598,8 @@ textarea:focus {
 .history-result {
   margin-top: 6px;
   padding: 8px 10px;
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -685,7 +682,7 @@ textarea:focus {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.62);
+  background: var(--surface-subtle);
 }
 
 .model-favorite-row {
@@ -711,8 +708,8 @@ textarea:focus {
 .badge {
   font-size: 12px;
   padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(180, 83, 9, 0.12);
+  border-radius: 8px;
+  background: var(--accent-soft);
   color: var(--accent-dark);
 }
 
@@ -723,7 +720,7 @@ textarea:focus {
   transform: translateX(-50%) translateY(-12px);
   z-index: 9999;
   padding: 10px 20px;
-  border-radius: 999px;
+  border-radius: 10px;
   background: #1e293b;
   color: #f8fafc;
   font-size: 14px;

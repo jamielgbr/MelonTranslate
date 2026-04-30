@@ -5,6 +5,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Action Popup</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            width: 420px;
+            height: 500px;
+            overflow: hidden;
+            background: #f8fafc;
+        }
+    </style>
     <link rel="stylesheet" href="../../shared/custom-dropdown.css">
     <link rel="stylesheet" href="./action-popup.css">
 </head>
@@ -35,48 +45,48 @@
                 </button>
             </div>
         </header>
-        <section class="block collapsible-block">
+
+        <section class="toolbar" aria-label="Translation controls">
+            <div class="control">
+                <label for="popup-source-language-select">Source</label>
+                <div id="popup-source-language-wrap"></div>
+                <input id="popup-source-language-custom" type="text" placeholder="Enter a language code" class="hidden">
+            </div>
+            <div class="control">
+                <label for="popup-target-language-select">Target</label>
+                <div id="popup-target-language-wrap"></div>
+                <input id="popup-target-language-custom" type="text" placeholder="Enter a language code" class="hidden">
+            </div>
+            <div class="control control-model">
+                <label for="popup-model">Model</label>
+                <div id="popup-model-wrap"></div>
+            </div>
+        </section>
+
+        <section class="source-block collapsible-block">
             <div class="block-header">
-                <button id="popup-toggle-input" class="section-toggle" type="button" aria-expanded="true"
-                    aria-controls="popup-input-content">Input</button>
-                <button id="popup-speak-source" class="icon-button" type="button" disabled
-                    title="Read source text aloud" aria-label="Read source text aloud">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path
-                            d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"
-                            fill="currentColor" />
-                    </svg>
-                </button>
+                <span class="section-title">Input</span>
+                <div class="source-actions">
+                    <button id="popup-speak-source" class="icon-button" type="button" disabled
+                        title="Read source text aloud" aria-label="Read source text aloud">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                                d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"
+                                fill="currentColor" />
+                        </svg>
+                    </button>
+                    <button id="popup-toggle-input" class="section-toggle" type="button" aria-expanded="true"
+                        aria-controls="popup-input-content">Hide</button>
+                </div>
             </div>
             <div id="popup-input-content" class="collapsible-content">
                 <textarea id="popup-source-text" rows="3" placeholder="Enter text to translate."></textarea>
-                <section class="block two-col">
-                    <div>
-                        <label for="popup-source-language-select">Source language</label>
-                        <div id="popup-source-language-wrap"></div>
-                        <input id="popup-source-language-custom" type="text" placeholder="Enter a language code"
-                            class="hidden">
-                    </div>
-                    <div>
-                        <label for="popup-target-language-select">Target language</label>
-                        <div id="popup-target-language-wrap"></div>
-                        <input id="popup-target-language-custom" type="text" placeholder="Enter a language code"
-                            class="hidden">
-                    </div>
-                </section>
-                <section class="block">
-                    <label for="popup-model">Model</label>
-                    <div id="popup-model-wrap"></div>
-                </section>
             </div>
         </section>
-        <section class="actions">
-            <button id="popup-translate" class="primary" type="button">Translate</button>
-            <button id="popup-copy" class="secondary" type="button">Copy</button>
-        </section>
-        <section class="block result-block">
+
+        <section class="result-block">
             <div class="block-header">
-                <label for="popup-result">Result</label>
+                <label for="popup-result">Translation</label>
                 <button id="popup-speak" class="icon-button" type="button" disabled title="Read translation aloud"
                     aria-label="Read translation aloud">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -87,8 +97,6 @@
                 </button>
             </div>
             <div class="result-wrap">
-                <p id="popup-status" class="status hidden" aria-live="polite"></p>
-                <p id="popup-metrics" class="metrics hidden"></p>
                 <details id="popup-reasoning-wrap" class="reasoning hidden">
                     <summary>Model reasoning</summary>
                     <pre id="popup-reasoning" class="reasoning-text"></pre>
@@ -96,6 +104,17 @@
                 <pre id="popup-result" class="result placeholder">No translation yet.</pre>
             </div>
         </section>
+
+        <footer class="footer">
+            <div class="meta-stack">
+                <p id="popup-status" class="status hidden" aria-live="polite"></p>
+                <p id="popup-metrics" class="metrics hidden"></p>
+            </div>
+            <div class="actions">
+                <button id="popup-translate" class="primary" type="button">Translate</button>
+                <button id="popup-copy" class="secondary" type="button">Copy</button>
+            </div>
+        </footer>
     </main>
     <script src="../../shared/constants.js"></script>
     <script src="../../shared/messages.js"></script>

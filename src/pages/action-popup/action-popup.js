@@ -32,6 +32,19 @@
 
   const RESULT_PLACEHOLDER = "No translation yet.";
 
+  function applyStoredTheme() {
+    api.storage.get("local", "melontranslateTheme").then((result) => {
+      const isDark = result && result.melontranslateTheme === "dark";
+      document.documentElement.classList.toggle("theme-dark", isDark);
+    }).catch(() => {});
+  }
+
+  function loadSafely() {
+    load().catch((error) => {
+      setStatus(error && error.message ? error.message : "Could not load settings.");
+    });
+  }
+
   function setMetricsLine(firstTokenMs, outputTokens, tokPerSec, fromCache) {
     const metricsEl = document.getElementById("popup-metrics");
     if (fromCache) {
@@ -532,6 +545,7 @@
     const expanded = button.getAttribute("aria-expanded") !== "false";
     const nextExpanded = !expanded;
     button.setAttribute("aria-expanded", nextExpanded ? "true" : "false");
+    button.textContent = nextExpanded ? "Hide" : "Show";
     content.classList.toggle("is-collapsed", !nextExpanded);
   }
 
@@ -546,5 +560,6 @@
   document.getElementById("open-compare").addEventListener("click", openCompare);
   document.getElementById("open-options").addEventListener("click", openOptions);
 
-  load();
+  applyStoredTheme();
+  loadSafely();
 }(globalThis));

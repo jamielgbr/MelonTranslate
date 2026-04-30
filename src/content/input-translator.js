@@ -25,6 +25,15 @@
     return value && value.nodeType === Node.ELEMENT_NODE;
   }
 
+  function applyStoredTheme(element) {
+    if (!element) {
+      return;
+    }
+    api.storage.get("local", "melontranslateTheme").then((result) => {
+      element.classList.toggle("dark", !!result && result.melontranslateTheme === "dark");
+    }).catch(() => {});
+  }
+
   function eventTouchesOwnUi(event) {
     const path = typeof event.composedPath === "function" ? event.composedPath() : [];
     return path.some((item) => (
@@ -367,13 +376,18 @@
       <style>
         :host { all: initial; }
         .btn {
+          --mt-surface: #ffffff;
+          --mt-text: #0f766e;
+          --mt-border: rgba(15, 118, 110, 0.26);
+          --mt-accent-soft: rgba(15, 118, 110, 0.08);
+          --mt-shadow: rgba(15, 23, 42, 0.16);
           width: 26px;
           height: 26px;
-          border: 1px solid rgba(15, 118, 110, 0.32);
-          border-radius: 999px;
-          background: rgba(240, 253, 248, 0.92);
-          color: #0f766e;
-          box-shadow: 0 4px 14px rgba(15, 23, 42, 0.14);
+          border: 1px solid var(--mt-border);
+          border-radius: 8px;
+          background: var(--mt-surface);
+          color: var(--mt-text);
+          box-shadow: 0 8px 22px var(--mt-shadow);
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -382,9 +396,16 @@
           font-family: ui-sans-serif, system-ui, sans-serif;
           transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, opacity 140ms ease;
         }
+        .btn.dark {
+          --mt-surface: rgba(15, 23, 42, 0.96);
+          --mt-text: #6ee7b7;
+          --mt-border: rgba(110, 231, 183, 0.34);
+          --mt-accent-soft: rgba(16, 185, 129, 0.13);
+          --mt-shadow: rgba(0, 0, 0, 0.46);
+        }
         .btn:hover {
-          background: #d1fae5;
-          border-color: rgba(15, 118, 110, 0.48);
+          background: var(--mt-accent-soft);
+          border-color: currentColor;
         }
         .btn:focus-visible {
           outline: 2px solid #0f766e;
@@ -401,6 +422,11 @@
           color: #dc2626;
           border-color: rgba(220, 38, 38, 0.38);
           background: rgba(254, 242, 242, 0.96);
+        }
+        .btn.dark.error {
+          color: #fca5a5;
+          border-color: rgba(248, 113, 113, 0.38);
+          background: rgba(127, 29, 29, 0.44);
         }
         svg {
           width: 15px;
@@ -421,6 +447,7 @@
         </svg>
       </button>
     `;
+    applyStoredTheme(shadow.querySelector(".btn"));
     shadow.querySelector(".btn").addEventListener("mousedown", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -663,113 +690,255 @@
     shadow.innerHTML = `
       <style>
         :host { all: initial; }
+        .panel,
+        .panel * {
+          box-sizing: border-box;
+        }
         .panel {
+          --mt-bg: rgba(255, 255, 255, 0.98);
+          --mt-surface: #ffffff;
+          --mt-surface-subtle: rgba(248, 250, 252, 0.95);
+          --mt-text: #111827;
+          --mt-text-secondary: #334155;
+          --mt-muted: #64748b;
+          --mt-border: rgba(15, 23, 42, 0.12);
+          --mt-border-strong: rgba(15, 23, 42, 0.18);
+          --mt-accent: #0f766e;
+          --mt-accent-strong: #115e59;
+          --mt-accent-soft: rgba(15, 118, 110, 0.08);
+          --mt-shadow: rgba(15, 23, 42, 0.18);
           position: fixed;
           z-index: 2147483647;
-          width: min(340px, calc(100vw - 24px));
+          width: min(380px, calc(100vw - 24px));
+          min-width: 300px;
           max-height: calc(100vh - 24px);
-          overflow: auto;
-          box-sizing: border-box;
-          border: 1px solid rgba(15, 118, 110, 0.18);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          border: 1px solid var(--mt-border);
           border-radius: 12px;
-          background: rgba(240, 253, 248, 0.98);
-          color: #1f2937;
-          box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+          background: var(--mt-bg);
+          color: var(--mt-text);
+          box-shadow: 0 18px 54px var(--mt-shadow);
           font-family: ui-sans-serif, system-ui, sans-serif;
+          backdrop-filter: blur(14px);
+        }
+        .panel.dark {
+          --mt-bg: rgba(12, 17, 29, 0.98);
+          --mt-surface: rgba(15, 23, 42, 0.95);
+          --mt-surface-subtle: rgba(30, 41, 59, 0.72);
+          --mt-text: #f8fafc;
+          --mt-text-secondary: #d1fae5;
+          --mt-muted: #94a3b8;
+          --mt-border: rgba(148, 163, 184, 0.16);
+          --mt-border-strong: rgba(148, 163, 184, 0.24);
+          --mt-accent: #10b981;
+          --mt-accent-strong: #34d399;
+          --mt-accent-soft: rgba(16, 185, 129, 0.11);
+          --mt-shadow: rgba(0, 0, 0, 0.48);
         }
         .hidden { display: none; }
         .header {
+          flex: 0 0 auto;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 10px;
-          padding: 10px 12px;
-          background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(209, 250, 229, 0.3));
+          padding: 9px 10px 8px 12px;
+          background: var(--mt-surface-subtle);
+          border-bottom: 1px solid var(--mt-border);
         }
         .title {
           font-size: 12px;
           font-weight: 700;
           letter-spacing: 0.04em;
           text-transform: uppercase;
-          color: #0f766e;
+          color: var(--mt-text-secondary);
         }
         .close {
           border: 0;
           background: transparent;
-          color: #374151;
+          color: var(--mt-muted);
           cursor: pointer;
-          font-size: 16px;
+          font-size: 17px;
           line-height: 1;
-          padding: 2px;
+          width: 26px;
+          height: 26px;
+          padding: 0;
+          border-radius: 999px;
+        }
+        .close:hover {
+          background: var(--mt-accent-soft);
+          color: var(--mt-accent);
         }
         .body {
-          display: grid;
+          flex: 1 1 auto;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
           gap: 10px;
-          padding: 12px;
+          padding: 10px;
+          overflow: hidden;
         }
         .grid {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
           gap: 8px;
+          flex: 0 0 auto;
+          padding: 8px;
+          border: 1px solid var(--mt-border);
+          border-radius: 10px;
+          background: var(--mt-surface-subtle);
+        }
+        .control {
+          min-width: 0;
         }
         label {
           display: block;
-          margin: 0 0 4px;
+          margin: 0 0 5px;
           font-size: 10px;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.06em;
           text-transform: uppercase;
-          color: #6b7280;
+          color: var(--mt-muted);
+          font-weight: 700;
         }
         select,
         input,
         textarea {
           box-sizing: border-box;
           width: 100%;
-          border: 1px solid rgba(15, 118, 110, 0.2);
+          border: 1px solid var(--mt-border);
           border-radius: 8px;
-          background: rgba(209, 250, 229, 0.5);
-          color: #1f2937;
+          background: var(--mt-surface);
+          color: var(--mt-text);
           font: inherit;
           font-size: 12px;
           padding: 7px 8px;
+          min-width: 0;
         }
         input { margin-top: 6px; }
         textarea {
-          min-height: 58px;
-          max-height: 120px;
-          resize: vertical;
+          resize: none;
           line-height: 1.45;
+          white-space: pre-wrap;
+          word-break: break-word;
         }
         textarea[readonly] {
           cursor: default;
         }
+        .source-panel {
+          flex: 0 0 auto;
+          border: 1px solid var(--mt-border);
+          border-radius: 10px;
+          background: var(--mt-surface);
+          overflow: hidden;
+        }
+        .source-panel summary {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 8px 10px;
+          cursor: pointer;
+          list-style: none;
+          color: var(--mt-text-secondary);
+        }
+        .source-panel summary::-webkit-details-marker {
+          display: none;
+        }
+        .source-panel summary label {
+          margin: 0;
+        }
+        .source-panel summary::after {
+          content: "Hide";
+          color: var(--mt-accent);
+          font-size: 11px;
+          font-weight: 700;
+        }
+        .source-panel:not([open]) summary::after {
+          content: "Show";
+        }
+        .source-body {
+          border-top: 1px solid var(--mt-border);
+          padding: 9px 10px 10px;
+        }
+        .source-body textarea {
+          min-height: 62px;
+          max-height: 118px;
+        }
+        .translation-panel {
+          flex: 1 1 auto;
+          min-height: 120px;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          border: 1px solid var(--mt-border-strong);
+          border-radius: 10px;
+          background: var(--mt-surface);
+        }
+        .translation-header {
+          flex: 0 0 auto;
+          padding: 8px 10px;
+          border-bottom: 1px solid var(--mt-border);
+          background: var(--mt-surface-subtle);
+        }
+        .translation-header label {
+          margin: 0;
+        }
+        .translation-panel textarea {
+          flex: 1 1 auto;
+          min-height: 0;
+          border: 0;
+          border-radius: 0;
+          font-size: 13px;
+          line-height: 1.58;
+          overflow: auto;
+          padding: 10px;
+        }
         .status {
-          min-height: 18px;
-          color: #6b7280;
+          min-height: 16px;
+          color: var(--mt-muted);
           font-size: 12px;
-          line-height: 1.5;
+          line-height: 1.4;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
         .footer {
+          flex: 0 0 auto;
           display: flex;
           align-items: center;
           justify-content: flex-end;
           gap: 8px;
-          padding: 0 12px 12px;
+          padding: 9px 10px;
+          border-top: 1px solid var(--mt-border);
+          background: var(--mt-surface-subtle);
         }
         button {
-          border: 1px solid rgba(15, 118, 110, 0.25);
-          border-radius: 999px;
-          background: rgba(240, 253, 248, 0.95);
-          color: #0f766e;
+          border: 1px solid var(--mt-border);
+          border-radius: 8px;
+          background: var(--mt-surface);
+          color: var(--mt-text);
           cursor: pointer;
           font: inherit;
           font-size: 12px;
+          font-weight: 650;
           padding: 7px 11px;
         }
+        button:hover {
+          border-color: rgba(15, 118, 110, 0.32);
+          background: var(--mt-accent-soft);
+          color: var(--mt-accent);
+        }
         button.primary {
-          background: #0f766e;
+          background: var(--mt-accent);
           color: white;
-          border-color: #0f766e;
+          border-color: var(--mt-accent);
+        }
+        button.primary:hover {
+          background: var(--mt-accent-strong);
+          border-color: var(--mt-accent-strong);
+          color: white;
         }
         button:disabled {
           opacity: 0.45;
@@ -783,8 +952,17 @@
         select:focus-visible,
         input:focus-visible,
         textarea:focus-visible {
-          outline: 2px solid #0f766e;
+          outline: 2px solid var(--mt-accent);
           outline-offset: 2px;
+        }
+        @media (max-width: 520px) {
+          .panel {
+            width: calc(100vw - 24px);
+            min-width: 0;
+          }
+          .grid {
+            grid-template-columns: 1fr;
+          }
         }
       </style>
       <section class="panel hidden" role="dialog" aria-label="Translate input text">
@@ -793,29 +971,33 @@
           <button class="close" type="button" aria-label="Close">×</button>
         </div>
         <div class="body">
-          <div>
+          <div class="grid" aria-label="Input translation controls">
+            <div class="control">
             <label for="mt-input-model">Model</label>
             <select id="mt-input-model" data-role="model"></select>
-          </div>
-          <div class="grid">
-            <div>
+            </div>
+            <div class="control">
               <label for="mt-input-target">Target</label>
               <select id="mt-input-target" data-role="target"></select>
               <input class="hidden" type="text" data-role="target-custom" placeholder="Language code">
             </div>
-            <div>
+            <div class="control">
               <label for="mt-input-style">Style</label>
               <select id="mt-input-style" data-role="style"></select>
             </div>
           </div>
-          <div>
-            <label for="mt-input-source">Source</label>
-            <textarea id="mt-input-source" data-role="source" readonly></textarea>
-          </div>
-          <div>
-            <label for="mt-input-result">Translation</label>
+          <details class="source-panel" open>
+            <summary><label for="mt-input-source">Source</label></summary>
+            <div class="source-body">
+              <textarea id="mt-input-source" data-role="source" readonly></textarea>
+            </div>
+          </details>
+          <section class="translation-panel">
+            <div class="translation-header">
+              <label for="mt-input-result">Translation</label>
+            </div>
             <textarea id="mt-input-result" data-role="result" readonly></textarea>
-          </div>
+          </section>
           <div class="status" data-role="status" aria-live="polite"></div>
         </div>
         <div class="footer">
@@ -825,6 +1007,7 @@
       </section>
     `;
 
+    applyStoredTheme(shadow.querySelector(".panel"));
     shadow.querySelector('[data-role="target"]').addEventListener("change", () => {
       const target = shadow.querySelector('[data-role="target"]');
       shadow.querySelector('[data-role="target-custom"]').classList.toggle("hidden", target.value !== "custom");
