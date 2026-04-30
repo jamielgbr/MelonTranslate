@@ -48,6 +48,11 @@ validate_manifest_wiring() {
   fi
 }
 
+DEMO_MODE=false
+if [[ "${1:-}" == "demo" ]]; then
+  DEMO_MODE=true
+fi
+
 validate_manifest_wiring
 
 rm -rf "$CHROME_DIR" "$FIREFOX_DIR"
@@ -61,7 +66,11 @@ copy_variant() {
   cp -R "$ROOT_DIR/assets" "$target_dir/assets"
   cp -R "$ROOT_DIR/src" "$target_dir/src"
   cp "$manifest_source" "$target_dir/manifest.json"
-  
+
+  if [[ "$DEMO_MODE" == true ]]; then
+    sed -i 's/"version"[[:space:]]*:[[:space:]]*"[^"]*"/"version": "999.9.9"/' "$target_dir/manifest.json"
+  fi
+
   # Copy documentation
   for doc in README.md PRIVACY_POLICY.md PERMISSIONS.md LICENSE CHANGELOG.md; do
     if [[ -f "$ROOT_DIR/$doc" ]]; then
@@ -75,3 +84,6 @@ copy_variant "$FIREFOX_DIR" "$PRIMARY_MANIFEST"
 
 echo "Built Chrome variant: $CHROME_DIR"
 echo "Built Firefox variant: $FIREFOX_DIR"
+if [[ "$DEMO_MODE" == true ]]; then
+  echo "Demo mode: version set to 999.9.9"
+fi
