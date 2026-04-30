@@ -510,6 +510,22 @@
     }, settings);
   }
 
+  function attachRequestLanguages(result, request) {
+    if (!result || typeof result !== "object") {
+      return result;
+    }
+    return Object.assign({}, result, {
+      targetLanguage: result.targetLanguage || request.targetLanguage,
+      detectedSourceLanguage: result.detectedSourceLanguage || request.sourceLanguageDetected || ""
+    });
+  }
+
+  function attachRequestLanguagesToResults(results, request) {
+    return Array.isArray(results)
+      ? results.map((result) => attachRequestLanguages(result, request))
+      : [];
+  }
+
   async function handleTranslation(message) {
     const ctx = await prepareTranslationContext(message);
     if (ctx.cached) {
@@ -523,9 +539,10 @@
       ctx.temperatureOverrides,
       ctx.configuredProviders
     );
-    setCache(ctx.key, results);
-    await appendTranslationHistory(ctx.request, results, ctx.settings);
-    return namespace.messages.ok({ results });
+    const resultsWithLanguages = attachRequestLanguagesToResults(results, ctx.request);
+    setCache(ctx.key, resultsWithLanguages);
+    await appendTranslationHistory(ctx.request, resultsWithLanguages, ctx.settings);
+    return namespace.messages.ok({ results: resultsWithLanguages });
   }
 
   async function handleReadAloud(message) {
@@ -553,16 +570,28 @@
     }
   }
 
-  function applyDetectedSourceLanguage(event, detectedSourceLanguage) {
-    if (event.event !== "provider-complete" || !event.result || event.result.detectedSourceLanguage || !detectedSourceLanguage) {
+  function applyRequestLanguageMetadata(event, request) {
+    if (!event || typeof event !== "object") {
       return event;
     }
-    return Object.assign({}, event, {
-      result: Object.assign({}, event.result, { detectedSourceLanguage })
-    });
+
+    if (event.event === "provider-chunk") {
+      return Object.assign({}, event, {
+        targetLanguage: request.targetLanguage,
+        detectedSourceLanguage: request.sourceLanguageDetected || ""
+      });
+    }
+
+    if (event.event === "provider-complete" && event.result) {
+      return Object.assign({}, event, {
+        result: attachRequestLanguages(event.result, request)
+      });
+    }
+
+    return event;
   }
 
-  function postCachedStreamResults(port, cachedResults, detectedSourceLanguage) {
+  function postCachedStreamResults(port, cachedResults, request) {
     cachedResults.forEach((result) => {
       port.postMessage({
         event: "provider-start",
@@ -570,7 +599,9 @@
         providerName: result.providerName,
         model: result.model,
         prompt: result.prompt || "",
-        fromCache: true
+        fromCache: true,
+        targetLanguage: result.targetLanguage || request.targetLanguage,
+        detectedSourceLanguage: result.detectedSourceLanguage || request.sourceLanguageDetected || ""
       });
 
       if (result.ok) {
@@ -583,7 +614,9 @@
           thinkingChunk: result.thinkingText || "",
           prompt: result.prompt || "",
           outputTokens: result.outputTokens,
-          fromCache: true
+          fromCache: true,
+          targetLanguage: result.targetLanguage || request.targetLanguage,
+          detectedSourceLanguage: result.detectedSourceLanguage || request.sourceLanguageDetected || ""
         });
         port.postMessage({
           event: "provider-complete",
@@ -592,7 +625,8 @@
           model: result.model,
           result: Object.assign({}, result, {
             fromCache: true,
-            detectedSourceLanguage: result.detectedSourceLanguage || detectedSourceLanguage || ""
+            targetLanguage: result.targetLanguage || request.targetLanguage,
+            detectedSourceLanguage: result.detectedSourceLanguage || request.sourceLanguageDetected || ""
           })
         });
         return;
@@ -624,20 +658,21 @@
       }
 
       if (ctx.cached) {
-        postCachedStreamResults(port, ctx.cached, ctx.request.sourceLanguageDetected);
+        postCachedStreamResults(port, ctx.cached, ctx.request);
         return;
       }
 
       const results = await namespace.providerRegistry.streamTranslate(ctx.request, ctx.providerIds, ctx.modelOverrides, (event) => {
         try {
-          port.postMessage(applyDetectedSourceLanguage(event, ctx.request.sourceLanguageDetected));
+          port.postMessage(applyRequestLanguageMetadata(event, ctx.request));
         } catch (_) {}
       }, ctx.temperatureOverrides, signal, ctx.configuredProviders);
 
       // Only cache and record history if the translation was not cancelled.
       if (!signal || !signal.aborted) {
-        setCache(ctx.key, results);
-        await appendTranslationHistory(ctx.request, results, ctx.settings);
+        const resultsWithLanguages = attachRequestLanguagesToResults(results, ctx.request);
+        setCache(ctx.key, resultsWithLanguages);
+        await appendTranslationHistory(ctx.request, resultsWithLanguages, ctx.settings);
         port.postMessage({ event: "stream-complete" });
       }
 

@@ -11,6 +11,7 @@
     currentResult: "",
     currentReasoning: "",
     detectedSourceLanguage: "",
+    currentTargetLanguage: "",
     reasoningExpanded: false,
     streamStartedAtMs: 0,
     firstTokenAtMs: 0,
@@ -298,7 +299,7 @@
       const response = await api.runtime.sendMessage({
         type: messageTypes.readAloud,
         text: state.currentResult,
-        language: getTargetLanguage()
+        language: state.currentTargetLanguage || getTargetLanguage()
       });
 
       if (token !== state.readAloudToken) {
@@ -411,6 +412,7 @@
     state.currentResult = "";
     state.currentReasoning = "";
     state.reasoningExpanded = false;
+    state.currentTargetLanguage = targetLanguage;
     state.streamStartedAtMs = Date.now();
     state.firstTokenAtMs = 0;
     state.outputTokens = 0;
@@ -429,6 +431,8 @@
       }
       if (message.event === "provider-chunk") {
         state.fromCache = !!message.fromCache;
+        state.currentTargetLanguage = String(message.targetLanguage || state.currentTargetLanguage || "").trim();
+        state.detectedSourceLanguage = String(message.detectedSourceLanguage || state.detectedSourceLanguage || "").trim();
         const translatedChunk = String(message.chunk || "");
         const reasoningChunk = String(message.thinkingChunk || "");
         const hasAnyChunk = !!translatedChunk || !!reasoningChunk;
@@ -460,6 +464,7 @@
         state.currentResult = message.result && message.result.translatedText ? message.result.translatedText : state.currentResult;
         state.currentReasoning = message.result && message.result.thinkingText ? message.result.thinkingText : state.currentReasoning;
         state.detectedSourceLanguage = String(message.result && message.result.detectedSourceLanguage || "").trim() || state.detectedSourceLanguage;
+        state.currentTargetLanguage = String(message.result && message.result.targetLanguage || "").trim() || state.currentTargetLanguage;
         setResultText(state.currentResult, { showPlaceholder: !state.currentReasoning });
         reasoningEl.textContent = state.currentReasoning;
         if (state.currentReasoning) {

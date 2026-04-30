@@ -63,6 +63,8 @@
                 providerName: message.providerName,
                 model: message.model,
                 thinkingChunk: message.thinkingChunk,
+                targetLanguage: message.targetLanguage,
+                detectedSourceLanguage: message.detectedSourceLanguage,
                 fromCache: !!message.fromCache,
                 outputTokens: message.outputTokens
               });

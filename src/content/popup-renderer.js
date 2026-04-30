@@ -15,6 +15,7 @@
     tokPerSec: 0,
     fromCache: false,
     detectedSourceLanguage: "",
+    targetLanguage: "",
     sourceLanguageDd: null,
     targetLanguageDd: null,
     onHideCallback: null
@@ -505,6 +506,9 @@
   }
 
   function getCurrentTargetLanguage(elements) {
+    if (popupState.targetLanguage) {
+      return popupState.targetLanguage;
+    }
     return elements.targetLanguage.value === "custom"
       ? (elements.targetLanguageCustom.value.trim() || "en")
       : (elements.targetLanguage.value || "en");
@@ -854,6 +858,7 @@
       popupState.tokPerSec = 0;
       popupState.fromCache = false;
       popupState.detectedSourceLanguage = "";
+      popupState.targetLanguage = String(targetLanguage || "en").trim();
       elements.panel.classList.remove("hidden");
       elements.source.textContent = sourceText;
       elements.translation.textContent = "Translating...";
@@ -890,6 +895,7 @@
       const cached = result.fromCache ? " • Cached" : "";
       popupState.fromCache = !!result.fromCache;
       popupState.detectedSourceLanguage = String(result.detectedSourceLanguage || "").trim();
+      popupState.targetLanguage = String(result.targetLanguage || popupState.targetLanguage || "").trim();
       pu.updateStreamMetrics(popupState, `${result.translatedText || ""}${result.thinkingText || ""}`, result.outputTokens);
       const firstTokenMs = popupState.firstTokenAtMs ? popupState.firstTokenAtMs - popupState.streamStartedAtMs : -1;
       elements.meta.textContent = `${result.providerName} • ${result.model} • ${result.latencyMs} ms${cached}`;
@@ -913,6 +919,8 @@
       const elements = getElements();
       elements.errorBadge.innerHTML = "";
       popupState.fromCache = !!(meta && meta.fromCache);
+      popupState.targetLanguage = String(meta && meta.targetLanguage || popupState.targetLanguage || "").trim();
+      popupState.detectedSourceLanguage = String(meta && meta.detectedSourceLanguage || popupState.detectedSourceLanguage || "").trim();
       const translatedChunk = String(chunk || "");
       const thinkingChunk = String(meta && meta.thinkingChunk || "");
       const hasAnyChunk = !!translatedChunk || !!thinkingChunk;
