@@ -1,2 +1,4 @@
 ref/
 dist/
+.codex/
+.vscode/
