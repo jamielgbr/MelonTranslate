@@ -6,7 +6,27 @@
   const pu = namespace.pageUtils;
   const buttonHostId = "melontranslate-input-button-host";
   const panelHostId = "melontranslate-input-panel-host";
-  const allowedInputTypes = new Set(["", "text", "search", "url", "tel", "email"]);
+  // URL, telephone, and email fields are intentionally excluded from input translation surfaces.
+  const editableInputTypes = new Set(["", "text", "search"]);
+  const ignoredInputModes = new Set(["numeric", "decimal"]);
+  const ignoredAutocompleteTokens = new Set([
+    "email",
+    "username",
+    "current-password",
+    "new-password",
+    "one-time-code"
+  ]);
+  const ignoredEditableAncestorSelectors = [
+    ".tagger-new"
+  ];
+  const ignoredEditableFeaturePatterns = [
+    /\b(?:2fa|account|auth|authenticator|email|login|mfa|one time|otp|pass|passcode|passwd|password|pin|pwd|security code|secret|recovery|signin|sign in|totp|two factor|user id|userid|user name|username|verification|verify|filename|tag|hashtag|nickname)\b/i,
+    /(?:账号|帐号|账户|帳號|賬戶|用戶|用户|用户名|用戶名|邮箱|郵箱|電子郵件|电子邮件|電子信箱|电子邮箱|電郵|电邮|密码|密碼|验证码|驗證碼|验证|驗證|认证|認證|身份验证|身份驗證|动态码|動態碼|动态密码|動態密碼|一次性|安全码|安全碼|两步验证|兩步驗證|二步验证|二步驗證|登录|登入|登錄|登陸)/,
+    /(?:アカウント|ユーザー名|ユーザ名|ユーザーid|ユーザid|メールアドレス|メール|ｅメール|eメール|パスワード|暗証番号|認証コード|確認コード|検証コード|ワンタイム|二段階認証|二要素認証|本人確認|ログイン|サインイン|認証)/i,
+    /(?:аккаунт|уч[её]тная запись|имя пользователя|пользователь|логин|пароль|эл\.?\s*почта|электронная почта|адрес электронной почты|код подтверждения|код проверки|проверочный код|одноразовый код|одноразовый пароль|двухфактор|аутентификация|авторизация|подтверждение|вход|войти)/i,
+    /\b(?:adresse e mail|adresse email|authentification|code d['’ ]authentification|code de s[eé]curit[eé]|code de v[eé]rification|code unique|compte|connexion|courriel|identifiant|mot de passe|nom d['’ ]utilisateur|se connecter|utilisateur|v[eé]rification)\b/i,
+    /\b(?:anmelden|anmeldung|authentifizierung|benutzer id|benutzerkennung|benutzername|best[aä]tigungscode|bestaetigungscode|e mail adresse|einmal code|einmal passwort|einmalcode|einmalpasswort|einloggen|kennwort|konto|passwort|pr[uü]fcode|pruefcode|sicherheitscode|verifizierung|zwei faktor)\b/i
+  ];
 
   const state = {
     getSettings: null,
@@ -45,12 +65,123 @@
     ));
   }
 
+  function normalizeFeatureText(value) {
+    return String(value || "")
+      .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+      .replace(/[_-]+/g, " ")
+      .trim()
+      .toLowerCase();
+  }
+
+  function splitAutocompleteTokens(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+  }
+
+  function featureMatchesIgnoredPattern(value) {
+    const text = normalizeFeatureText(value);
+    return !!text && ignoredEditableFeaturePatterns.some((pattern) => pattern.test(text));
+  }
+
+  function getAttributeFeatureText(element) {
+    if (!element || !element.getAttribute) {
+      return "";
+    }
+    return [
+      element.getAttribute("name"),
+      element.getAttribute("id"),
+      element.getAttribute("placeholder"),
+      element.getAttribute("aria-label"),
+      element.getAttribute("title"),
+      element.getAttribute("class")
+    ].filter(Boolean).join(" ");
+  }
+
+  function getAssociatedLabelText(element) {
+    if (!element) {
+      return "";
+    }
+    const parts = [];
+    if (element.id && typeof document !== "undefined") {
+      try {
+        const selector = `label[for="${CSS.escape(element.id)}"]`;
+        const explicitLabel = document.querySelector(selector);
+        if (explicitLabel) {
+          parts.push(explicitLabel.textContent);
+        }
+      } catch (_) {}
+    }
+    const wrappingLabel = element.closest && element.closest("label");
+    if (wrappingLabel) {
+      parts.push(wrappingLabel.textContent);
+    }
+    return parts.filter(Boolean).join(" ");
+  }
+
+  function getNearbyContainerFeatureText(element) {
+    const parts = [];
+    let current = element ? element.parentElement : null;
+    let depth = 0;
+    while (current && depth < 4) {
+      parts.push(
+        current.getAttribute("class"),
+        current.getAttribute("id"),
+        current.getAttribute("aria-label")
+      );
+      if (current.tagName === "FORM") {
+        break;
+      }
+      current = current.parentElement;
+      depth += 1;
+    }
+    return parts.filter(Boolean).join(" ");
+  }
+
+  function hasIgnoredEditableAncestor(element) {
+    return !!element
+      && !!element.closest
+      && ignoredEditableAncestorSelectors.some((selector) => {
+        try {
+          return !!element.closest(selector);
+        } catch (_) {
+          return false;
+        }
+      });
+  }
+
+  function isIgnoredEditableField(element) {
+    if (!isElement(element)) {
+      return false;
+    }
+    if (hasIgnoredEditableAncestor(element)) {
+      return true;
+    }
+    if (element.tagName === "INPUT") {
+      const inputMode = normalizeFeatureText(element.getAttribute("inputmode"));
+      const autocompleteTokens = splitAutocompleteTokens(element.getAttribute("autocomplete"));
+      if (ignoredInputModes.has(inputMode)) {
+        return true;
+      }
+      if (autocompleteTokens.some((token) => ignoredAutocompleteTokens.has(token))) {
+        return true;
+      }
+    }
+    return featureMatchesIgnoredPattern([
+      getAttributeFeatureText(element),
+      getAssociatedLabelText(element),
+      getNearbyContainerFeatureText(element)
+    ].join(" "));
+  }
+
   function isTextInput(element) {
     if (!element || element.tagName !== "INPUT") {
       return false;
     }
     const type = String(element.getAttribute("type") || "text").trim().toLowerCase();
-    return allowedInputTypes.has(type)
+    return editableInputTypes.has(type)
       && !element.disabled
       && !element.readOnly;
   }
@@ -76,6 +207,10 @@
       return false;
     }
     return isVisible(element);
+  }
+
+  function canShowInlineButtonForEditable(element) {
+    return isEditableElement(element) && !isIgnoredEditableField(element);
   }
 
   function isVisible(element) {
@@ -608,7 +743,7 @@
   }
 
   function positionButton() {
-    if (!state.activeEditable || !isEditableElement(state.activeEditable)) {
+    if (!state.activeEditable || !canShowInlineButtonForEditable(state.activeEditable)) {
       hideButton();
       return;
     }
@@ -659,7 +794,7 @@
   }
 
   async function activateEditable(editable) {
-    if (!editable || !isEditableElement(editable)) {
+    if (!editable || !canShowInlineButtonForEditable(editable)) {
       deactivateEditable();
       return false;
     }
@@ -1435,14 +1570,8 @@
       if (!editable) {
         return false;
       }
-      const settings = await state.getSettings();
-      if (pu.isHostAllowedForInputButton(settings, window.location.hostname)) {
-        state.activeEditable = editable;
-        observeEditable(editable);
-        scheduleButtonPosition();
-      } else {
-        deactivateEditable();
-      }
+      await activateEditable(editable);
+      // Context menu is an explicit user action, so it can translate ignored inline-button fields.
       return openForEditable(editable);
     }
   };
