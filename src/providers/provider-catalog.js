@@ -43,7 +43,7 @@
       id: "deepseek",
       displayName: "DeepSeek",
       transport: "openai-compatible",
-      defaultModel: "deepseek-chat",
+      defaultModel: "deepseek-v4-flash",
       baseUrl: "https://api.deepseek.com/v1",
       modelListPath: "https://api.deepseek.com/models",
       modelListAuth: "bearer",
