@@ -3,7 +3,8 @@
   const api = namespace.browserApi;
   const messageTypes = namespace.messages.types;
   const requestState = {
-    lastSelectionData: null
+    lastSelectionData: null,
+    activeToken: 0
   };
   const selectionTranslationClient = namespace.translationClient.create({
     onChunk(chunk, meta) {
@@ -20,9 +21,13 @@
   }
 
   async function translateSelection(selectionData, options) {
+    const requestToken = ++requestState.activeToken;
     const runtimeOptions = Object.assign({}, options || {});
     if (!runtimeOptions.targetLanguage) {
       const settings = await getSettings();
+      if (requestToken !== requestState.activeToken) {
+        return;
+      }
       runtimeOptions.targetLanguage = settings.targetLanguage || "en";
     }
     if (!runtimeOptions.sourceLanguage) {
@@ -33,19 +38,40 @@
       sourceText: selectionData.text,
       rect: selectionData.rect,
       targetLanguage: runtimeOptions.targetLanguage,
-      sourceLanguage: runtimeOptions.sourceLanguage
+      sourceLanguage: runtimeOptions.sourceLanguage,
+      revealModelImmediately: !!runtimeOptions.revealModelImmediately
     });
     namespace.popupRenderer.bindRefresh(() => {
       const retrySelection = requestState.lastSelectionData;
       if (retrySelection) {
         const languageValues = namespace.popupRenderer.getLanguageValues();
-        translateSelection(retrySelection, Object.assign({}, languageValues, { bypassCache: true }));
+        const modelValues = namespace.popupRenderer.getModelValues();
+        translateSelection(retrySelection, Object.assign({}, languageValues, modelValues, {
+          bypassCache: true,
+          revealModelImmediately: true
+        }));
+      }
+    });
+    namespace.popupRenderer.bindModelChange((modelValues) => {
+      const retrySelection = requestState.lastSelectionData;
+      if (retrySelection) {
+        const languageValues = namespace.popupRenderer.getLanguageValues();
+        translateSelection(retrySelection, Object.assign({}, languageValues, modelValues, {
+          bypassCache: true,
+          revealModelImmediately: true
+        }));
       }
     });
     try {
       const result = await selectionTranslationClient.request(selectionData.text, runtimeOptions);
+      if (requestToken !== requestState.activeToken) {
+        return;
+      }
       namespace.popupRenderer.setResult(result);
     } catch (error) {
+      if (requestToken !== requestState.activeToken) {
+        return;
+      }
       const category = error.category ? error.category() : "network";
       namespace.popupRenderer.setError(error.message, category);
     }
@@ -57,6 +83,7 @@
   }
 
   namespace.popupRenderer.onHide(() => {
+    requestState.activeToken += 1;
     selectionTranslationClient.disconnect();
   });
 

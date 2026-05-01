@@ -21,6 +21,12 @@
     translationInProgress: false,
     sourceLanguageDd: null,
     targetLanguageDd: null,
+    modelDd: null,
+    modelOptions: [],
+    selectedModelKey: "",
+    modelOptionsRequestId: 0,
+    modelRevealTimer: null,
+    onModelChangeCallback: null,
     onHideCallback: null
   };
   const readAloudState = {
@@ -175,9 +181,20 @@
           cursor: move;
           user-select: none;
           flex: 0 0 auto;
+          position: relative;
+          z-index: 3;
+        }
+        .header-main {
+          flex: 1 1 auto;
+          min-width: 0;
+          height: 26px;
+          position: relative;
+          display: flex;
+          align-items: center;
         }
         .title {
           min-width: 0;
+          max-width: 100%;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -186,6 +203,48 @@
           letter-spacing: 0.04em;
           text-transform: uppercase;
           color: var(--mt-text-secondary);
+          opacity: 1;
+          transform: translateY(0);
+          transition: opacity 260ms ease, transform 260ms ease;
+        }
+        .model-switcher {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          min-width: 0;
+          opacity: 0;
+          transform: translateY(4px);
+          pointer-events: none;
+          transition: opacity 260ms ease, transform 260ms ease;
+        }
+        .panel.model-revealed .title {
+          opacity: 0;
+          transform: translateY(-4px);
+          pointer-events: none;
+        }
+        .panel.model-revealed .model-switcher {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+        .cdd-model-wrap {
+          width: min(230px, 100%);
+        }
+        .cdd-model-wrap .cdd-trigger {
+          min-height: 26px;
+          padding: 4px 8px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 650;
+          background: var(--mt-btn-bg);
+        }
+        .cdd-model-wrap.cdd-disabled .cdd-trigger {
+          opacity: 0.58;
+          cursor: default;
+        }
+        .cdd-model-wrap .cdd-panel {
+          max-width: min(340px, calc(100vw - 48px));
         }
         .header-actions,
         .translation-actions,
@@ -473,6 +532,7 @@
           display: block;
         }
         .copy:focus-visible,
+        .cdd-trigger:focus-visible,
         .expand:focus-visible,
         .speak:focus-visible,
         .refresh:focus-visible,
@@ -577,11 +637,19 @@
             width: 100%;
             justify-content: flex-end;
           }
+          .cdd-model-wrap {
+            width: 100%;
+          }
         }
       </style>
       <section class="panel hidden" role="dialog" aria-label="Melon Translate" aria-live="polite">
         <div class="header">
-          <span class="title" id="melontranslate-dlg-title">Melon Translate</span>
+          <div class="header-main">
+            <span class="title" id="melontranslate-dlg-title">Melon Translate</span>
+            <div class="model-switcher" data-role="model-switcher" aria-label="Translation model">
+              <div class="cdd-model-wrap" data-role="model-container"></div>
+            </div>
+          </div>
           <div class="header-actions">
             <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
               <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -666,6 +734,7 @@
       host,
       panel: shadow.querySelector(".panel"),
       header: shadow.querySelector(".header"),
+      modelContainer: shadow.querySelector('[data-role="model-container"]'),
       source: shadow.querySelector('[data-role="source"]'),
       sourceWrap: shadow.querySelector('[data-role="source-wrap"]'),
       sourceSize: shadow.querySelector('[data-role="source-size"]'),
@@ -986,6 +1055,134 @@
     });
   }
 
+  function getSelectedModelRoute() {
+    const modelKey = popupState.modelDd ? popupState.modelDd.getValue() : popupState.selectedModelKey;
+    const parsed = pu.parseDefaultModelKey(modelKey);
+    if (!parsed.providerId || !parsed.model) {
+      return { providerIds: [], modelOverrides: {} };
+    }
+    return {
+      providerIds: [parsed.providerId],
+      modelOverrides: { [parsed.providerId]: parsed.model }
+    };
+  }
+
+  function setModelDropdown(elements, items, selected, disabled) {
+    const shadow = elements.host.shadowRoot;
+    const normalizedItems = Array.isArray(items) ? items : [];
+    const selectedValue = String(selected || "");
+
+    if (!popupState.modelDd) {
+      popupState.modelDd = namespace.customDropdown.create(elements.modelContainer, {
+        dataAttrs: { role: "model" },
+        items: normalizedItems,
+        selected: selectedValue,
+        showSearch: true,
+        placeholder: "Choose model",
+        rootElement: shadow,
+        onChange(value) {
+          const nextValue = String(value || "");
+          if (nextValue === popupState.selectedModelKey) {
+            return;
+          }
+          popupState.selectedModelKey = nextValue;
+          if (typeof popupState.onModelChangeCallback === "function") {
+            popupState.onModelChangeCallback(getSelectedModelRoute());
+          }
+        }
+      });
+    } else {
+      popupState.modelDd.setItems(normalizedItems);
+      popupState.modelDd.setValue(selectedValue);
+    }
+
+    popupState.modelDd.setDisabled(!!disabled);
+  }
+
+  function setModelPlaceholder(elements, label) {
+    popupState.selectedModelKey = "";
+    setModelDropdown(elements, [{ value: "", label }], "", true);
+  }
+
+  function renderModelOptions(elements, modelState) {
+    const modelOptions = Array.isArray(modelState && modelState.modelOptions)
+      ? modelState.modelOptions
+      : [];
+    popupState.modelOptions = modelOptions.slice();
+
+    const items = modelOptions.map((item) => ({
+      value: item.key,
+      label: item.label || `${item.providerName || item.providerId} · ${item.model}`
+    })).filter((item) => item.value);
+
+    if (!items.length) {
+      setModelPlaceholder(elements, "No models available");
+      return;
+    }
+
+    let selectedKey = popupState.selectedModelKey;
+    if (!items.some((item) => item.value === selectedKey)) {
+      selectedKey = String(modelState && modelState.selectedModelKey || "").trim();
+    }
+    if (!items.some((item) => item.value === selectedKey)) {
+      selectedKey = items[0].value;
+    }
+
+    popupState.selectedModelKey = selectedKey;
+    setModelDropdown(elements, items, selectedKey, false);
+  }
+
+  function loadModelOptions(elements) {
+    const requestId = ++popupState.modelOptionsRequestId;
+    if (popupState.modelOptions.length) {
+      renderModelOptions(elements, {
+        modelOptions: popupState.modelOptions,
+        selectedModelKey: popupState.selectedModelKey
+      });
+    } else {
+      setModelPlaceholder(elements, "Loading models...");
+    }
+
+    api.runtime.sendMessage({ type: messageTypes.getTranslationModelOptions }).then((response) => {
+      if (requestId !== popupState.modelOptionsRequestId) {
+        return;
+      }
+      if (!response || !response.ok) {
+        throw new Error(response?.error?.message || "Could not load model options.");
+      }
+      renderModelOptions(elements, response.data || {});
+    }).catch(() => {
+      if (requestId !== popupState.modelOptionsRequestId) {
+        return;
+      }
+      if (!popupState.modelOptions.length) {
+        setModelPlaceholder(elements, "Models unavailable");
+      }
+    });
+  }
+
+  function clearModelRevealTimer() {
+    if (popupState.modelRevealTimer) {
+      clearTimeout(popupState.modelRevealTimer);
+      popupState.modelRevealTimer = null;
+    }
+  }
+
+  function syncModelReveal(elements, revealImmediately) {
+    clearModelRevealTimer();
+    if (revealImmediately) {
+      elements.panel.classList.add("model-revealed");
+      return;
+    }
+    elements.panel.classList.remove("model-revealed");
+    popupState.modelRevealTimer = setTimeout(() => {
+      popupState.modelRevealTimer = null;
+      if (!elements.panel.classList.contains("hidden")) {
+        elements.panel.classList.add("model-revealed");
+      }
+    }, 2000);
+  }
+
   function bindClose(elements) {
     if (elements.close.dataset.bound) {
       return;
@@ -1075,7 +1272,7 @@
       if (event.currentTarget === elements.translationHeader && !elements.panel.classList.contains("is-translation-expanded")) {
         return;
       }
-      if (event.target && event.target.closest("button, .close, .theme-toggle, .speak, .expand")) {
+      if (event.target && event.target.closest("button, input, .close, .theme-toggle, .speak, .expand, .cdd-wrapper, .cdd-panel")) {
         return;
       }
       popupState.dragging = true;
@@ -1140,12 +1337,14 @@
   }
 
   namespace.popupRenderer = {
-    show({ sourceText, rect, targetLanguage, sourceLanguage }) {
+    show({ sourceText, rect, targetLanguage, sourceLanguage, revealModelImmediately }) {
       const elements = getElements();
       bindClose(elements);
       bindDrag(elements);
       bindViewportGuard(elements);
       renderLanguageOptions(elements, targetLanguage, sourceLanguage);
+      loadModelOptions(elements);
+      syncModelReveal(elements, !!revealModelImmediately);
       const normalizedSourceText = String(sourceText || "");
       const sourceIsLong = isLongContent(normalizedSourceText, "");
       popupState.streamStartedAtMs = Date.now();
@@ -1315,16 +1514,24 @@
         : (elements.sourceLanguage.value || "auto");
       return { targetLanguage, sourceLanguage };
     },
+    getModelValues() {
+      return getSelectedModelRoute();
+    },
+    bindModelChange(handler) {
+      popupState.onModelChangeCallback = handler;
+    },
     hide() {
       const host = document.getElementById(popupHostId);
       if (!host || !host.shadowRoot) {
         return;
       }
+      clearModelRevealTimer();
       stopReadAloud(getElements());
       stopSourceReadAloud(getElements());
       const panel = host.shadowRoot.querySelector(".panel");
       if (panel) {
         panel.classList.remove("is-translation-expanded");
+        panel.classList.remove("model-revealed");
         panel.classList.add("hidden");
       }
       popupState.translationExpanded = false;
