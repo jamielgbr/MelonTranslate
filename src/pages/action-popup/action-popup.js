@@ -10,9 +10,9 @@
     providerConfigs: {},
     currentResult: "",
     currentReasoning: "",
-    detectedSourceLanguage: "",
     currentTargetLanguage: "",
-    reasoningExpanded: false,
+    resultExpanded: false,
+    translationInProgress: false,
     streamStartedAtMs: 0,
     firstTokenAtMs: 0,
     outputTokens: 0,
@@ -31,6 +31,11 @@
   };
 
   const RESULT_PLACEHOLDER = "No translation yet.";
+  const EXPAND_RESULT_LABEL = "Expand translation";
+  const COLLAPSE_RESULT_LABEL = "Exit expanded translation";
+
+  const EXPAND_RESULT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10a1 1 0 0 0 1-1V6h3a1 1 0 0 0 0-2H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1zm10-6a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0V5a1 1 0 0 0-1-1h-4zM5 14a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4a1 1 0 1 0 0-2H6v-3a1 1 0 0 0-1-1zm14 0a1 1 0 0 0-1 1v3h-3a1 1 0 1 0 0 2h4a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1z" fill="currentColor" /></svg>';
+  const COLLAPSE_RESULT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4a1 1 0 0 0-1 1v3H5a1 1 0 0 0 0 2h4a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1zm6 0a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4a1 1 0 1 0 0-2h-3V5a1 1 0 0 0-1-1zM5 14a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0v-4a1 1 0 0 0-1-1H5zm10 0a1 1 0 0 0-1 1v4a1 1 0 1 0 2 0v-3h3a1 1 0 1 0 0-2h-4z" fill="currentColor" /></svg>';
 
   function applyStoredTheme() {
     api.storage.get("local", "melontranslateTheme").then((result) => {
@@ -130,6 +135,50 @@
     btn.setAttribute("aria-label", state.sourceReadAloudPlaying ? "Stop reading" : "Read source text aloud");
   }
 
+  function updateResultExpandButton() {
+    const button = document.getElementById("popup-toggle-result-expand");
+    if (!button) {
+      return;
+    }
+    const canExpand = canExpandResult();
+    if (!canExpand) {
+      state.resultExpanded = false;
+      syncResultExpandedClass(false);
+    }
+    const label = state.resultExpanded ? COLLAPSE_RESULT_LABEL : EXPAND_RESULT_LABEL;
+    button.disabled = !canExpand;
+    button.setAttribute("aria-pressed", state.resultExpanded ? "true" : "false");
+    pu.setHtml(button, state.resultExpanded ? COLLAPSE_RESULT_SVG : EXPAND_RESULT_SVG);
+    button.title = label;
+    button.setAttribute("aria-label", label);
+  }
+
+  function canExpandResult() {
+    return !!state.currentResult && !state.translationInProgress;
+  }
+
+  function syncResultExpandedClass(expanded) {
+    const panel = document.getElementById("popup-panel");
+    if (panel) {
+      panel.classList.toggle("is-result-expanded", expanded);
+    }
+  }
+
+  function setResultExpanded(expanded) {
+    const nextExpanded = !!expanded && canExpandResult();
+    const resultWrap = document.getElementById("popup-result-wrap");
+    state.resultExpanded = nextExpanded;
+    syncResultExpandedClass(nextExpanded);
+    updateResultExpandButton();
+    if (nextExpanded && resultWrap) {
+      resultWrap.focus({ preventScroll: true });
+    }
+  }
+
+  function toggleResultExpanded() {
+    setResultExpanded(!state.resultExpanded);
+  }
+
   function stopReadAloud() {
     state.readAloudToken += 1;
     state.readAloudLoading = false;
@@ -161,15 +210,18 @@
     if (normalized) {
       resultEl.textContent = normalized;
       resultEl.classList.remove("placeholder");
+      updateResultExpandButton();
       return;
     }
     if (!showPlaceholder) {
       resultEl.textContent = "";
       resultEl.classList.remove("placeholder");
+      updateResultExpandButton();
       return;
     }
     resultEl.textContent = RESULT_PLACEHOLDER;
     resultEl.classList.add("placeholder");
+    setResultExpanded(false);
   }
 
   function renderLanguageSelector(settings) {
@@ -287,6 +339,7 @@
     setMetricsLine(-1, 0, 0, false);
     updateSpeakButton();
     updateSpeakSourceButton();
+    updateResultExpandButton();
     setStatus("");
   }
 
@@ -419,12 +472,13 @@
 
     stopReadAloud();
     stopSourceReadAloud();
+    setResultExpanded(false);
     const reasoningWrapEl = document.getElementById("popup-reasoning-wrap");
     const reasoningEl = document.getElementById("popup-reasoning");
-    setResultText("", { showPlaceholder: false });
     state.currentResult = "";
     state.currentReasoning = "";
-    state.reasoningExpanded = false;
+    state.translationInProgress = true;
+    setResultText("", { showPlaceholder: false });
     state.currentTargetLanguage = targetLanguage;
     state.streamStartedAtMs = Date.now();
     state.firstTokenAtMs = 0;
@@ -445,7 +499,6 @@
       if (message.event === "provider-chunk") {
         state.fromCache = !!message.fromCache;
         state.currentTargetLanguage = String(message.targetLanguage || state.currentTargetLanguage || "").trim();
-        state.detectedSourceLanguage = String(message.detectedSourceLanguage || state.detectedSourceLanguage || "").trim();
         const translatedChunk = String(message.chunk || "");
         const reasoningChunk = String(message.thinkingChunk || "");
         const hasAnyChunk = !!translatedChunk || !!reasoningChunk;
@@ -456,13 +509,11 @@
           state.currentReasoning += reasoningChunk;
           reasoningEl.textContent = state.currentReasoning;
           reasoningWrapEl.classList.remove("hidden");
-          state.reasoningExpanded = true;
           reasoningWrapEl.open = true;
           reasoningEl.scrollTop = reasoningEl.scrollHeight;
         }
         if (translatedChunk) {
           state.currentResult += translatedChunk;
-          state.reasoningExpanded = false;
           reasoningWrapEl.open = false;
         }
         pu.updateStreamMetrics(state, `${state.currentResult}${state.currentReasoning}`, message.outputTokens);
@@ -476,8 +527,8 @@
         state.fromCache = !!(message.result && message.result.fromCache);
         state.currentResult = message.result && message.result.translatedText ? message.result.translatedText : state.currentResult;
         state.currentReasoning = message.result && message.result.thinkingText ? message.result.thinkingText : state.currentReasoning;
-        state.detectedSourceLanguage = String(message.result && message.result.detectedSourceLanguage || "").trim() || state.detectedSourceLanguage;
         state.currentTargetLanguage = String(message.result && message.result.targetLanguage || "").trim() || state.currentTargetLanguage;
+        state.translationInProgress = false;
         setResultText(state.currentResult, { showPlaceholder: !state.currentReasoning });
         reasoningEl.textContent = state.currentReasoning;
         if (state.currentReasoning) {
@@ -498,6 +549,7 @@
 
       if (message.event === "provider-error") {
         const err = message.error && message.error.error ? message.error.error : "Translation failed.";
+        state.translationInProgress = false;
         setStatus(err);
         setResultText(state.currentResult);
         updateSpeakButton();
@@ -552,6 +604,7 @@
   document.getElementById("popup-translate").addEventListener("click", translate);
   document.getElementById("popup-copy").addEventListener("click", copyResult);
   document.getElementById("popup-speak").addEventListener("click", toggleReadAloud);
+  document.getElementById("popup-toggle-result-expand").addEventListener("click", toggleResultExpanded);
   document.getElementById("popup-speak-source").addEventListener("click", toggleReadAloudSource);
   document.getElementById("popup-source-text").addEventListener("input", updateSpeakSourceButton);
   document.getElementById("popup-toggle-input").addEventListener("click", () => {
@@ -559,6 +612,12 @@
   });
   document.getElementById("open-compare").addEventListener("click", openCompare);
   document.getElementById("open-options").addEventListener("click", openOptions);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && state.resultExpanded) {
+      setResultExpanded(false);
+      event.preventDefault();
+    }
+  });
 
   applyStoredTheme();
   loadSafely();

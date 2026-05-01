@@ -16,6 +16,9 @@
     fromCache: false,
     detectedSourceLanguage: "",
     targetLanguage: "",
+    currentTranslatedText: "",
+    translationExpanded: false,
+    translationInProgress: false,
     sourceLanguageDd: null,
     targetLanguageDd: null,
     onHideCallback: null
@@ -34,26 +37,18 @@
   };
   const SPEAK_SVG = namespace.readAloud.SPEAK_SVG;
   const STOP_SVG = namespace.readAloud.STOP_SVG;
+  const EXPAND_RESULT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10a1 1 0 0 0 1-1V6h3a1 1 0 0 0 0-2H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1zm10-6a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0V5a1 1 0 0 0-1-1h-4zM5 14a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4a1 1 0 1 0 0-2H6v-3a1 1 0 0 0-1-1zm14 0a1 1 0 0 0-1 1v3h-3a1 1 0 1 0 0 2h4a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1z" fill="currentColor"/></svg>';
+  const COLLAPSE_RESULT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4a1 1 0 0 0-1 1v3H5a1 1 0 0 0 0 2h4a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1zm6 0a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4a1 1 0 1 0 0-2h-3V5a1 1 0 0 0-1-1zM5 14a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0v-4a1 1 0 0 0-1-1H5zm10 0a1 1 0 0 0-1 1v4a1 1 0 1 0 2 0v-3h3a1 1 0 1 0 0-2h-4z" fill="currentColor"/></svg>';
   const pu = namespace.pageUtils;
   const ra = namespace.readAloud;
   const LONG_SOURCE_THRESHOLD = 520;
   const LONG_TRANSLATION_THRESHOLD = 780;
   const LONG_LINE_THRESHOLD = 7;
-
-  function estimateOutputTokens(text) {
-    return pu.estimateOutputTokens(text);
-  }
-
-  function formatRate(value) {
-    return pu.formatRate(value);
-  }
-
-  function formatMillis(value) {
-    return pu.formatMillis(value);
-  }
+  const EXPAND_RESULT_LABEL = "Expand translation";
+  const COLLAPSE_RESULT_LABEL = "Exit expanded translation";
 
   function buildTokenTooltip(firstTokenMs, outputTokens, tokPerSec) {
-    return `First token: ${formatMillis(firstTokenMs)}\nOutput: ${outputTokens} tok\n${formatRate(tokPerSec)} tok/s`;
+    return `First token: ${pu.formatMillis(firstTokenMs)}\nOutput: ${outputTokens} tok\n${pu.formatRate(tokPerSec)} tok/s`;
   }
 
   function ensureHost() {
@@ -193,6 +188,7 @@
           color: var(--mt-text-secondary);
         }
         .header-actions,
+        .translation-actions,
         .actions {
           display: inline-flex;
           align-items: center;
@@ -201,6 +197,7 @@
         }
         .theme-toggle,
         .close,
+        .expand,
         .speak {
           border: 0;
           background: transparent;
@@ -221,6 +218,7 @@
         }
         .theme-toggle:hover,
         .close:hover,
+        .expand:hover,
         .speak:hover {
           background: var(--mt-accent-soft);
           color: var(--mt-accent);
@@ -448,10 +446,17 @@
         }
         .copy:disabled,
         .refresh:disabled,
+        .expand:disabled,
         .speak:disabled {
           opacity: 0.42;
           cursor: default;
         }
+        .expand:disabled:hover,
+        .speak:disabled:hover {
+          background: transparent;
+          color: var(--mt-speak);
+        }
+        .expand,
         .speak {
           width: 28px;
           height: 28px;
@@ -461,18 +466,57 @@
           padding: 0;
           color: var(--mt-speak);
         }
+        .expand svg,
         .speak svg {
           width: 16px;
           height: 16px;
           display: block;
         }
         .copy:focus-visible,
+        .expand:focus-visible,
         .speak:focus-visible,
         .refresh:focus-visible,
         .close:focus-visible,
         .theme-toggle:focus-visible {
           outline: 2px solid var(--mt-accent);
           outline-offset: 2px;
+        }
+        .translation-scroll:focus-visible {
+          outline: 2px solid var(--mt-accent);
+          outline-offset: -3px;
+        }
+        .panel.is-translation-expanded {
+          width: min(720px, calc(100vw - 24px));
+          height: min(620px, calc(100vh - 24px));
+          min-height: min(360px, calc(100vh - 24px));
+          resize: none;
+        }
+        .panel.is-translation-expanded .header,
+        .panel.is-translation-expanded .controls,
+        .panel.is-translation-expanded .source-panel,
+        .panel.is-translation-expanded .footer {
+          display: none;
+        }
+        .panel.is-translation-expanded .body {
+          padding: 0;
+          gap: 0;
+        }
+        .panel.is-translation-expanded .translation-panel {
+          min-height: 0;
+          border: 0;
+          border-radius: 0;
+        }
+        .panel.is-translation-expanded .translation-header {
+          padding: 10px 12px;
+          cursor: move;
+          user-select: none;
+        }
+        .panel.is-translation-expanded .translation-scroll {
+          padding: 14px 16px 18px;
+        }
+        .panel.is-translation-expanded .translation-text {
+          font-size: 15px;
+          line-height: 1.7;
         }
         .error-badge {
           display: inline-block;
@@ -584,11 +628,16 @@
           <section class="translation-panel" aria-labelledby="melontranslate-trl-label">
             <div class="translation-header">
               <span class="section-label" id="melontranslate-trl-label">Translation</span>
-              <button class="speak hidden" type="button" aria-label="Read translation aloud">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/></svg>
-              </button>
+              <div class="translation-actions">
+                <button class="speak hidden" type="button" aria-label="Read translation aloud">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/></svg>
+                </button>
+                <button class="expand" type="button" disabled title="Expand translation" aria-label="Expand translation" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10a1 1 0 0 0 1-1V6h3a1 1 0 0 0 0-2H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1zm10-6a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0V5a1 1 0 0 0-1-1h-4zM5 14a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4a1 1 0 1 0 0-2H6v-3a1 1 0 0 0-1-1zm14 0a1 1 0 0 0-1 1v3h-3a1 1 0 1 0 0 2h4a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1z" fill="currentColor"/></svg>
+                </button>
+              </div>
             </div>
-            <div class="translation-scroll" data-role="translation-scroll">
+            <div class="translation-scroll" data-role="translation-scroll" tabindex="-1">
               <div data-role="error-badge"></div>
               <p class="text translation-text muted" data-role="translation">Translation will appear here...</p>
               <details class="reasoning hidden" data-role="reasoning-wrap">
@@ -626,6 +675,7 @@
       sourceLanguageCustom: shadow.querySelector('[data-role="source-language-custom"]'),
       errorBadge: shadow.querySelector('[data-role="error-badge"]'),
       translation: shadow.querySelector('[data-role="translation"]'),
+      translationHeader: shadow.querySelector(".translation-header"),
       translationScroll: shadow.querySelector('[data-role="translation-scroll"]'),
       reasoningWrap: shadow.querySelector('[data-role="reasoning-wrap"]'),
       reasoningText: shadow.querySelector('[data-role="reasoning-text"]'),
@@ -633,6 +683,7 @@
       refresh: shadow.querySelector(".refresh"),
       speak: shadow.querySelector(".speak:not(.speak-source)"),
       speakSource: shadow.querySelector(".speak-source"),
+      expand: shadow.querySelector(".expand"),
       copy: shadow.querySelector(".copy"),
       close: shadow.querySelector(".close"),
       themeToggle: shadow.querySelector(".theme-toggle")
@@ -672,12 +723,8 @@
     }
   }
 
-  function getCurrentTranslatedText(elements) {
-    const text = String(elements.translation.textContent || "").trim();
-    if (!text || elements.translation.classList.contains("muted")) {
-      return "";
-    }
-    return text;
+  function getCurrentTranslatedText() {
+    return String(popupState.currentTranslatedText || "").trim();
   }
 
   function getCurrentSourceText(elements) {
@@ -712,9 +759,52 @@
     ra.updateButton(elements.speakSource, sourceReadAloudState, hasText, "Read source text aloud", "Stop reading");
   }
 
+  function updateTranslationExpandButton(elements) {
+    if (!elements.expand) {
+      return;
+    }
+    const canExpand = canExpandTranslation();
+    if (!canExpand) {
+      popupState.translationExpanded = false;
+      syncTranslationExpandedClass(elements, false);
+    }
+    const label = popupState.translationExpanded ? COLLAPSE_RESULT_LABEL : EXPAND_RESULT_LABEL;
+    elements.expand.disabled = !canExpand;
+    elements.expand.setAttribute("aria-pressed", popupState.translationExpanded ? "true" : "false");
+    pu.setHtml(elements.expand, popupState.translationExpanded ? COLLAPSE_RESULT_SVG : EXPAND_RESULT_SVG);
+    elements.expand.title = label;
+    elements.expand.setAttribute("aria-label", label);
+  }
+
+  function canExpandTranslation() {
+    return !!getCurrentTranslatedText() && !popupState.translationInProgress;
+  }
+
+  function syncTranslationExpandedClass(elements, expanded) {
+    elements.panel.classList.toggle("is-translation-expanded", expanded);
+  }
+
+  function setTranslationExpanded(elements, expanded) {
+    const nextExpanded = !!expanded && canExpandTranslation();
+    popupState.translationExpanded = nextExpanded;
+    syncTranslationExpandedClass(elements, nextExpanded);
+    updateTranslationExpandButton(elements);
+    if (nextExpanded) {
+      elements.translationScroll.focus({ preventScroll: true });
+    }
+    if (!elements.panel.classList.contains("hidden")) {
+      keepPanelInViewport(elements.panel);
+    }
+  }
+
+  function toggleTranslationExpanded() {
+    const elements = getElements();
+    setTranslationExpanded(elements, !popupState.translationExpanded);
+  }
+
   function stopReadAloud(elements) {
     ra.stopAudioState(readAloudState);
-    updateSpeakButton(elements, !!getCurrentTranslatedText(elements));
+    updateSpeakButton(elements, !!getCurrentTranslatedText());
   }
 
   function stopSourceReadAloud(elements) {
@@ -729,19 +819,12 @@
     elements.speakSource.classList.add("hidden");
     elements.copy.classList.add("hidden");
     elements.copy.textContent = "Copy";
-  }
-
-  function playClip(audio, url, getToken, token) {
-    return ra.playClip(audio, url, getToken, token);
-  }
-
-  async function playReadAloudClips(elements, clips, token, getToken, onAudio, onDone) {
-    return ra.playReadAloudClips(clips, token, getToken, onAudio, onDone);
+    updateTranslationExpandButton(elements);
   }
 
   async function toggleReadAloud() {
     const elements = getElements();
-    const text = getCurrentTranslatedText(elements);
+    const text = getCurrentTranslatedText();
     if (!text) {
       return;
     }
@@ -776,8 +859,7 @@
       readAloudState.loading = false;
       readAloudState.playing = true;
       updateSpeakButton(elements, true);
-      await playReadAloudClips(
-        elements,
+      await ra.playReadAloudClips(
         response.data.clips || [],
         token,
         () => readAloudState.token,
@@ -830,8 +912,7 @@
       sourceReadAloudState.loading = false;
       sourceReadAloudState.playing = true;
       updateSpeakSourceButton(elements, true);
-      await playReadAloudClips(
-        elements,
+      await ra.playReadAloudClips(
         response.data.clips || [],
         token,
         () => sourceReadAloudState.token,
@@ -913,9 +994,11 @@
     elements.refresh.dataset.bound = "1";
     elements.speak.dataset.bound = "1";
     elements.speakSource.dataset.bound = "1";
+    elements.expand.dataset.bound = "1";
     elements.themeToggle.dataset.bound = "1";
     elements.close.addEventListener("click", () => namespace.popupRenderer.hide());
     elements.speak.addEventListener("click", toggleReadAloud);
+    elements.expand.addEventListener("click", toggleTranslationExpanded);
     elements.speakSource.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -934,6 +1017,13 @@
     }, true);
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
+        const currentElements = getElements();
+        if (popupState.translationExpanded) {
+          setTranslationExpanded(currentElements, false);
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
         namespace.popupRenderer.hide();
       }
     }, true);
@@ -979,19 +1069,24 @@
     }
     popupState.dragBound = true;
 
-    elements.header.addEventListener("pointerdown", (event) => {
-      if (event.target && event.target.closest(".close, .theme-toggle")) {
+    const dragHandles = [elements.header, elements.translationHeader].filter(Boolean);
+
+    const startDragging = (event) => {
+      if (event.currentTarget === elements.translationHeader && !elements.panel.classList.contains("is-translation-expanded")) {
+        return;
+      }
+      if (event.target && event.target.closest("button, .close, .theme-toggle, .speak, .expand")) {
         return;
       }
       popupState.dragging = true;
       const rect = elements.panel.getBoundingClientRect();
       popupState.dragOffsetX = event.clientX - rect.left;
       popupState.dragOffsetY = event.clientY - rect.top;
-      elements.header.setPointerCapture(event.pointerId);
+      event.currentTarget.setPointerCapture(event.pointerId);
       event.preventDefault();
-    });
+    };
 
-    elements.header.addEventListener("pointermove", (event) => {
+    const moveDragging = (event) => {
       if (!popupState.dragging) {
         return;
       }
@@ -1000,21 +1095,25 @@
       const clamped = clampToViewport(elements.panel, nextLeft, nextTop);
       elements.panel.style.left = `${clamped.left}px`;
       elements.panel.style.top = `${clamped.top}px`;
-    });
+    };
 
     const stopDragging = (event) => {
       if (!popupState.dragging) {
         return;
       }
       popupState.dragging = false;
-      if (elements.header.hasPointerCapture(event.pointerId)) {
-        elements.header.releasePointerCapture(event.pointerId);
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
       }
       keepPanelInViewport(elements.panel);
     };
 
-    elements.header.addEventListener("pointerup", stopDragging);
-    elements.header.addEventListener("pointercancel", stopDragging);
+    dragHandles.forEach((handle) => {
+      handle.addEventListener("pointerdown", startDragging);
+      handle.addEventListener("pointermove", moveDragging);
+      handle.addEventListener("pointerup", stopDragging);
+      handle.addEventListener("pointercancel", stopDragging);
+    });
   }
 
   function placePanel(panel, rect) {
@@ -1056,9 +1155,13 @@
       popupState.fromCache = false;
       popupState.detectedSourceLanguage = "";
       popupState.targetLanguage = String(targetLanguage || "en").trim();
+      popupState.currentTranslatedText = "";
+      popupState.translationExpanded = false;
+      popupState.translationInProgress = true;
       elements.panel.style.width = "";
       elements.panel.style.height = "";
       elements.panel.classList.toggle("is-long", sourceIsLong);
+      elements.panel.classList.remove("is-translation-expanded");
       elements.panel.classList.remove("hidden");
       elements.source.textContent = normalizedSourceText;
       elements.sourceSize.textContent = formatSourceSize(normalizedSourceText);
@@ -1076,6 +1179,7 @@
       elements.refresh.textContent = "Refresh";
       resetAudioAndActions(elements);
       updateSpeakSourceButton(elements, !!getCurrentSourceText(elements));
+      updateTranslationExpandButton(elements);
       placePanel(elements.panel, rect);
       keepPanelInViewport(elements.panel);
       elements.close.focus();
@@ -1084,6 +1188,8 @@
     setResult(result) {
       const elements = getElements();
       elements.errorBadge.innerHTML = "";
+      popupState.translationInProgress = false;
+      popupState.currentTranslatedText = String(result.translatedText || "");
       elements.translation.textContent = result.translatedText;
       elements.translation.classList.remove("muted");
       elements.translationScroll.scrollTop = 0;
@@ -1110,6 +1216,7 @@
       updateAdaptiveLayout(elements);
       updateSpeakButton(elements, !!result.translatedText);
       updateSpeakSourceButton(elements, !!getCurrentSourceText(elements));
+      updateTranslationExpandButton(elements);
       elements.copy.classList.remove("hidden");
       elements.copy.onclick = async () => {
         try {
@@ -1149,6 +1256,7 @@
       }
       elements.translation.classList.remove("muted");
       elements.translation.textContent += translatedChunk;
+      popupState.currentTranslatedText += translatedChunk;
       if (translatedChunk && elements.translationScroll) {
         elements.translationScroll.scrollTop = elements.translationScroll.scrollHeight;
       }
@@ -1164,9 +1272,13 @@
       }
       elements.refresh.disabled = true;
       elements.refresh.textContent = "Translating...";
+      updateTranslationExpandButton(elements);
     },
     setError(message, category) {
       const elements = getElements();
+      popupState.currentTranslatedText = "";
+      popupState.translationInProgress = false;
+      setTranslationExpanded(elements, false);
       const labels = { auth: "Authentication error", rate_limit: "Rate limit", server: "Server error", network: "Network error" };
       const cssMap = { auth: "error-auth", rate_limit: "error-rate", server: "error-server", network: "error-net" };
       const cat = category || "network";
@@ -1183,6 +1295,7 @@
       elements.refresh.textContent = "Try again";
       resetAudioAndActions(elements);
       updateAdaptiveLayout(elements);
+      updateTranslationExpandButton(elements);
     },
     bindRefresh(handler) {
       const elements = getElements();
@@ -1211,8 +1324,11 @@
       stopSourceReadAloud(getElements());
       const panel = host.shadowRoot.querySelector(".panel");
       if (panel) {
+        panel.classList.remove("is-translation-expanded");
         panel.classList.add("hidden");
       }
+      popupState.translationExpanded = false;
+      popupState.translationInProgress = false;
       if (typeof popupState.onHideCallback === "function") {
         try { popupState.onHideCallback(); } catch (_) {}
       }

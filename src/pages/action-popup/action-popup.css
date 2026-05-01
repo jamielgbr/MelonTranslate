@@ -188,7 +188,8 @@ input:focus-visible {
   margin: 0;
 }
 
-.source-actions {
+.source-actions,
+.result-actions {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -251,6 +252,11 @@ input:focus-visible {
   padding: 12px;
 }
 
+.result-wrap:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
 .result {
   margin: 0;
   white-space: pre-wrap;
@@ -299,6 +305,33 @@ input:focus-visible {
   padding: 9px 10px;
   border-top: 1px solid var(--border);
   background: var(--surface-subtle);
+}
+
+.panel.is-result-expanded .top,
+.panel.is-result-expanded .toolbar,
+.panel.is-result-expanded .source-block,
+.panel.is-result-expanded .footer {
+  display: none;
+}
+
+.panel.is-result-expanded .result-block {
+  flex: 1 1 auto;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.panel.is-result-expanded .result-block .block-header {
+  padding: 10px 12px;
+}
+
+.panel.is-result-expanded .result-wrap {
+  padding: 14px 16px 18px;
+}
+
+.panel.is-result-expanded .result {
+  font-size: 15px;
+  line-height: 1.7;
 }
 
 .meta-stack {
