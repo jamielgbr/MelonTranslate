@@ -29,10 +29,8 @@
                 <span class="visually-hidden">Save</span>
             </button>
         </header>
-
         <input id="import-config-file" type="file" accept="application/json,.json" class="visually-hidden"
             aria-hidden="true">
-
         <div class="settings-layout">
             <nav class="settings-nav" aria-label="Settings sections">
                 <a href="#translation-defaults">Language &amp; model</a>
@@ -42,7 +40,6 @@
                 <a href="#model-parameters-section">Model parameters</a>
                 <a href="#data-history">Data &amp; history</a>
             </nav>
-
             <div class="settings-content">
                 <section id="translation-defaults" class="panel settings-section">
                     <div class="section-header">
@@ -98,7 +95,8 @@
                         </div>
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
-                                <label for="dictionary-mode-for-single-word">Use dictionary mode for single words</label>
+                                <label for="dictionary-mode-for-single-word">Use dictionary mode for single
+                                    words</label>
                                 <p class="setting-desc">Return a short dictionary entry with meaning, pronunciation, and
                                     an example.</p>
                             </div>
@@ -110,7 +108,6 @@
                         </div>
                     </div>
                 </section>
-
                 <section id="selection" class="panel settings-section">
                     <div class="section-header">
                         <div>
@@ -140,7 +137,6 @@
                         </div>
                     </div>
                 </section>
-
                 <section id="input-button" class="panel settings-section">
                     <div class="section-header">
                         <div>
@@ -183,7 +179,8 @@
                         <div class="settings-row" id="input-allowed-hosts-row">
                             <div class="settings-copy">
                                 <label for="input-allowed-hosts">Allowed domains</label>
-                                <p class="setting-desc">Used when the site rule mode is allowlist.</p>
+                                <p class="setting-desc">One domain per line. A rule like youtube.com also matches
+                                    www.youtube.com.</p>
                             </div>
                             <div class="settings-control">
                                 <textarea id="input-allowed-hosts" spellcheck="false"></textarea>
@@ -201,7 +198,6 @@
                         </div>
                     </div>
                 </section>
-
                 <section id="providers-section" class="panel settings-section">
                     <div class="section-header">
                         <div>
@@ -211,7 +207,6 @@
                     </div>
                     <div id="providers" class="providers"></div>
                 </section>
-
                 <section id="model-parameters-section" class="panel settings-section">
                     <div class="section-header">
                         <div>
@@ -222,7 +217,6 @@
                     <p class="hint">Adjust parameters for models from enabled providers.</p>
                     <div id="model-parameters" class="model-parameters"></div>
                 </section>
-
                 <section id="data-history" class="panel settings-section">
                     <div class="section-header">
                         <div>
@@ -285,7 +279,6 @@
                 </section>
             </div>
         </div>
-
         <p id="status" class="status" aria-live="polite"></p>
     </main>
     <script src="../../shared/constants.js"></script>
