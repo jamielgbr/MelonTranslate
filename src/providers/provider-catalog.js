@@ -117,8 +117,8 @@
       displayName: "Baseten",
       transport: "openai-compatible",
       defaultModel: "openai/gpt-oss-120b",
-      baseUrl: "https://inference.baseten.co",
-      modelListPath: "/v1/models",
+      baseUrl: "https://inference.baseten.co/v1",
+      modelListPath: "/models",
       modelListAuth: "baseten-api-key",
       enabledByDefault: false,
       experimental: false
