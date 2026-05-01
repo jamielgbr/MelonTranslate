@@ -1,9 +1,9 @@
 (function initInputTranslator(root) {
   const namespace = root.MelonTranslate = root.MelonTranslate || {};
   const api = namespace.browserApi;
-  const messageTypes = namespace.messages.types;
   const constants = namespace.constants;
   const pu = namespace.pageUtils;
+  const shell = namespace.panelShell;
   const buttonHostId = "melontranslate-input-button-host";
   const panelHostId = "melontranslate-input-panel-host";
   // URL, telephone, and email fields are intentionally excluded from input translation surfaces.
@@ -38,7 +38,9 @@
     resizeObserver: null,
     reflowFrame: 0,
     panel: null,
-    quickTranslating: false
+    quickTranslating: false,
+    modelPicker: null,
+    modelRevealTimer: null
   };
 
   function isElement(value) {
@@ -817,208 +819,21 @@
       return state.panelHost;
     }
 
-    const host = document.createElement("div");
-    host.id = panelHostId;
-    host.style.all = "initial";
-    document.documentElement.appendChild(host);
-    const shadow = host.attachShadow({ mode: "open" });
-    shadow.innerHTML = `
-      <style>
-        :host { all: initial; }
-        .panel,
-        .panel * {
-          box-sizing: border-box;
-        }
-        .panel {
-          --mt-bg: rgba(255, 255, 255, 0.98);
-          --mt-surface: #ffffff;
-          --mt-surface-subtle: rgba(248, 250, 252, 0.95);
-          --mt-text: #111827;
-          --mt-text-secondary: #334155;
-          --mt-muted: #64748b;
-          --mt-border: rgba(15, 23, 42, 0.12);
-          --mt-border-strong: rgba(15, 23, 42, 0.18);
-          --mt-accent: #0f766e;
-          --mt-accent-strong: #115e59;
-          --mt-accent-soft: rgba(15, 118, 110, 0.08);
-          --mt-shadow: rgba(15, 23, 42, 0.18);
-          position: fixed;
-          z-index: 2147483647;
-          width: min(380px, calc(100vw - 24px));
-          min-width: 300px;
-          max-height: calc(100vh - 24px);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          border: 1px solid var(--mt-border);
-          border-radius: 12px;
-          background: var(--mt-bg);
-          color: var(--mt-text);
-          box-shadow: 0 18px 54px var(--mt-shadow);
-          font-family: ui-sans-serif, system-ui, sans-serif;
-          backdrop-filter: blur(14px);
-        }
-        .panel.dark {
-          --mt-bg: rgba(12, 17, 29, 0.98);
-          --mt-surface: rgba(15, 23, 42, 0.95);
-          --mt-surface-subtle: rgba(30, 41, 59, 0.72);
-          --mt-text: #f8fafc;
-          --mt-text-secondary: #d1fae5;
-          --mt-muted: #94a3b8;
-          --mt-border: rgba(148, 163, 184, 0.16);
-          --mt-border-strong: rgba(148, 163, 184, 0.24);
-          --mt-accent: #10b981;
-          --mt-accent-strong: #34d399;
-          --mt-accent-soft: rgba(16, 185, 129, 0.11);
-          --mt-shadow: rgba(0, 0, 0, 0.48);
-        }
-        .hidden { display: none; }
-        .header {
-          flex: 0 0 auto;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          padding: 9px 10px 8px 12px;
-          background: var(--mt-surface-subtle);
-          border-bottom: 1px solid var(--mt-border);
-        }
-        .title {
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          color: var(--mt-text-secondary);
-        }
-        .close {
-          border: 0;
-          background: transparent;
-          color: var(--mt-muted);
-          cursor: pointer;
-          font-size: 17px;
-          line-height: 1;
-          width: 26px;
-          height: 26px;
-          padding: 0;
-          border-radius: 999px;
-        }
-        .close:hover {
-          background: var(--mt-accent-soft);
-          color: var(--mt-accent);
-        }
-        .body {
-          flex: 1 1 auto;
-          min-height: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          padding: 10px;
-          overflow: hidden;
-        }
-        .grid {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
-          gap: 8px;
-          flex: 0 0 auto;
-          padding: 8px;
-          border: 1px solid var(--mt-border);
-          border-radius: 10px;
-          background: var(--mt-surface-subtle);
-        }
-        .control {
-          min-width: 0;
-        }
-        label {
-          display: block;
-          margin: 0 0 5px;
-          font-size: 10px;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          color: var(--mt-muted);
-          font-weight: 700;
-        }
-        select,
-        input,
-        textarea {
-          box-sizing: border-box;
-          width: 100%;
-          border: 1px solid var(--mt-border);
-          border-radius: 8px;
-          background: var(--mt-surface);
-          color: var(--mt-text);
-          font: inherit;
-          font-size: 12px;
-          padding: 7px 8px;
-          min-width: 0;
-        }
-        input { margin-top: 6px; }
-        textarea {
-          resize: none;
-          line-height: 1.45;
-          white-space: pre-wrap;
-          word-break: break-word;
-        }
-        textarea[readonly] {
-          cursor: default;
-        }
-        .source-panel {
-          flex: 0 0 auto;
-          border: 1px solid var(--mt-border);
-          border-radius: 10px;
-          background: var(--mt-surface);
-          overflow: hidden;
-        }
-        .source-panel summary {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          padding: 8px 10px;
-          cursor: pointer;
-          list-style: none;
-          color: var(--mt-text-secondary);
-        }
-        .source-panel summary::-webkit-details-marker {
-          display: none;
-        }
-        .source-panel summary label {
-          margin: 0;
-        }
-        .source-panel summary::after {
-          content: "Hide";
-          color: var(--mt-accent);
-          font-size: 11px;
-          font-weight: 700;
-        }
-        .source-panel:not([open]) summary::after {
-          content: "Show";
-        }
-        .source-body {
-          border-top: 1px solid var(--mt-border);
-          padding: 9px 10px 10px;
-        }
+    const host = shell.createPanelHost({
+      hostId: panelHostId,
+      ariaLabel: "Translate input text",
+      title: "Translate input",
+      closeLabel: "Close",
+      extraCss: `
+        .panel { min-height: 260px; }
+        .translation-panel { min-height: 120px; }
         .source-body textarea {
           min-height: 62px;
           max-height: 118px;
-        }
-        .translation-panel {
-          flex: 1 1 auto;
-          min-height: 120px;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          border: 1px solid var(--mt-border-strong);
-          border-radius: 10px;
-          background: var(--mt-surface);
-        }
-        .translation-header {
-          flex: 0 0 auto;
-          padding: 8px 10px;
-          border-bottom: 1px solid var(--mt-border);
-          background: var(--mt-surface-subtle);
-        }
-        .translation-header label {
-          margin: 0;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          padding: 0;
         }
         .translation-panel textarea {
           flex: 1 1 auto;
@@ -1029,88 +844,10 @@
           line-height: 1.58;
           overflow: auto;
           padding: 10px;
-        }
-        .status {
-          min-height: 16px;
-          color: var(--mt-muted);
-          font-size: 12px;
-          line-height: 1.4;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .footer {
-          flex: 0 0 auto;
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 8px;
-          padding: 9px 10px;
-          border-top: 1px solid var(--mt-border);
-          background: var(--mt-surface-subtle);
-        }
-        button {
-          border: 1px solid var(--mt-border);
-          border-radius: 8px;
           background: var(--mt-surface);
-          color: var(--mt-text);
-          cursor: pointer;
-          font: inherit;
-          font-size: 12px;
-          font-weight: 650;
-          padding: 7px 11px;
-        }
-        button:hover {
-          border-color: rgba(15, 118, 110, 0.32);
-          background: var(--mt-accent-soft);
-          color: var(--mt-accent);
-        }
-        button.primary {
-          background: var(--mt-accent);
-          color: white;
-          border-color: var(--mt-accent);
-        }
-        button.primary:hover {
-          background: var(--mt-accent-strong);
-          border-color: var(--mt-accent-strong);
-          color: white;
-        }
-        button:disabled {
-          opacity: 0.45;
-          cursor: default;
-        }
-        select:disabled {
-          opacity: 0.65;
-          cursor: default;
-        }
-        button:focus-visible,
-        select:focus-visible,
-        input:focus-visible,
-        textarea:focus-visible {
-          outline: 2px solid var(--mt-accent);
-          outline-offset: 2px;
-        }
-        @media (max-width: 520px) {
-          .panel {
-            width: calc(100vw - 24px);
-            min-width: 0;
-          }
-          .grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      </style>
-      <section class="panel hidden" role="dialog" aria-label="Translate input text">
-        <div class="header">
-          <span class="title">Translate input</span>
-          <button class="close" type="button" aria-label="Close">×</button>
-        </div>
-        <div class="body">
-          <div class="grid" aria-label="Input translation controls">
-            <div class="control">
-            <label for="mt-input-model">Model</label>
-            <select id="mt-input-model" data-role="model"></select>
-            </div>
+        }`,
+      bodyHtml: `
+          <div class="controls" aria-label="Input translation controls">
             <div class="control">
               <label for="mt-input-target">Target</label>
               <select id="mt-input-target" data-role="target"></select>
@@ -1122,27 +859,35 @@
             </div>
           </div>
           <details class="source-panel" open>
-            <summary><label for="mt-input-source">Source</label></summary>
+            <summary>
+              <span class="source-summary-copy">
+                <label class="section-label" for="mt-input-source">Source text</label>
+              </span>
+              <span class="source-summary-actions">
+                <span class="source-toggle-label" aria-hidden="true"></span>
+              </span>
+            </summary>
             <div class="source-body">
-              <textarea id="mt-input-source" data-role="source" readonly></textarea>
+              <textarea id="mt-input-source" data-role="source"></textarea>
             </div>
           </details>
           <section class="translation-panel">
             <div class="translation-header">
-              <label for="mt-input-result">Translation</label>
+              <label class="section-label" for="mt-input-result">Translation</label>
             </div>
             <textarea id="mt-input-result" data-role="result" readonly></textarea>
           </section>
-          <div class="status" data-role="status" aria-live="polite"></div>
-        </div>
-        <div class="footer">
-          <button type="button" data-role="translate">Translate</button>
-          <button class="primary" type="button" data-role="replace" disabled>Replace</button>
-        </div>
-      </section>
-    `;
+        `,
+      footerHtml: `
+          <span class="status" data-role="status" aria-live="polite"></span>
+          <div class="actions">
+            <button type="button" data-role="translate">Translate</button>
+            <button class="primary" type="button" data-role="replace" disabled>Replace</button>
+          </div>
+        `
+    });
 
-    applyStoredTheme(shadow.querySelector(".panel"));
+    const shadow = host.shadowRoot;
     shadow.querySelector('[data-role="target"]').addEventListener("change", () => {
       const target = shadow.querySelector('[data-role="target"]');
       shadow.querySelector('[data-role="target-custom"]').classList.toggle("hidden", target.value !== "custom");
@@ -1155,7 +900,7 @@
         state.panel.userChangedTarget = true;
       }
     });
-    shadow.querySelector('[data-role="model"]').addEventListener("change", updateReplaceState);
+    shadow.querySelector('[data-role="source"]').addEventListener("input", handlePanelSourceInput);
     shadow.querySelector(".close").addEventListener("click", hidePanel);
     shadow.querySelector('[data-role="translate"]').addEventListener("click", () => runPanelTranslation(false));
     shadow.querySelector('[data-role="replace"]').addEventListener("click", replaceFromPanel);
@@ -1169,6 +914,7 @@
     return {
       host,
       panel: shadow.querySelector(".panel"),
+      modelContainer: shadow.querySelector('[data-role="model-container"]'),
       model: shadow.querySelector('[data-role="model"]'),
       target: shadow.querySelector('[data-role="target"]'),
       targetCustom: shadow.querySelector('[data-role="target-custom"]'),
@@ -1181,39 +927,22 @@
     };
   }
 
-  async function loadModelOptions() {
-    const response = await api.runtime.sendMessage({ type: messageTypes.getTranslationModelOptions });
-    if (!response || !response.ok) {
-      throw new Error(response?.error?.message || "Could not load model options.");
+  function ensurePanelModelPicker(elements) {
+    if (!state.modelPicker) {
+      state.modelPicker = shell.createModelPicker(elements.modelContainer, {
+        rootElement: elements.host.shadowRoot,
+        onChange() {
+          updateReplaceState();
+        }
+      });
     }
-    return response.data || {};
+    return state.modelPicker;
   }
 
-  function populateModelOptions(elements, modelState) {
-    const modelOptions = Array.isArray(modelState && modelState.modelOptions)
-      ? modelState.modelOptions
-      : [];
-    if (!modelOptions.length) {
-      const option = document.createElement("option");
-      option.value = "";
-      option.textContent = "No models available";
-      elements.model.replaceChildren(option);
-      elements.model.disabled = true;
-      return false;
-    }
-
-    elements.model.replaceChildren(...modelOptions.map((item) => {
-      const option = document.createElement("option");
-      option.value = item.key;
-      option.textContent = item.label;
-      return option;
-    }));
-    const selectedKey = String(modelState.selectedModelKey || "").trim();
-    elements.model.value = modelOptions.some((item) => item.key === selectedKey)
-      ? selectedKey
-      : modelOptions[0].key;
-    elements.model.disabled = false;
-    return true;
+  function getModelLoadingStatus(hasModelOptions) {
+    return hasModelOptions
+      ? "Choose model, target, and style."
+      : "Enable a provider and choose a model in Settings.";
   }
 
   function setPanelTargetLanguage(elements, targetLanguage) {
@@ -1225,8 +954,7 @@
     elements.targetCustom.classList.toggle("hidden", elements.target.value !== "custom");
   }
 
-  function populatePanelOptions(elements, settings, text, modelState) {
-    const hasModelOptions = populateModelOptions(elements, modelState);
+  function populatePanelOptions(elements, settings, text) {
     const languageOptions = constants.languageOptions || [];
     const targetLanguage = pu.resolveInputTargetLanguage(settings, text, settings.targetLanguage);
     elements.target.replaceChildren(...languageOptions.map((item) => {
@@ -1250,7 +978,6 @@
       return option;
     }));
     elements.style.value = pu.getInputContextStyle(settings.defaultInputContextStyle);
-    return hasModelOptions;
   }
 
   function getTargetLanguage(elements) {
@@ -1259,15 +986,12 @@
       : (elements.target.value || "en");
   }
 
+  function getPanelSourceText(elements) {
+    return String(elements.source.value || "").trim();
+  }
+
   function getModelRoute(elements) {
-    const parsed = pu.parseDefaultModelKey(elements.model.value);
-    if (!parsed.providerId || !parsed.model) {
-      return { providerIds: [], modelOverrides: {} };
-    }
-    return {
-      providerIds: [parsed.providerId],
-      modelOverrides: { [parsed.providerId]: parsed.model }
-    };
+    return ensurePanelModelPicker(elements).getRoute();
   }
 
   function placePanel(elements, editable) {
@@ -1292,48 +1016,91 @@
     }
     const elements = getPanelElements();
     const changed = hasInputChanged(state.panel.textInfo);
+    const sourceText = getPanelSourceText(elements);
     const hasResult = !!String(state.panel.resultText || "").trim();
-    elements.replace.disabled = !hasResult || changed || state.panel.translating;
+    const resultMatchesSource = hasResult && state.panel.resultSourceText === sourceText;
+    elements.translate.disabled = state.panel.translating || !state.panel.hasModelOptions || !sourceText;
+    elements.replace.disabled = !hasResult || !resultMatchesSource || changed || state.panel.translating;
     if (changed && hasResult) {
       elements.status.textContent = "Input changed. Translate again before replacing.";
+    } else if (hasResult && !resultMatchesSource) {
+      elements.status.textContent = "Source changed. Translate again before replacing.";
     }
+  }
+
+  function handlePanelSourceInput() {
+    if (!state.panel) {
+      return;
+    }
+    const elements = getPanelElements();
+    if (state.panel.translating) {
+      state.panel.token += 1;
+      state.panel.translating = false;
+      state.streamClient.disconnect();
+    }
+    state.panel.sourceText = getPanelSourceText(elements);
+    state.panel.resultText = "";
+    state.panel.resultSourceText = "";
+    elements.result.value = "";
+    elements.status.textContent = state.panel.sourceText
+      ? "Source changed. Translate again before replacing."
+      : "Enter source text to translate.";
+    updateReplaceState();
   }
 
   async function openForEditable(editable) {
     if (!editable || !isEditableElement(editable)) {
       return false;
     }
-    const [settings, modelState] = await Promise.all([
-      state.getSettings(),
-      loadModelOptions()
-    ]);
+    const settings = await state.getSettings();
     const textInfo = captureEditableText(editable);
     if (!textInfo) {
       return false;
     }
 
     const elements = getPanelElements();
-    const hasModelOptions = populatePanelOptions(elements, settings, textInfo.text, modelState);
+    populatePanelOptions(elements, settings, textInfo.text);
+    const modelPicker = ensurePanelModelPicker(elements);
+    const modelOptionsReady = modelPicker.load();
+    const initialHasModelOptions = modelPicker.hasOptions();
     state.panel = {
       editable,
       textInfo,
       settings,
+      sourceText: textInfo.text,
       resultText: "",
+      resultSourceText: "",
       translating: false,
       token: 0,
       userChangedTarget: false,
-      hasModelOptions
+      hasModelOptions: initialHasModelOptions
     };
     elements.source.value = textInfo.text;
     elements.result.value = "";
-    elements.status.textContent = hasModelOptions
-      ? "Choose model, target, and style."
-      : "Enable a provider and choose a model in Settings.";
-    elements.translate.disabled = !hasModelOptions;
+    elements.status.textContent = initialHasModelOptions
+      ? getModelLoadingStatus(true)
+      : "Loading models...";
+    elements.translate.disabled = !initialHasModelOptions;
     elements.replace.disabled = true;
+    elements.panel.style.width = "";
+    elements.panel.style.height = "";
     elements.panel.classList.remove("hidden");
+    shell.scheduleModelReveal(elements.panel, state, false);
     placePanel(elements, editable);
-    (hasModelOptions ? elements.model : elements.target).focus();
+    elements.target.focus();
+    const panelRef = state.panel;
+    modelOptionsReady.then((hasModelOptions) => {
+      if (!state.panel || state.panel !== panelRef) {
+        return;
+      }
+      state.panel.hasModelOptions = !!hasModelOptions;
+      if (!state.panel.translating && !state.panel.resultText) {
+        elements.status.textContent = getPanelSourceText(elements)
+          ? getModelLoadingStatus(state.panel.hasModelOptions)
+          : "Enter source text to translate.";
+      }
+      updateReplaceState();
+    });
     return true;
   }
 
@@ -1366,13 +1133,26 @@
         return;
       }
       state.panel.textInfo = textInfo;
-      elements.source.value = textInfo.text;
+      state.panel.sourceText = textInfo.text;
+      state.panel.resultSourceText = "";
+      if (!getPanelSourceText(elements)) {
+        elements.source.value = textInfo.text;
+      }
+    }
+
+    const sourceText = getPanelSourceText(elements);
+    if (!sourceText) {
+      elements.status.textContent = "Enter source text to translate.";
+      updateReplaceState();
+      return;
     }
 
     const token = state.panel.token + 1;
     state.panel.token = token;
     state.panel.translating = true;
+    state.panel.sourceText = sourceText;
     state.panel.resultText = "";
+    state.panel.resultSourceText = "";
     elements.result.value = "";
     elements.status.textContent = "Translating...";
     elements.translate.disabled = true;
@@ -1380,11 +1160,11 @@
 
     try {
       const settings = state.panel.settings || await state.getSettings();
-      const detectedSourceLanguage = pu.detectTextLanguage(textInfo.text);
+      const detectedSourceLanguage = pu.detectTextLanguage(sourceText);
       const requestedTargetLanguage = getTargetLanguage(elements);
       const targetLanguage = state.panel.userChangedTarget
         ? requestedTargetLanguage
-        : pu.resolveInputTargetLanguage(settings, textInfo.text, settings.targetLanguage);
+        : pu.resolveInputTargetLanguage(settings, sourceText, settings.targetLanguage);
       if (!state.panel.userChangedTarget) {
         setPanelTargetLanguage(elements, targetLanguage);
       }
@@ -1394,7 +1174,7 @@
         return;
       }
 
-      const result = await state.streamClient.request(textInfo.text, {
+      const result = await state.streamClient.request(sourceText, {
         targetLanguage,
         sourceLanguage: detectedSourceLanguage,
         contextStyle: pu.getInputContextStyle(elements.style.value),
@@ -1407,6 +1187,7 @@
         return;
       }
       state.panel.resultText = String(result.translatedText || state.panel.resultText || "").trim();
+      state.panel.resultSourceText = sourceText;
       elements.result.value = state.panel.resultText;
       elements.status.textContent = `${result.providerName} • ${result.model} • ${result.latencyMs} ms${result.fromCache ? " • Cached" : ""}`;
     } catch (error) {
@@ -1482,6 +1263,11 @@
       updateReplaceState();
       return;
     }
+    if (state.panel.resultSourceText !== getPanelSourceText(elements)) {
+      elements.status.textContent = "Source changed. Translate again before replacing.";
+      updateReplaceState();
+      return;
+    }
     if (!replaceEditableText(state.panel.textInfo, state.panel.resultText)) {
       elements.status.textContent = "Could not replace the input text.";
       return;
@@ -1491,12 +1277,14 @@
   }
 
   function hidePanel() {
+    shell.clearModelReveal(state);
     if (state.streamClient) {
       state.streamClient.disconnect();
     }
     if (state.panelHost && state.panelHost.shadowRoot) {
       const panel = state.panelHost.shadowRoot.querySelector(".panel");
       if (panel) {
+        panel.classList.remove("model-revealed");
         panel.classList.add("hidden");
       }
     }

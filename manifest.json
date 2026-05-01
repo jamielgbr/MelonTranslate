@@ -68,6 +68,7 @@
         "src/shared/custom-dropdown.js",
         "src/shared/page-utils.js",
         "src/shared/read-aloud.js",
+        "src/content/panel-shell.js",
         "src/content/popup-renderer.js",
         "src/content/selection-detector.js",
         "src/content/translation-client.js",
