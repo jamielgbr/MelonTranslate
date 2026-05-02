@@ -4,17 +4,7 @@
   const messageTypes = namespace.messages.types;
   const pu = namespace.pageUtils;
   const themePanels = new Set();
-
-  const THEME_TOGGLE_HTML = `
-    <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
-      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <circle cx="12" cy="12" r="4"/>
-        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-      </svg>
-      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-      </svg>
-    </button>`;
+  const SVG_NS = "http://www.w3.org/2000/svg";
 
   const BASE_CSS = `
     :host { all: initial; }
@@ -536,8 +526,109 @@
       .cdd-model-wrap { width: 100%; }
     }`;
 
-  function escapeHtml(value) {
-    return pu.escapeHtml(value);
+  function appendChildren(parent, children) {
+    if (!parent || children === null || typeof children === "undefined") {
+      return parent;
+    }
+    if (Array.isArray(children)) {
+      children.forEach(function(child) {
+        appendChildren(parent, child);
+      });
+      return parent;
+    }
+    if (children && typeof children.nodeType === "number") {
+      parent.appendChild(children);
+      return parent;
+    }
+    parent.appendChild(document.createTextNode(String(children)));
+    return parent;
+  }
+
+  function applyAttributes(element, attrs) {
+    Object.keys(attrs || {}).forEach(function(name) {
+      const value = attrs[name];
+      if (value === false || value === null || typeof value === "undefined") {
+        return;
+      }
+      if (name === "class" || name === "className") {
+        element.setAttribute("class", String(value));
+        return;
+      }
+      if (name === "dataset") {
+        Object.keys(value || {}).forEach(function(key) {
+          element.dataset[key] = String(value[key]);
+        });
+        return;
+      }
+      if (value === true) {
+        element.setAttribute(name, "");
+        return;
+      }
+      element.setAttribute(name, String(value));
+    });
+    return element;
+  }
+
+  function createElement(tagName, attrs, children) {
+    const element = document.createElement(tagName);
+    applyAttributes(element, attrs);
+    appendChildren(element, children);
+    return element;
+  }
+
+  function createSvgElement(tagName, attrs, children) {
+    const element = document.createElementNS(SVG_NS, tagName);
+    applyAttributes(element, attrs);
+    appendChildren(element, children);
+    return element;
+  }
+
+  function addClassTokens(element, classNames) {
+    String(classNames || "").split(/\s+/).filter(Boolean).forEach(function(className) {
+      element.classList.add(className);
+    });
+  }
+
+  function createThemeToggleButton() {
+    const sunIcon = createSvgElement("svg", {
+      class: "icon-sun",
+      viewBox: "0 0 24 24",
+      "aria-hidden": "true",
+      fill: "none",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round"
+    }, [
+      createSvgElement("circle", { cx: "12", cy: "12", r: "4" }),
+      createSvgElement("path", { d: "M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" })
+    ]);
+    const moonIcon = createSvgElement("svg", {
+      class: "icon-moon",
+      viewBox: "0 0 24 24",
+      "aria-hidden": "true",
+      fill: "none",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round"
+    }, createSvgElement("path", { d: "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" }));
+
+    return createElement("button", {
+      class: "theme-toggle",
+      type: "button",
+      "aria-label": "Toggle dark mode"
+    }, [sunIcon, moonIcon]);
+  }
+
+  function appendBuiltContent(container, builder) {
+    if (typeof builder !== "function") {
+      return;
+    }
+    appendChildren(container, builder(container, {
+      el: createElement,
+      svg: createSvgElement,
+      append: appendChildren
+    }));
   }
 
   function bindThemeToggle(panel, button) {
@@ -581,27 +672,49 @@
     host.style.all = "initial";
     document.documentElement.appendChild(host);
     const shadow = host.attachShadow({ mode: "open" });
-    const titleId = opts.titleId || "";
-    const titleAttrs = titleId ? ` id="${escapeHtml(titleId)}"` : "";
     const modelLabel = opts.modelLabel || "Translation model";
-    shadow.innerHTML = `
-      <style>${BASE_CSS}${opts.extraCss || ""}</style>
-      <section class="panel hidden ${escapeHtml(opts.panelClass || "")}" role="dialog" aria-label="${escapeHtml(opts.ariaLabel || opts.title || "Melon Translate")}" aria-live="polite">
-        <div class="header">
-          <div class="header-main">
-            <span class="title"${titleAttrs}>${escapeHtml(opts.title || "Melon Translate")}</span>
-            <div class="model-switcher" data-role="model-switcher" aria-label="${escapeHtml(modelLabel)}">
-              <div class="cdd-model-wrap" data-role="model-container"></div>
-            </div>
-          </div>
-          <div class="header-actions">
-            ${THEME_TOGGLE_HTML}
-            <button class="close" type="button" aria-label="${escapeHtml(opts.closeLabel || "Close")}">×</button>
-          </div>
-        </div>
-        <div class="body">${opts.bodyHtml || ""}</div>
-        <div class="footer">${opts.footerHtml || ""}</div>
-      </section>`;
+    const style = createElement("style");
+    const panel = createElement("section", {
+      class: "panel hidden",
+      role: "dialog",
+      "aria-label": opts.ariaLabel || opts.title || "Melon Translate",
+      "aria-live": "polite"
+    });
+    const header = createElement("div", { class: "header" });
+    const headerMain = createElement("div", { class: "header-main" });
+    const title = createElement("span", { class: "title" }, opts.title || "Melon Translate");
+    const modelSwitcher = createElement("div", {
+      class: "model-switcher",
+      dataset: { role: "model-switcher" },
+      "aria-label": modelLabel
+    });
+    const headerActions = createElement("div", { class: "header-actions" });
+    const body = createElement("div", { class: "body" });
+    const footer = createElement("div", { class: "footer" });
+
+    style.textContent = BASE_CSS + (opts.extraCss || "");
+    if (opts.titleId) {
+      title.id = String(opts.titleId);
+    }
+    addClassTokens(panel, opts.panelClass);
+    appendChildren(modelSwitcher, createElement("div", {
+      class: "cdd-model-wrap",
+      dataset: { role: "model-container" }
+    }));
+    appendChildren(headerMain, [title, modelSwitcher]);
+    appendChildren(headerActions, [
+      createThemeToggleButton(),
+      createElement("button", {
+        class: "close",
+        type: "button",
+        "aria-label": opts.closeLabel || "Close"
+      }, "×")
+    ]);
+    appendChildren(header, [headerMain, headerActions]);
+    appendBuiltContent(body, opts.bodyBuilder);
+    appendBuiltContent(footer, opts.footerBuilder);
+    appendChildren(panel, [header, body, footer]);
+    appendChildren(shadow, [style, panel]);
 
     bindThemeToggle(shadow.querySelector(".panel"), shadow.querySelector(".theme-toggle"));
     return host;

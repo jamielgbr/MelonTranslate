@@ -509,87 +509,105 @@
     host.style.display = "none";
     document.documentElement.appendChild(host);
     const shadow = host.attachShadow({ mode: "open" });
-    shadow.innerHTML = `
-      <style>
-        :host { all: initial; }
-        .btn {
-          --mt-surface: #ffffff;
-          --mt-text: #0f766e;
-          --mt-border: rgba(15, 118, 110, 0.26);
-          --mt-accent-soft: rgba(15, 118, 110, 0.08);
-          --mt-shadow: rgba(15, 23, 42, 0.16);
-          width: 26px;
-          height: 26px;
-          border: 1px solid var(--mt-border);
-          border-radius: 8px;
-          background: var(--mt-surface);
-          color: var(--mt-text);
-          box-shadow: 0 8px 22px var(--mt-shadow);
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0;
-          cursor: pointer;
-          font-family: ui-sans-serif, system-ui, sans-serif;
-          transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, opacity 140ms ease;
-        }
-        .btn.dark {
-          --mt-surface: rgba(15, 23, 42, 0.96);
-          --mt-text: #6ee7b7;
-          --mt-border: rgba(110, 231, 183, 0.34);
-          --mt-accent-soft: rgba(16, 185, 129, 0.13);
-          --mt-shadow: rgba(0, 0, 0, 0.46);
-        }
-        .btn:hover {
-          background: var(--mt-accent-soft);
-          border-color: currentColor;
-        }
-        .btn:focus-visible {
-          outline: 2px solid #0f766e;
-          outline-offset: 2px;
-        }
-        .btn:disabled {
-          cursor: progress;
-          opacity: 0.75;
-        }
-        .btn.loading svg {
-          animation: spin 0.8s linear infinite;
-        }
-        .btn.error {
-          color: #dc2626;
-          border-color: rgba(220, 38, 38, 0.38);
-          background: rgba(254, 242, 242, 0.96);
-        }
-        .btn.dark.error {
-          color: #fca5a5;
-          border-color: rgba(248, 113, 113, 0.38);
-          background: rgba(127, 29, 29, 0.44);
-        }
-        svg {
-          width: 15px;
-          height: 15px;
-          display: block;
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      </style>
-      <button class="btn" type="button" aria-label="Translate and replace input text" title="Translate and replace">
-        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 8h8"/>
-          <path d="M9 4v4c0 4-2 7-5 9"/>
-          <path d="M7 12c1 2 3 4 6 5"/>
-          <path d="M14 20l4-9 4 9"/>
-          <path d="M15.5 17h5"/>
-        </svg>
-      </button>
+    const style = document.createElement("style");
+    const button = document.createElement("button");
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+    style.textContent = `
+      :host { all: initial; }
+      .btn {
+        --mt-surface: #ffffff;
+        --mt-text: #0f766e;
+        --mt-border: rgba(15, 118, 110, 0.26);
+        --mt-accent-soft: rgba(15, 118, 110, 0.08);
+        --mt-shadow: rgba(15, 23, 42, 0.16);
+        width: 26px;
+        height: 26px;
+        border: 1px solid var(--mt-border);
+        border-radius: 8px;
+        background: var(--mt-surface);
+        color: var(--mt-text);
+        box-shadow: 0 8px 22px var(--mt-shadow);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        cursor: pointer;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, opacity 140ms ease;
+      }
+      .btn.dark {
+        --mt-surface: rgba(15, 23, 42, 0.96);
+        --mt-text: #6ee7b7;
+        --mt-border: rgba(110, 231, 183, 0.34);
+        --mt-accent-soft: rgba(16, 185, 129, 0.13);
+        --mt-shadow: rgba(0, 0, 0, 0.46);
+      }
+      .btn:hover {
+        background: var(--mt-accent-soft);
+        border-color: currentColor;
+      }
+      .btn:focus-visible {
+        outline: 2px solid #0f766e;
+        outline-offset: 2px;
+      }
+      .btn:disabled {
+        cursor: progress;
+        opacity: 0.75;
+      }
+      .btn.loading svg {
+        animation: spin 0.8s linear infinite;
+      }
+      .btn.error {
+        color: #dc2626;
+        border-color: rgba(220, 38, 38, 0.38);
+        background: rgba(254, 242, 242, 0.96);
+      }
+      .btn.dark.error {
+        color: #fca5a5;
+        border-color: rgba(248, 113, 113, 0.38);
+        background: rgba(127, 29, 29, 0.44);
+      }
+      svg {
+        width: 15px;
+        height: 15px;
+        display: block;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     `;
-    applyStoredTheme(shadow.querySelector(".btn"));
-    shadow.querySelector(".btn").addEventListener("mousedown", (event) => {
+    button.className = "btn";
+    button.type = "button";
+    button.setAttribute("aria-label", "Translate and replace input text");
+    button.title = "Translate and replace";
+    icon.setAttribute("viewBox", "0 0 24 24");
+    icon.setAttribute("aria-hidden", "true");
+    icon.setAttribute("fill", "none");
+    icon.setAttribute("stroke", "currentColor");
+    icon.setAttribute("stroke-width", "2");
+    icon.setAttribute("stroke-linecap", "round");
+    icon.setAttribute("stroke-linejoin", "round");
+    [
+      "M5 8h8",
+      "M9 4v4c0 4-2 7-5 9",
+      "M7 12c1 2 3 4 6 5",
+      "M14 20l4-9 4 9",
+      "M15.5 17h5"
+    ].forEach((pathData) => {
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", pathData);
+      icon.appendChild(path);
+    });
+    button.appendChild(icon);
+    shadow.appendChild(style);
+    shadow.appendChild(button);
+    applyStoredTheme(button);
+    button.addEventListener("mousedown", (event) => {
       event.preventDefault();
       event.stopPropagation();
     });
-    shadow.querySelector(".btn").addEventListener("click", async (event) => {
+    button.addEventListener("click", async (event) => {
       event.preventDefault();
       event.stopPropagation();
       await quickTranslateEditable(state.activeEditable);
@@ -814,6 +832,63 @@
     return true;
   }
 
+  function buildInputPanelBody(_container, dom) {
+    const el = dom.el;
+    return [
+      el("div", { class: "controls", "aria-label": "Input translation controls" }, [
+        el("div", { class: "control" }, [
+          el("label", { for: "mt-input-target" }, "Target"),
+          el("select", { id: "mt-input-target", "data-role": "target" }),
+          el("input", {
+            class: "hidden",
+            type: "text",
+            "data-role": "target-custom",
+            placeholder: "Language code"
+          })
+        ]),
+        el("div", { class: "control" }, [
+          el("label", { for: "mt-input-style" }, "Style"),
+          el("select", { id: "mt-input-style", "data-role": "style" })
+        ])
+      ]),
+      el("details", { class: "source-panel", open: true }, [
+        el("summary", {}, [
+          el("span", { class: "source-summary-copy" }, [
+            el("label", { class: "section-label", for: "mt-input-source" }, "Source text")
+          ]),
+          el("span", { class: "source-summary-actions" }, [
+            el("span", { class: "source-toggle-label", "aria-hidden": "true" })
+          ])
+        ]),
+        el("div", { class: "source-body" }, [
+          el("textarea", { id: "mt-input-source", "data-role": "source" })
+        ])
+      ]),
+      el("section", { class: "translation-panel" }, [
+        el("div", { class: "translation-header" }, [
+          el("label", { class: "section-label", for: "mt-input-result" }, "Translation")
+        ]),
+        el("textarea", { id: "mt-input-result", "data-role": "result", readonly: true })
+      ])
+    ];
+  }
+
+  function buildInputPanelFooter(_container, dom) {
+    const el = dom.el;
+    return [
+      el("span", { class: "status", "data-role": "status", "aria-live": "polite" }),
+      el("div", { class: "actions" }, [
+        el("button", { type: "button", "data-role": "translate" }, "Translate"),
+        el("button", {
+          class: "primary",
+          type: "button",
+          "data-role": "replace",
+          disabled: true
+        }, "Replace")
+      ])
+    ];
+  }
+
   function ensurePanelHost() {
     if (state.panelHost) {
       return state.panelHost;
@@ -846,45 +921,8 @@
           padding: 10px;
           background: var(--mt-surface);
         }`,
-      bodyHtml: `
-          <div class="controls" aria-label="Input translation controls">
-            <div class="control">
-              <label for="mt-input-target">Target</label>
-              <select id="mt-input-target" data-role="target"></select>
-              <input class="hidden" type="text" data-role="target-custom" placeholder="Language code">
-            </div>
-            <div class="control">
-              <label for="mt-input-style">Style</label>
-              <select id="mt-input-style" data-role="style"></select>
-            </div>
-          </div>
-          <details class="source-panel" open>
-            <summary>
-              <span class="source-summary-copy">
-                <label class="section-label" for="mt-input-source">Source text</label>
-              </span>
-              <span class="source-summary-actions">
-                <span class="source-toggle-label" aria-hidden="true"></span>
-              </span>
-            </summary>
-            <div class="source-body">
-              <textarea id="mt-input-source" data-role="source"></textarea>
-            </div>
-          </details>
-          <section class="translation-panel">
-            <div class="translation-header">
-              <label class="section-label" for="mt-input-result">Translation</label>
-            </div>
-            <textarea id="mt-input-result" data-role="result" readonly></textarea>
-          </section>
-        `,
-      footerHtml: `
-          <span class="status" data-role="status" aria-live="polite"></span>
-          <div class="actions">
-            <button type="button" data-role="translate">Translate</button>
-            <button class="primary" type="button" data-role="replace" disabled>Replace</button>
-          </div>
-        `
+      bodyBuilder: buildInputPanelBody,
+      footerBuilder: buildInputPanelFooter
     });
 
     const shadow = host.shadowRoot;

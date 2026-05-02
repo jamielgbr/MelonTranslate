@@ -39,10 +39,11 @@
     loading: false,
     playing: false
   };
-  const SPEAK_SVG = namespace.readAloud.SPEAK_SVG;
-  const STOP_SVG = namespace.readAloud.STOP_SVG;
-  const EXPAND_RESULT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10a1 1 0 0 0 1-1V6h3a1 1 0 0 0 0-2H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1zm10-6a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0V5a1 1 0 0 0-1-1h-4zM5 14a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4a1 1 0 1 0 0-2H6v-3a1 1 0 0 0-1-1zm14 0a1 1 0 0 0-1 1v3h-3a1 1 0 1 0 0 2h4a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1z" fill="currentColor"/></svg>';
-  const COLLAPSE_RESULT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4a1 1 0 0 0-1 1v3H5a1 1 0 0 0 0 2h4a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1zm6 0a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4a1 1 0 1 0 0-2h-3V5a1 1 0 0 0-1-1zM5 14a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0v-4a1 1 0 0 0-1-1H5zm10 0a1 1 0 0 0-1 1v4a1 1 0 1 0 2 0v-3h3a1 1 0 1 0 0-2h-4z" fill="currentColor"/></svg>';
+  const SPEAK_ICON_PATH = "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z";
+  const EXPAND_RESULT_PATH = "M5 10a1 1 0 0 0 1-1V6h3a1 1 0 0 0 0-2H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1zm10-6a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0V5a1 1 0 0 0-1-1h-4zM5 14a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4a1 1 0 1 0 0-2H6v-3a1 1 0 0 0-1-1zm14 0a1 1 0 0 0-1 1v3h-3a1 1 0 1 0 0 2h4a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1z";
+  const COLLAPSE_RESULT_PATH = "M9 4a1 1 0 0 0-1 1v3H5a1 1 0 0 0 0 2h4a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1zm6 0a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4a1 1 0 1 0 0-2h-3V5a1 1 0 0 0-1-1zM5 14a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0v-4a1 1 0 0 0-1-1H5zm10 0a1 1 0 0 0-1 1v4a1 1 0 1 0 2 0v-3h3a1 1 0 1 0 0-2h-4z";
+  const EXPAND_RESULT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + EXPAND_RESULT_PATH + '" fill="currentColor"/></svg>';
+  const COLLAPSE_RESULT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + COLLAPSE_RESULT_PATH + '" fill="currentColor"/></svg>';
   const pu = namespace.pageUtils;
   const ra = namespace.readAloud;
   const LONG_SOURCE_THRESHOLD = 520;
@@ -53,6 +54,102 @@
 
   function buildTokenTooltip(firstTokenMs, outputTokens, tokPerSec) {
     return `First token: ${pu.formatMillis(firstTokenMs)}\nOutput: ${outputTokens} tok\n${pu.formatRate(tokPerSec)} tok/s`;
+  }
+
+  function createPathIcon(dom, pathData) {
+    return dom.svg("svg", { viewBox: "0 0 24 24", "aria-hidden": "true" }, [
+      dom.svg("path", { d: pathData, fill: "currentColor" })
+    ]);
+  }
+
+  function buildPopupPanelBody(_container, dom) {
+    const el = dom.el;
+    return [
+      el("div", { class: "controls" }, [
+        el("div", { class: "control" }, [
+          el("label", { for: "melontranslate-source-language" }, "Source"),
+          el("div", { class: "cdd-lang-wrap", "data-role": "source-language-container" }),
+          el("input", {
+            type: "text",
+            placeholder: "Enter a language code",
+            class: "hidden",
+            "data-role": "source-language-custom"
+          })
+        ]),
+        el("div", { class: "control" }, [
+          el("label", { for: "melontranslate-target-language" }, "Target"),
+          el("div", { class: "cdd-lang-wrap", "data-role": "target-language-container" }),
+          el("input", {
+            type: "text",
+            placeholder: "Enter a language code",
+            class: "hidden",
+            "data-role": "target-language-custom"
+          })
+        ])
+      ]),
+      el("details", { class: "source-panel", "data-role": "source-wrap", open: true }, [
+        el("summary", {}, [
+          el("span", { class: "source-summary-copy" }, [
+            el("span", { class: "section-label", id: "melontranslate-src-label" }, "Source text"),
+            el("span", { class: "source-size", "data-role": "source-size" })
+          ]),
+          el("span", { class: "source-summary-actions" }, [
+            el("button", {
+              class: "speak speak-source hidden",
+              type: "button",
+              "aria-label": "Read source text aloud"
+            }, createPathIcon(dom, SPEAK_ICON_PATH)),
+            el("span", { class: "source-toggle-label", "aria-hidden": "true" })
+          ])
+        ]),
+        el("div", { class: "source-body" }, [
+          el("p", {
+            class: "text",
+            "data-role": "source",
+            "aria-labelledby": "melontranslate-src-label"
+          })
+        ])
+      ]),
+      el("section", { class: "translation-panel", "aria-labelledby": "melontranslate-trl-label" }, [
+        el("div", { class: "translation-header" }, [
+          el("span", { class: "section-label", id: "melontranslate-trl-label" }, "Translation"),
+          el("div", { class: "translation-actions" }, [
+            el("button", {
+              class: "speak hidden",
+              type: "button",
+              "aria-label": "Read translation aloud"
+            }, createPathIcon(dom, SPEAK_ICON_PATH)),
+            el("button", {
+              class: "expand",
+              type: "button",
+              disabled: true,
+              title: EXPAND_RESULT_LABEL,
+              "aria-label": EXPAND_RESULT_LABEL,
+              "aria-pressed": "false"
+            }, createPathIcon(dom, EXPAND_RESULT_PATH))
+          ])
+        ]),
+        el("div", { class: "translation-scroll", "data-role": "translation-scroll", tabindex: "-1" }, [
+          el("div", { "data-role": "error-badge" }),
+          el("p", { class: "text translation-text muted", "data-role": "translation" }, "Translation will appear here..."),
+          el("details", { class: "reasoning hidden", "data-role": "reasoning-wrap" }, [
+            el("summary", { class: "reasoning-summary" }, "Model reasoning"),
+            el("p", { class: "reasoning-text", "data-role": "reasoning-text" })
+          ])
+        ])
+      ])
+    ];
+  }
+
+  function buildPopupPanelFooter(_container, dom) {
+    const el = dom.el;
+    return [
+      el("span", { class: "meta", "data-role": "meta" }),
+      el("div", { class: "actions" }, [
+        el("button", { class: "refresh", type: "button", "aria-label": "Refresh" }, "Refresh"),
+        el("button", { class: "copy hidden", type: "button", "aria-label": "Copy translation" }, "Copy")
+      ])
+    ];
   }
 
   function ensureHost() {
@@ -110,65 +207,8 @@
             min-height: min(360px, calc(100vh - 24px));
           }
         }`,
-      bodyHtml: `
-          <div class="controls">
-            <div class="control">
-              <label for="melontranslate-source-language">Source</label>
-              <div class="cdd-lang-wrap" data-role="source-language-container"></div>
-              <input type="text" placeholder="Enter a language code" class="hidden" data-role="source-language-custom">
-            </div>
-            <div class="control">
-              <label for="melontranslate-target-language">Target</label>
-              <div class="cdd-lang-wrap" data-role="target-language-container"></div>
-              <input type="text" placeholder="Enter a language code" class="hidden" data-role="target-language-custom">
-            </div>
-          </div>
-          <details class="source-panel" data-role="source-wrap" open>
-            <summary>
-              <span class="source-summary-copy">
-                <span class="section-label" id="melontranslate-src-label">Source text</span>
-                <span class="source-size" data-role="source-size"></span>
-              </span>
-              <span class="source-summary-actions">
-                <button class="speak speak-source hidden" type="button" aria-label="Read source text aloud">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/></svg>
-                </button>
-                <span class="source-toggle-label" aria-hidden="true"></span>
-              </span>
-            </summary>
-            <div class="source-body">
-              <p class="text" data-role="source" aria-labelledby="melontranslate-src-label"></p>
-            </div>
-          </details>
-          <section class="translation-panel" aria-labelledby="melontranslate-trl-label">
-            <div class="translation-header">
-              <span class="section-label" id="melontranslate-trl-label">Translation</span>
-              <div class="translation-actions">
-                <button class="speak hidden" type="button" aria-label="Read translation aloud">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/></svg>
-                </button>
-                <button class="expand" type="button" disabled title="Expand translation" aria-label="Expand translation" aria-pressed="false">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10a1 1 0 0 0 1-1V6h3a1 1 0 0 0 0-2H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1zm10-6a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0V5a1 1 0 0 0-1-1h-4zM5 14a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4a1 1 0 1 0 0-2H6v-3a1 1 0 0 0-1-1zm14 0a1 1 0 0 0-1 1v3h-3a1 1 0 1 0 0 2h4a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1z" fill="currentColor"/></svg>
-                </button>
-              </div>
-            </div>
-            <div class="translation-scroll" data-role="translation-scroll" tabindex="-1">
-              <div data-role="error-badge"></div>
-              <p class="text translation-text muted" data-role="translation">Translation will appear here...</p>
-              <details class="reasoning hidden" data-role="reasoning-wrap">
-                <summary class="reasoning-summary">Model reasoning</summary>
-                <p class="reasoning-text" data-role="reasoning-text"></p>
-              </details>
-            </div>
-          </section>
-        `,
-      footerHtml: `
-          <span class="meta" data-role="meta"></span>
-          <div class="actions">
-            <button class="refresh" type="button" aria-label="Refresh">Refresh</button>
-            <button class="copy hidden" type="button" aria-label="Copy translation">Copy</button>
-          </div>
-        `
+      bodyBuilder: buildPopupPanelBody,
+      footerBuilder: buildPopupPanelFooter
     });
   }
 
@@ -697,7 +737,7 @@
       elements.translation.textContent = "Translating...";
       elements.translation.classList.add("muted");
       elements.translationScroll.scrollTop = 0;
-      elements.errorBadge.innerHTML = "";
+      elements.errorBadge.replaceChildren();
       elements.meta.textContent = "Waiting for a provider...";
       elements.meta.title = "";
       elements.reasoningText.textContent = "";
@@ -715,7 +755,7 @@
     },
     setResult(result) {
       const elements = getElements();
-      elements.errorBadge.innerHTML = "";
+      elements.errorBadge.replaceChildren();
       popupState.translationInProgress = false;
       popupState.currentTranslatedText = String(result.translatedText || "");
       elements.translation.textContent = result.translatedText;
@@ -758,7 +798,7 @@
     },
     appendChunk(chunk, meta) {
       const elements = getElements();
-      elements.errorBadge.innerHTML = "";
+      elements.errorBadge.replaceChildren();
       popupState.fromCache = !!(meta && meta.fromCache);
       popupState.targetLanguage = String(meta && meta.targetLanguage || popupState.targetLanguage || "").trim();
       popupState.detectedSourceLanguage = String(meta && meta.detectedSourceLanguage || popupState.detectedSourceLanguage || "").trim();
