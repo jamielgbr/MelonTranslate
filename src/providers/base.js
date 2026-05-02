@@ -42,6 +42,73 @@
       : (fallbackCategory || "network");
   }
 
+  function createWordSegmenter() {
+    if (typeof Intl === "undefined" || typeof Intl.Segmenter !== "function") {
+      return null;
+    }
+    try {
+      return new Intl.Segmenter(undefined, { granularity: "word" });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  const wordSegmenter = createWordSegmenter();
+  const noSpaceScriptPattern = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+  const japaneseScriptPattern = /[\p{Script=Hiragana}\p{Script=Katakana}]/u;
+  const koreanScriptPattern = /\p{Script=Hangul}/u;
+  const japaneseParticleSource = "(?:が|を|は|へ|に|で|と|も|や|の|から|まで|より|だけ|ほど)";
+  const japaneseParticlePattern = new RegExp(`^${japaneseParticleSource}$`, "u");
+  const inlineJapaneseParticlePattern = new RegExp([
+    "[\\p{Script=Han}\\p{Script=Katakana}A-Za-z0-9]",
+    japaneseParticleSource,
+    "[\\p{Script=Han}\\p{Script=Hiragana}\\p{Script=Katakana}A-Za-z0-9]"
+  ].join(""), "u");
+  const koreanParticleSource = [
+    "에서", "으로", "부터", "까지", "보다", "에게", "한테", "하고",
+    "은", "는", "가", "을", "를", "와", "과", "도", "만", "께"
+  ].join("|");
+  const inlineKoreanParticlePattern = new RegExp(
+    `[\\p{Script=Hangul}](?:${koreanParticleSource})[\\p{Script=Hangul}]`,
+    "u"
+  );
+
+  function getWordLikeSegments(text) {
+    if (!wordSegmenter) {
+      return [];
+    }
+    try {
+      return Array.from(wordSegmenter.segment(text))
+        .filter((segment) => segment.isWordLike)
+        .map((segment) => segment.segment);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function looksLikeNoSpacePhrase(text) {
+    if (!noSpaceScriptPattern.test(text)) {
+      return false;
+    }
+
+    if (koreanScriptPattern.test(text) && inlineKoreanParticlePattern.test(text)) {
+      return true;
+    }
+
+    const segments = getWordLikeSegments(text);
+    if (!segments.length) {
+      return japaneseScriptPattern.test(text) && inlineJapaneseParticlePattern.test(text);
+    }
+
+    const hasJapaneseParticle = japaneseScriptPattern.test(text)
+      && segments.some((segment) => japaneseParticlePattern.test(segment));
+    if (hasJapaneseParticle && segments.length > 1) {
+      return true;
+    }
+
+    return segments.length > 3;
+  }
+
   class BaseProvider {
     constructor(config) {
       this.config = config;
@@ -126,6 +193,10 @@
 
       // Sentence-ending/interrogative punctuation indicates a phrase, not a word
       if (/[…．、※×！？。!?—ー（）；【】,，]/.test(normalized)) {
+        return false;
+      }
+
+      if (looksLikeNoSpacePhrase(normalized)) {
         return false;
       }
 
