@@ -637,7 +637,7 @@
       if (!panel.classList.contains("hidden")) {
         panel.classList.add("model-revealed");
       }
-    }, 2000);
+    }, 1500);
   }
 
   function routeFromModelKey(modelKey) {
