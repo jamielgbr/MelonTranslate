@@ -22,9 +22,11 @@
 <body>
     <main id="popup-panel" class="panel">
         <header class="top">
-            <div>
-                <p class="eyebrow">Melon Translate</p>
-                <h1>Translate</h1>
+            <div class="top-main">
+                <span class="top-title">Melon Translate</span>
+                <div class="model-switcher" aria-label="Translation model">
+                    <div id="popup-model-wrap"></div>
+                </div>
             </div>
             <div class="top-actions">
                 <button id="open-options" class="icon-button" type="button" title="Open Settings"
@@ -55,10 +57,6 @@
                 <label for="popup-target-language-select">Target</label>
                 <div id="popup-target-language-wrap"></div>
                 <input id="popup-target-language-custom" type="text" placeholder="Enter a language code" class="hidden">
-            </div>
-            <div class="control control-model">
-                <label for="popup-model">Model</label>
-                <div id="popup-model-wrap"></div>
             </div>
         </section>
         <section class="source-block collapsible-block">

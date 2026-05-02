@@ -27,6 +27,7 @@
     sourceReadAloudAudio: null,
     sourceReadAloudLoading: false,
     sourceReadAloudPlaying: false,
+    modelRevealTimer: null,
     dropdowns: {}
   };
 
@@ -48,6 +49,26 @@
     load().catch((error) => {
       setStatus(error && error.message ? error.message : "Could not load settings.");
     });
+  }
+
+  function clearModelRevealTimer() {
+    if (state.modelRevealTimer) {
+      clearTimeout(state.modelRevealTimer);
+      state.modelRevealTimer = null;
+    }
+  }
+
+  function scheduleModelReveal() {
+    const panel = document.getElementById("popup-panel");
+    if (!panel) {
+      return;
+    }
+    clearModelRevealTimer();
+    panel.classList.remove("model-revealed");
+    state.modelRevealTimer = setTimeout(() => {
+      state.modelRevealTimer = null;
+      panel.classList.add("model-revealed");
+    }, 1500);
   }
 
   function setMetricsLine(firstTokenMs, outputTokens, tokPerSec, fromCache) {
@@ -336,6 +357,7 @@
     renderLanguageSelector(state.settings);
     renderSourceLanguageSelector("auto");
     renderModelSelector();
+    scheduleModelReveal();
     setMetricsLine(-1, 0, 0, false);
     updateSpeakButton();
     updateSpeakSourceButton();
