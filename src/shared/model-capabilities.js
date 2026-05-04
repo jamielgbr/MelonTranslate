@@ -432,6 +432,18 @@
     return !/\bnon[-_ ]?reasoning\b/.test(modelName) && /\bgrok-4-fast\b/.test(modelName);
   }
 
+  function isVolcengineDoubaoReasoningModel(item) {
+    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
+    if (!meta || !isTextGenerationModel(meta)) {
+      return false;
+    }
+    if (modelHasFeature(meta, "reasoning")) {
+      return true;
+    }
+    const modelName = normalizeReasoningModelName(meta);
+    return /(?:^|[/:\s-])doubao[-_]?seed(?:[\w.-]*)?\b/.test(modelName);
+  }
+
   function isOpenAICompatibleReasoningControlModel(item) {
     const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
     if (!meta || !isTextGenerationModel(meta)) {
@@ -486,7 +498,7 @@
     } else if (input.includes("text") && output.includes("text")) {
       labels.push("Text");
     }
-    if (features.includes("reasoning") || isOpenAICompatibleReasoningControlModel(meta) || isAnthropicReasoningControlModel(meta)) {
+    if (features.includes("reasoning") || isOpenAICompatibleReasoningControlModel(meta) || isAnthropicReasoningControlModel(meta) || isVolcengineDoubaoReasoningModel(meta)) {
       labels.push("Reasoning");
     }
     if (features.includes("streaming")) {
@@ -513,6 +525,7 @@
     isAnthropicReasoningControlModel,
     isXaiGrokReasoningEffortModel,
     isGrok4FastReasoningModel,
+    isVolcengineDoubaoReasoningModel,
     describeModelCapabilities,
     formatModelOptionLabel,
     modelHasInput,

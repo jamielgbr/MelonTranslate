@@ -19,6 +19,21 @@
     if (config && config.id === "groq") {
       return {};
     }
+    if (config && config.id === "volcengine") {
+      if (!effort || !mc.isVolcengineDoubaoReasoningModel(meta)) {
+        return {};
+      }
+      if (effort === "off") {
+        return {
+          thinking: { type: "disabled" },
+          reasoning_effort: "minimal"
+        };
+      }
+      return {
+        thinking: { type: "enabled" },
+        reasoning_effort: effort
+      };
+    }
     if (!effort || !mc.isOpenAICompatibleReasoningControlModel(meta)) {
       return {};
     }

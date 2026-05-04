@@ -112,7 +112,11 @@
     const supportsReasoningEffort = (
       String(configWithModel.transport || "") === "openai-compatible"
       && configWithModel.id !== "groq"
-      && (configWithModel.id === "grok" ? mc.isXaiGrokReasoningEffortModel(modelMeta) : mc.isOpenAICompatibleReasoningControlModel(modelMeta))
+      && (configWithModel.id === "grok"
+        ? mc.isXaiGrokReasoningEffortModel(modelMeta)
+        : (configWithModel.id === "volcengine"
+          ? mc.isVolcengineDoubaoReasoningModel(modelMeta)
+          : mc.isOpenAICompatibleReasoningControlModel(modelMeta)))
     ) || (
       String(configWithModel.transport || "") === "anthropic"
       && mc.isAnthropicReasoningControlModel(modelMeta)

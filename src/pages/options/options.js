@@ -133,6 +133,9 @@
     if (provider && provider.id === "grok") {
       return mc.isXaiGrokReasoningEffortModel(meta);
     }
+    if (provider && provider.id === "volcengine") {
+      return mc.isVolcengineDoubaoReasoningModel(meta);
+    }
     return (transport === "openai-compatible" && mc.isOpenAICompatibleReasoningControlModel(meta))
       || (transport === "anthropic" && mc.isAnthropicReasoningControlModel(meta));
   }
