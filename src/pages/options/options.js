@@ -4,12 +4,15 @@
   const messageTypes = namespace.messages.types;
   const pu = namespace.pageUtils;
   const mp = namespace.modelParams;
+  const mc = namespace.modelCapabilities;
+  const sre = namespace.siteRuleEngine;
   const PAGE_SIZE = 25;
 
   const state = {
     settings: null,
     providers: [],
     providerConfigs: {},
+    siteRules: [],
     history: [],
     historyPage: 0,
     providerModelFilters: {},
@@ -61,6 +64,20 @@
     }
   }
 
+  function normalizeImmersiveDisplayMode(value) {
+    const modes = namespace.constants.immersiveDisplayModes || [];
+    const normalized = String(value || "").trim();
+    return modes.some((item) => item.id === normalized) ? normalized : "below-original";
+  }
+
+  function clampNumber(value, fallback, min, max) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) {
+      return fallback;
+    }
+    return Math.max(min, Math.min(max, Math.round(number)));
+  }
+
   function formatTemperatureInputValue(value) {
     const normalized = mp.normalizeTemperature(value, namespace.constants.modelTemperatureMax);
     const resolved = normalized === null ? namespace.constants.modelTemperatureDefault : normalized;
@@ -84,6 +101,31 @@
       namespace.constants.modelTemperatureDefault
     );
     return resolved === null ? namespace.constants.modelTemperatureDefault : resolved;
+  }
+
+  function getAvailableModelMetas(config, providerId) {
+    return mc.normalizeModelList((config && config.availableModels) || [], {
+      source: providerId || (config && config.id) || "provider",
+      updatedAt: Number(config && config.modelsFetchedAt || 0)
+    });
+  }
+
+  function getModelMeta(config, providerId, modelId) {
+    return mc.findModelMeta((config && config.availableModels) || [], modelId)
+      || mc.normalizeModelEntry(modelId, {
+        source: providerId || (config && config.id) || "provider",
+        updatedAt: Number(config && config.modelsFetchedAt || 0)
+      });
+  }
+
+  function isTextModel(config, providerId, modelId) {
+    return mc.isTextGenerationModel(getModelMeta(config, providerId, modelId));
+  }
+
+  function renderCapabilityBadges(meta) {
+    return mc.describeModelCapabilities(meta).map((label) => (
+      `<span class="model-capability-badge">${pu.escapeHtml(label)}</span>`
+    )).join("");
   }
 
   function updateModelParameter(providerId, modelId, patch) {
@@ -114,7 +156,8 @@
         }
         const currentModel = getEffectiveProviderModel(provider.id, config);
         const favorites = pu.normalizeModels(config.favoriteModels || []);
-        const models = pu.normalizeModels([currentModel, ...favorites]);
+        const models = pu.normalizeModels([currentModel, ...favorites])
+          .filter((modelId) => isTextModel(config, provider.id, modelId));
         if (!models.length) {
           return null;
         }
@@ -192,6 +235,13 @@
       inputInlineButtonBlockedHosts: pu.normalizeHostRuleList(document.getElementById("input-blocked-hosts").value),
       inputInlineButtonAllowedHosts: pu.normalizeHostRuleList(document.getElementById("input-allowed-hosts").value),
       defaultInputContextStyle: pu.getInputContextStyle(document.getElementById("input-context-style").value),
+      immersiveTranslationEnabled: document.getElementById("immersive-translation-enabled").checked,
+      immersiveTranslationAutoTranslate: document.getElementById("immersive-translation-auto").checked,
+      immersiveTranslationVisibleOnly: document.getElementById("immersive-translation-visible-only").checked,
+      immersiveTranslationDisplayMode: normalizeImmersiveDisplayMode(document.getElementById("immersive-display-mode").value),
+      immersiveTranslationMinTextLength: clampNumber(document.getElementById("immersive-min-text-length").value, 32, 8, 500),
+      immersiveTranslationMaxConcurrent: clampNumber(document.getElementById("immersive-max-concurrent").value, 2, 1, 4),
+      immersiveTranslationContextStyle: "auto",
       persistHistory: document.getElementById("persist-history").checked
     };
   }
@@ -242,6 +292,33 @@
           : (current.inputInlineButtonAllowedHosts || [])
       ),
       defaultInputContextStyle: pu.getInputContextStyle(incoming.defaultInputContextStyle || current.defaultInputContextStyle),
+      immersiveTranslationEnabled: incoming.immersiveTranslationEnabled !== undefined
+        ? !!incoming.immersiveTranslationEnabled
+        : current.immersiveTranslationEnabled !== false,
+      immersiveTranslationAutoTranslate: incoming.immersiveTranslationAutoTranslate !== undefined
+        ? !!incoming.immersiveTranslationAutoTranslate
+        : !!current.immersiveTranslationAutoTranslate,
+      immersiveTranslationVisibleOnly: incoming.immersiveTranslationVisibleOnly !== undefined
+        ? !!incoming.immersiveTranslationVisibleOnly
+        : current.immersiveTranslationVisibleOnly !== false,
+      immersiveTranslationDisplayMode: normalizeImmersiveDisplayMode(incoming.immersiveTranslationDisplayMode || current.immersiveTranslationDisplayMode),
+      immersiveTranslationMinTextLength: clampNumber(
+        incoming.immersiveTranslationMinTextLength !== undefined
+          ? incoming.immersiveTranslationMinTextLength
+          : current.immersiveTranslationMinTextLength,
+        32,
+        8,
+        500
+      ),
+      immersiveTranslationMaxConcurrent: clampNumber(
+        incoming.immersiveTranslationMaxConcurrent !== undefined
+          ? incoming.immersiveTranslationMaxConcurrent
+          : current.immersiveTranslationMaxConcurrent,
+        2,
+        1,
+        4
+      ),
+      immersiveTranslationContextStyle: "auto",
       persistHistory: incoming.persistHistory !== undefined
         ? !!incoming.persistHistory
         : !!current.persistHistory
@@ -261,7 +338,10 @@
         : {};
 
       const model = String(incoming.model !== undefined ? incoming.model : (current.model || "")).trim();
-      const availableModels = pu.normalizeModels(incoming.availableModels !== undefined ? incoming.availableModels : (current.availableModels || []));
+      const availableModels = mc.normalizeModelList(incoming.availableModels !== undefined ? incoming.availableModels : (current.availableModels || []), {
+        source: provider.id,
+        updatedAt: Number(incoming.modelsFetchedAt || current.modelsFetchedAt || 0)
+      });
       const favoriteModels = pu.normalizeModels(incoming.favoriteModels !== undefined ? incoming.favoriteModels : (current.favoriteModels || []));
       const mergedFavorites = pu.normalizeModels(model ? [...favoriteModels, model] : favoriteModels);
       const mergedModelParameters = mp.getProviderModelParameters({
@@ -308,7 +388,10 @@
           apiKey: resolvedApiKey,
           favoriteModels: pu.normalizeModels(config.favoriteModels || []),
           modelParameters: mp.getProviderModelParameters(config),
-          availableModels: pu.normalizeModels(config.availableModels || []),
+          availableModels: mc.normalizeModelList(config.availableModels || [], {
+            source: providerId,
+            updatedAt: Number(config.modelsFetchedAt || 0)
+          }),
           modelsFetchedAt: Number.isFinite(Number(config.modelsFetchedAt)) ? Number(config.modelsFetchedAt) : 0,
           modelListAccountId: config.modelListAccountId || "",
           transport: config.transport || "openai-compatible",
@@ -322,7 +405,8 @@
       schemaVersion: 1,
       exportedAt: new Date().toISOString(),
       settings: collectSettingsFromForm(),
-      providerConfigs: exportProviderConfigs
+      providerConfigs: exportProviderConfigs,
+      siteRules: sre.normalizeRules(state.siteRules || [])
     };
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     downloadJsonFile(`melontranslate-config-${stamp}.json`, payload);
@@ -346,6 +430,7 @@
 
     const settings = normalizeImportedSettings(parsed.settings);
     const providerConfigs = normalizeImportedProviderConfigs(parsed.providerConfigs);
+    const siteRules = sre.normalizeRules(parsed.siteRules || state.siteRules || []);
     status("Importing settings…");
 
     const response = await api.runtime.sendMessage({
@@ -359,6 +444,15 @@
       return;
     }
 
+    const siteRuleResponse = await api.runtime.sendMessage({
+      type: messageTypes.saveSiteRules,
+      siteRules
+    });
+    if (!siteRuleResponse || !siteRuleResponse.ok) {
+      status(siteRuleResponse?.error?.message || "Could not import site rules.");
+      return;
+    }
+
     status("Settings imported.");
     await load();
   }
@@ -367,12 +461,18 @@
     return getConfiguredProviders().flatMap((provider) => {
       const config = state.providerConfigs[provider.id] || {};
       const favorites = pu.normalizeModels(config.favoriteModels || []);
-      return favorites.map((model) => ({
-        key: pu.buildDefaultModelKey(provider.id, model),
-        providerId: provider.id,
-        model,
-        label: `${provider.displayName} · ${model}`
-      }));
+      return favorites.map((model) => {
+        const meta = getModelMeta(config, provider.id, model);
+        if (!mc.isTextGenerationModel(meta)) {
+          return null;
+        }
+        return {
+          key: pu.buildDefaultModelKey(provider.id, model),
+          providerId: provider.id,
+          model,
+          label: mc.formatModelOptionLabel(provider.displayName, model, meta)
+        };
+      }).filter(Boolean);
     });
   }
 
@@ -425,6 +525,17 @@
         selected: "auto"
       }
     );
+    state.dropdowns["immersive-display-mode"] = namespace.customDropdown.create(
+      document.getElementById("immersive-display-mode-wrap"),
+      {
+        id: "immersive-display-mode",
+        items: (namespace.constants.immersiveDisplayModes || []).map((item) => ({
+          value: item.id,
+          label: item.label
+        })),
+        selected: "below-original"
+      }
+    );
   }
 
   function renderDefaultModelSelect() {
@@ -474,14 +585,17 @@
 
   function renderModelFavoriteRows(config) {
     const favorites = pu.normalizeModels(config.favoriteModels || []);
-    const allModels = pu.normalizeModels(config.availableModels || []);
+    const allModels = getAvailableModelMetas(config, config.id);
     if (!allModels.length) {
       return '<p class="hint">No available models.</p>';
     }
 
-    return allModels.map((model) => {
-      const checked = favorites.includes(model) ? "checked" : "";
-      return `<label class="checkbox-row model-favorite-row" data-model="${pu.escapeHtml(model)}"><input data-model-favorite="${pu.escapeHtml(model)}" type="checkbox" ${checked}> ${pu.escapeHtml(model)}</label>`;
+    return allModels.map((meta) => {
+      const checked = favorites.includes(meta.id) ? "checked" : "";
+      const textModel = mc.isTextGenerationModel(meta);
+      const disabled = textModel ? "" : "disabled";
+      const title = textModel ? "" : ' title="This model is not available for text translation."';
+      return `<label class="checkbox-row model-favorite-row${textModel ? "" : " model-favorite-row-disabled"}" data-model="${pu.escapeHtml(meta.id)}"${title}><input data-model-favorite="${pu.escapeHtml(meta.id)}" type="checkbox" ${checked} ${disabled}> <span class="model-favorite-name">${pu.escapeHtml(meta.id)}</span><span class="model-capability-badges">${renderCapabilityBadges(meta)}</span></label>`;
     }).join("");
   }
 
@@ -529,17 +643,35 @@
     const modelCustom = document.querySelector(`[data-provider-id="${providerId}"][data-field="model-custom"]`);
     if (!dd || !hiddenInput) return;
 
+    const provider = state.providers.find((item) => item.id === providerId) || {};
+    const config = state.providerConfigs[providerId] || {};
     const card = hiddenInput.closest(".provider-card");
     const favoriteInputs = card ? card.querySelectorAll("input[data-model-favorite]") : [];
-    const favorites = Array.from(favoriteInputs).filter((item) => item.checked).map((item) => item.dataset.modelFavorite);
+    const favorites = Array.from(favoriteInputs)
+      .filter((item) => item.checked && !item.disabled)
+      .map((item) => item.dataset.modelFavorite);
     const currentValue = hiddenInput.value === "custom" ? (modelCustom ? modelCustom.value.trim() : "") : hiddenInput.value;
-    const merged = Array.from(new Set([...favorites, currentValue].filter(Boolean)));
+    const safeCurrentValue = currentValue && isTextModel(config, providerId, currentValue) ? currentValue : "";
+    const merged = Array.from(new Set([...favorites, safeCurrentValue].filter(Boolean)));
 
-    dd.setItems(merged.map((model) => ({ value: model, label: model })));
+    dd.setItems(merged.map((model) => ({
+      value: model,
+      label: mc.formatModelOptionLabel(provider.displayName || providerId, model, getModelMeta(config, providerId, model))
+    })));
 
-    if (merged.includes(currentValue)) {
-      dd.setValue(currentValue);
-      updateProviderDraft(providerId, { model: currentValue, modelSelectValue: currentValue, modelCustomValue: currentValue });
+    if (safeCurrentValue && merged.includes(safeCurrentValue)) {
+      dd.setValue(safeCurrentValue);
+      updateProviderDraft(providerId, { model: safeCurrentValue, modelSelectValue: safeCurrentValue, modelCustomValue: safeCurrentValue });
+    } else if (currentValue && !safeCurrentValue) {
+      const first = merged[0] || "";
+      if (first) {
+        dd.setValue(first);
+        updateProviderDraft(providerId, { model: first, modelSelectValue: first, modelCustomValue: first });
+      } else {
+        dd.setValue("custom");
+        if (modelCustom) modelCustom.value = "";
+        updateProviderDraft(providerId, { model: "", modelSelectValue: "custom", modelCustomValue: "" });
+      }
     } else if (currentValue) {
       dd.setValue("custom");
       if (modelCustom) modelCustom.value = currentValue;
@@ -573,8 +705,10 @@
       card.className = "provider-card";
       card.dataset.providerId = provider.id;
       card.dataset.expanded = expanded ? "true" : "false";
-      const favoriteModels = pu.normalizeModels(config.favoriteModels || []);
-      const currentModel = typeof draft.model === "string" ? draft.model : getPreferredModel(config);
+      const favoriteModels = pu.normalizeModels(config.favoriteModels || [])
+        .filter((modelId) => isTextModel(config, provider.id, modelId));
+      const rawCurrentModel = typeof draft.model === "string" ? draft.model : getPreferredModel(config);
+      const currentModel = rawCurrentModel && isTextModel(config, provider.id, rawCurrentModel) ? rawCurrentModel : "";
       const draftModelSelectValue = typeof draft.modelSelectValue === "string" ? draft.modelSelectValue : "";
       const modelSelectValue = draftModelSelectValue || (favoriteModels.includes(currentModel) ? currentModel : (currentModel ? "custom" : (favoriteModels[0] || "custom")));
       const modelCustomVisible = modelSelectValue === "custom";
@@ -662,10 +796,13 @@
 
       const modelCustom = card.querySelector(`[data-provider-id="${provider.id}"][data-field="model-custom"]`);
       const modelWrap = card.querySelector(".cdd-provider-model-wrap");
-      const currentModelVal = typeof draft.model === "string" ? draft.model : getPreferredModel(config);
-      const favModels = pu.normalizeModels(config.favoriteModels || []);
+      const currentModelVal = currentModel;
+      const favModels = favoriteModels;
       const mergedModels = Array.from(new Set([...favModels, currentModelVal].filter(Boolean)));
-      const ddItems = mergedModels.map((model) => ({ value: model, label: model }));
+      const ddItems = mergedModels.map((model) => ({
+        value: model,
+        label: mc.formatModelOptionLabel(provider.displayName, model, getModelMeta(config, provider.id, model))
+      }));
       const ddInitValue = mergedModels.includes(currentModelVal) ? currentModelVal : (currentModelVal ? "custom" : (mergedModels[0] || "custom"));
       if (ddInitValue === "custom" && modelCustom && currentModelVal) {
         modelCustom.value = currentModelVal;
@@ -844,11 +981,85 @@
     });
   }
 
+  function renderSiteRules() {
+    const container = document.getElementById("site-rules");
+    if (!container) {
+      return;
+    }
+    const rules = sre.normalizeRules(state.siteRules || []);
+    if (!rules.length) {
+      container.innerHTML = '<p class="hint">No site rules yet. Use the page context menu to select an inline translation area.</p>';
+      return;
+    }
+
+    function renderSelectorGroup(rule, kind, title) {
+      const selectors = kind === "exclude" ? (rule.excludeSelectors || []) : (rule.includeSelectors || []);
+      const emptyText = kind === "exclude" ? "No excluded areas" : "Whole matching site";
+      const content = selectors.length
+        ? selectors.map((selector) => `
+          <span class="site-rule-selector-chip">
+            <code>${pu.escapeHtml(selector)}</code>
+            <button class="secondary" type="button"
+              data-remove-selector-rule="${pu.escapeHtml(rule.id)}"
+              data-remove-selector-kind="${kind}"
+              data-remove-selector-value="${pu.escapeHtml(selector)}">Remove</button>
+          </span>
+        `).join("")
+        : `<span class="hint">${emptyText}</span>`;
+      return `
+        <div class="site-rule-selector-group">
+          <span class="site-rule-selector-label">${title}</span>
+          <div class="site-rule-selectors">${content}</div>
+        </div>
+      `;
+    }
+
+    pu.setHtml(container, rules.map((rule) => {
+      const styleOptions = (namespace.constants.inputContextStyles || []).map((item) => (
+        `<option value="${pu.escapeHtml(item.id)}" ${item.id === rule.contextStyle ? "selected" : ""}>${pu.escapeHtml(item.label)}</option>`
+      )).join("");
+      const badge = rule.category === "picker" ? '<span class="site-rule-badge">Picker</span>' : "";
+      return `
+        <article class="site-rule-card" data-rule-id="${pu.escapeHtml(rule.id)}">
+          <div class="site-rule-main">
+            <label class="site-rule-title">
+              <input type="checkbox" data-rule-toggle="${pu.escapeHtml(rule.id)}" ${rule.enabled !== false ? "checked" : ""}>
+              <span>${pu.escapeHtml(rule.hostPattern)}</span>
+              ${badge}
+            </label>
+            <label class="site-rule-style">Style
+              <select data-rule-style="${pu.escapeHtml(rule.id)}">${styleOptions}</select>
+            </label>
+            ${renderSelectorGroup(rule, "include", "Translate areas")}
+            ${renderSelectorGroup(rule, "exclude", "Excluded areas")}
+          </div>
+          <button class="secondary" type="button" data-delete-rule="${pu.escapeHtml(rule.id)}">Delete</button>
+        </article>
+      `;
+    }).join(""));
+  }
+
+  async function persistSiteRules(nextRules) {
+    const response = await api.runtime.sendMessage({
+      type: messageTypes.saveSiteRules,
+      siteRules: nextRules
+    });
+    if (!response || !response.ok) {
+      status(response?.error?.message || "Could not save site rules.");
+      return false;
+    }
+    state.siteRules = response.data.siteRules || [];
+    renderSiteRules();
+    status("Site rules saved.");
+    return true;
+  }
+
   function fillGeneralSettings() {
     state.dropdowns["selection-trigger"].setValue(state.settings.selectionTrigger);
     state.dropdowns["modifier-key"].setValue(state.settings.modifierKey);
     state.dropdowns["input-site-mode"].setValue(pu.normalizeInputSiteMode(state.settings.inputInlineButtonSiteMode));
     state.dropdowns["input-context-style"].setValue(pu.getInputContextStyle(state.settings.defaultInputContextStyle));
+    state.dropdowns["immersive-display-mode"].setValue(normalizeImmersiveDisplayMode(state.settings.immersiveTranslationDisplayMode));
     renderDefaultModelSelect();
     renderModelParametersPanel();
     renderLanguageSelect("target-language", "target-language-custom", state.settings.targetLanguage);
@@ -859,6 +1070,11 @@
     document.getElementById("input-blocked-hosts").value = formatHostRuleList(state.settings.inputInlineButtonBlockedHosts || []);
     document.getElementById("input-allowed-hosts").value = formatHostRuleList(state.settings.inputInlineButtonAllowedHosts || []);
     updateInputSiteRuleVisibility();
+    document.getElementById("immersive-translation-enabled").checked = state.settings.immersiveTranslationEnabled !== false;
+    document.getElementById("immersive-translation-auto").checked = !!state.settings.immersiveTranslationAutoTranslate;
+    document.getElementById("immersive-translation-visible-only").checked = state.settings.immersiveTranslationVisibleOnly !== false;
+    document.getElementById("immersive-min-text-length").value = clampNumber(state.settings.immersiveTranslationMinTextLength, 32, 8, 500);
+    document.getElementById("immersive-max-concurrent").value = clampNumber(state.settings.immersiveTranslationMaxConcurrent, 2, 1, 4);
     document.getElementById("persist-history").checked = !!state.settings.persistHistory;
   }
 
@@ -882,7 +1098,10 @@
           baseUrl: current.baseUrl || "",
           favoriteModels: pu.normalizeModels(current.favoriteModels || []),
           modelParameters: current.modelParameters || {},
-          availableModels: pu.normalizeModels(current.availableModels || []),
+          availableModels: mc.normalizeModelList(current.availableModels || [], {
+            source: provider.id,
+            updatedAt: Number(current.modelsFetchedAt || 0)
+          }),
           modelsFetchedAt: Number(current.modelsFetchedAt || 0),
           modelListAccountId: current.modelListAccountId || "",
           transport: provider.transport,
@@ -905,10 +1124,12 @@
       const modelListAccountIdInput = document.querySelector(`[data-provider-id="${provider.id}"][data-field="modelListAccountId"]`);
       const modelListAccountId = modelListAccountIdInput ? modelListAccountIdInput.value.trim() : (current.modelListAccountId || "");
       const favoriteModels = Array.from(card ? card.querySelectorAll("input[data-model-favorite]") : [])
-        .filter((input) => input.checked)
+        .filter((input) => input.checked && !input.disabled)
         .map((input) => input.dataset.modelFavorite);
-      const availableModels = Array.from(card ? card.querySelectorAll(".model-list input[data-model-favorite]") : [])
-        .map((input) => input.dataset.modelFavorite);
+      const availableModels = mc.normalizeModelList(current.availableModels || [], {
+        source: provider.id,
+        updatedAt: Number(current.modelsFetchedAt || 0)
+      });
 
       const normalizedFavorites = pu.normalizeModels([...favoriteModels, model].filter(Boolean));
       const existingModelParameters = mp.getProviderModelParameters(current);
@@ -932,7 +1153,7 @@
         baseUrl,
         favoriteModels: normalizedFavorites,
         modelParameters: filteredModelParameters,
-        availableModels: pu.normalizeModels(availableModels),
+        availableModels,
         modelsFetchedAt: Number(current.modelsFetchedAt || 0),
         modelListAccountId,
         transport: provider.transport,
@@ -955,6 +1176,7 @@
     state.settings = response.data.settings;
     state.providers = response.data.providers;
     state.providerConfigs = response.data.providerConfigs;
+    state.siteRules = response.data.siteRules || [];
     state.providerDrafts = {};
     state.history = response.data.history;
     state.historyPage = 0;
@@ -966,6 +1188,7 @@
     await maybeAutoFetchModels();
     renderDefaultModelSelect();
     renderHistory();
+    renderSiteRules();
     status("");
   }
 
@@ -1079,7 +1302,7 @@
     if (favoriteProviderId && state.providerConfigs[favoriteProviderId]) {
       const allFavoriteInputs = card.querySelectorAll("input[data-model-favorite]");
       const checkedFavorites = Array.from(allFavoriteInputs)
-        .filter((item) => item.checked)
+        .filter((item) => item.checked && !item.disabled)
         .map((item) => item.dataset.modelFavorite);
       state.providerConfigs[favoriteProviderId] = Object.assign({}, state.providerConfigs[favoriteProviderId], {
         favoriteModels: checkedFavorites
@@ -1129,6 +1352,61 @@
     input.value = formatTemperatureInputValue(normalized);
     updateModelParameter(providerId, modelId, { temperature: normalized });
     renderDefaultModelSelect();
+  });
+
+  document.getElementById("site-rules").addEventListener("change", async (event) => {
+    const input = event.target;
+    if (!input || !input.dataset || (!input.dataset.ruleToggle && !input.dataset.ruleStyle)) {
+      return;
+    }
+    const ruleId = input.dataset.ruleToggle || input.dataset.ruleStyle;
+    const nextRules = sre.normalizeRules(state.siteRules || []).map((rule) => (
+      rule.id === ruleId
+        ? Object.assign({}, rule, input.dataset.ruleToggle
+          ? { enabled: input.checked, updatedAt: new Date().toISOString() }
+          : { contextStyle: sre.normalizeContextStyle(input.value), updatedAt: new Date().toISOString() })
+        : rule
+    ));
+    await persistSiteRules(nextRules);
+  });
+
+  document.getElementById("site-rules").addEventListener("click", async (event) => {
+    const removeSelectorButton = event.target.closest("button[data-remove-selector-rule]");
+    if (removeSelectorButton) {
+      const ruleId = removeSelectorButton.dataset.removeSelectorRule;
+      const kind = removeSelectorButton.dataset.removeSelectorKind === "exclude" ? "exclude" : "include";
+      const selectorValue = String(removeSelectorButton.dataset.removeSelectorValue || "");
+      const nextRules = sre.normalizeRules(state.siteRules || []).flatMap((rule) => {
+        if (rule.id !== ruleId) {
+          return [rule];
+        }
+        const patch = kind === "exclude"
+          ? { excludeSelectors: (rule.excludeSelectors || []).filter((selector) => selector !== selectorValue) }
+          : { includeSelectors: (rule.includeSelectors || []).filter((selector) => selector !== selectorValue) };
+        const nextRule = Object.assign({}, rule, patch, { updatedAt: new Date().toISOString() });
+        const selectorCount = (nextRule.includeSelectors || []).length + (nextRule.excludeSelectors || []).length;
+        return rule.category === "picker" && selectorCount === 0 ? [] : [nextRule];
+      });
+      await persistSiteRules(nextRules);
+      return;
+    }
+
+    const button = event.target.closest("button[data-delete-rule]");
+    if (!button) {
+      return;
+    }
+    const ruleId = button.dataset.deleteRule;
+    const response = await api.runtime.sendMessage({
+      type: messageTypes.deleteSiteRule,
+      ruleId
+    });
+    if (!response || !response.ok) {
+      status(response?.error?.message || "Could not delete site rule.");
+      return;
+    }
+    state.siteRules = response.data.siteRules || [];
+    renderSiteRules();
+    status("Site rule deleted.");
   });
 
   document.getElementById("save-button").addEventListener("click", save);

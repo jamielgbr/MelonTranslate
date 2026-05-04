@@ -3,6 +3,7 @@
   const api = namespace.browserApi;
   const messageTypes = namespace.messages.types;
   const pu = namespace.pageUtils;
+  const mc = namespace.modelCapabilities;
   const SESSION_KEY = "melontranslate-compare-state";
 
   const state = {
@@ -103,10 +104,27 @@
     );
   }
 
-  function buildModelOverrideChoices(config) {
+  function buildModelOverrideChoices(provider, config) {
     const favorites = pu.normalizeModels(config.favoriteModels || []);
     const current = String(config.model || "").trim();
-    const models = Array.from(new Set([...favorites, current].filter(Boolean)));
+    const availableModels = mc.normalizeModelList(config.availableModels || [], {
+      source: config.id || "provider",
+      updatedAt: Number(config.modelsFetchedAt || 0)
+    });
+    const modelById = Object.fromEntries(availableModels.map((model) => [model.id, model]));
+    const models = Array.from(new Set([...favorites, current].filter(Boolean))).map((model) => {
+      const meta = modelById[model] || mc.normalizeModelEntry(model, {
+        source: config.id || "provider",
+        updatedAt: Number(config.modelsFetchedAt || 0)
+      });
+      if (!mc.isTextGenerationModel(meta)) {
+        return null;
+      }
+      return {
+        value: model,
+        label: mc.formatModelOptionLabel(provider.displayName || provider.id, model, meta)
+      };
+    }).filter(Boolean);
     const defaultLabel = `Default${current ? `: ${current}` : ""}`;
     return { defaultLabel, models };
   }
@@ -155,11 +173,11 @@
       const config = state.providerConfigs[provider.id] || {};
       const wrap = selector.querySelector(`.cdd-model-wrap[data-provider-id="${provider.id}"]`);
       const customInput = selector.querySelector(`.model-override-custom[data-provider-id="${provider.id}"]`);
-      const { defaultLabel, models } = buildModelOverrideChoices(config);
+      const { defaultLabel, models } = buildModelOverrideChoices(provider, config);
       namespace.customDropdown.create(wrap, {
         classNames: "model-override",
         dataAttrs: { "provider-id": provider.id },
-        items: [{ value: "", label: defaultLabel }, ...models.map((m) => ({ value: m, label: m }))],
+        items: [{ value: "", label: defaultLabel }, ...models],
         selected: "",
         showSearch: true,
         showCustom: true,

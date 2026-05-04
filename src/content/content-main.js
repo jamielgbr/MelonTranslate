@@ -81,6 +81,9 @@
   if (namespace.inputTranslator) {
     namespace.inputTranslator.start(getSettings);
   }
+  if (namespace.immersiveTranslator) {
+    namespace.immersiveTranslator.start(getSettings);
+  }
 
   namespace.popupRenderer.onHide(() => {
     requestState.activeToken += 1;
@@ -110,6 +113,18 @@
         translateSelection(selectionData);
       }
 
+      return namespace.messages.ok();
+    }
+
+    if (message.type === messageTypes.manualTranslateImmersivePage && namespace.immersiveTranslator) {
+      const result = await namespace.immersiveTranslator.translateCurrentPage();
+      return result && result.started
+        ? namespace.messages.ok(result)
+        : namespace.messages.error(result && result.reason || "Could not start immersive translation.");
+    }
+
+    if (message.type === messageTypes.startElementPicker && namespace.elementPicker) {
+      namespace.elementPicker.start();
       return namespace.messages.ok();
     }
 

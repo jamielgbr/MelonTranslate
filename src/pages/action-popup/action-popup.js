@@ -3,6 +3,7 @@
   const api = namespace.browserApi;
   const messageTypes = namespace.messages.types;
   const pu = namespace.pageUtils;
+  const mc = namespace.modelCapabilities;
 
   const state = {
     settings: null,
@@ -288,16 +289,30 @@
 
     state.modelOptions = configured.flatMap((provider) => {
       const config = state.providerConfigs[provider.id] || {};
+      const availableModels = mc.normalizeModelList(config.availableModels || [], {
+        source: provider.id,
+        updatedAt: Number(config.modelsFetchedAt || 0)
+      });
+      const modelById = Object.fromEntries(availableModels.map((model) => [model.id, model]));
       const models = Array.from(new Set([
         ...(Array.isArray(config.favoriteModels) ? config.favoriteModels : []),
         config.model || ""
       ].map((item) => String(item || "").trim()).filter(Boolean)));
-      return models.map((model) => ({
-        key: pu.buildDefaultModelKey(provider.id, model),
-        providerId: provider.id,
-        model,
-        label: `${provider.displayName} · ${model}`
-      }));
+      return models.map((model) => {
+        const meta = modelById[model] || mc.normalizeModelEntry(model, {
+          source: provider.id,
+          updatedAt: Number(config.modelsFetchedAt || 0)
+        });
+        if (!mc.isTextGenerationModel(meta)) {
+          return null;
+        }
+        return {
+          key: pu.buildDefaultModelKey(provider.id, model),
+          providerId: provider.id,
+          model,
+          label: mc.formatModelOptionLabel(provider.displayName, model, meta)
+        };
+      }).filter(Boolean);
     });
 
     const items = state.modelOptions.map((item) => ({ value: item.key, label: item.label }));

@@ -2,6 +2,7 @@
   const namespace = root.MelonTranslate = root.MelonTranslate || {};
   const { storageKeys, selectionTriggers, modifierKeys } = namespace.constants;
   const mp = namespace.modelParams;
+  const mc = namespace.modelCapabilities;
 
   function getDefaultSettings() {
     return {
@@ -18,6 +19,13 @@
       inputInlineButtonBlockedHosts: [],
       inputInlineButtonAllowedHosts: [],
       defaultInputContextStyle: "auto",
+      immersiveTranslationEnabled: true,
+      immersiveTranslationAutoTranslate: false,
+      immersiveTranslationVisibleOnly: true,
+      immersiveTranslationDisplayMode: "below-original",
+      immersiveTranslationMinTextLength: 32,
+      immersiveTranslationMaxConcurrent: 2,
+      immersiveTranslationContextStyle: "auto",
       persistHistory: false,
       maxHistoryItems: namespace.constants.historyLimit
     };
@@ -30,7 +38,10 @@
         enabled: provider.enabledByDefault,
         model: provider.defaultModel,
         baseUrl: provider.baseUrl,
-        availableModels: provider.staticModels ? provider.staticModels.slice() : [],
+        availableModels: provider.staticModels ? mc.normalizeModelList(provider.staticModels, {
+          source: provider.id,
+          updatedAt: 0
+        }) : [],
         favoriteModels: provider.defaultModel ? [provider.defaultModel] : [],
         modelParameters: {},
         modelsFetchedAt: 0,
@@ -134,11 +145,14 @@
           model: config.model || "",
           baseUrl: config.baseUrl || "",
           availableModels: Array.isArray(config.availableModels)
-            ? config.availableModels.slice(0, 500).map((item) => String(item || "").trim()).filter(Boolean)
+            ? mc.normalizeModelList(config.availableModels.slice(0, 500), {
+              source: config.id,
+              updatedAt: Number.isFinite(config.modelsFetchedAt) ? Number(config.modelsFetchedAt) : Date.now()
+            })
             : [],
           favoriteModels: Array.isArray(config.favoriteModels)
             ? config.favoriteModels.slice(0, namespace.constants.maxFavoriteModelsPerProvider)
-              .map((item) => String(item || "").trim())
+              .map((item) => mc.normalizeModelId(item))
               .filter(Boolean)
             : [],
           modelParameters: mp.getProviderModelParameters(config),
@@ -154,6 +168,48 @@
       const toPersist = Object.fromEntries(sanitizedEntries);
       await namespace.browserApi.storage.set("local", { [storageKeys.providerConfigs]: toPersist });
       return toPersist;
+    },
+    async getSiteRules() {
+      const stored = await namespace.browserApi.storage.get("local", storageKeys.siteRules);
+      return namespace.siteRuleEngine.normalizeRules(stored[storageKeys.siteRules] || []);
+    },
+    async saveSiteRules(siteRules) {
+      const normalized = namespace.siteRuleEngine.normalizeRules(siteRules || []);
+      await namespace.browserApi.storage.set("local", { [storageKeys.siteRules]: normalized });
+      return normalized;
+    },
+    async saveSiteRule(siteRule) {
+      const normalized = namespace.siteRuleEngine.normalizeRule(siteRule);
+      if (!normalized) {
+        throw new Error("Invalid site rule.");
+      }
+      const current = await this.getSiteRules();
+      const index = current.findIndex((rule) => rule.id === normalized.id);
+      const next = index >= 0 ? current.slice() : current.concat(normalized);
+      if (index >= 0) {
+        next[index] = normalized;
+      }
+      return {
+        rule: normalized,
+        siteRules: await this.saveSiteRules(next)
+      };
+    },
+    async saveSiteRuleFromPicker(payload) {
+      const current = await this.getSiteRules();
+      const result = namespace.siteRuleEngine.mergePickerRule(current, payload || {});
+      if (!result.rule) {
+        throw new Error("Invalid picker rule.");
+      }
+      return {
+        rule: result.rule,
+        siteRules: await this.saveSiteRules(result.siteRules)
+      };
+    },
+    async deleteSiteRule(ruleId) {
+      const id = String(ruleId || "").trim();
+      const current = await this.getSiteRules();
+      const next = current.filter((rule) => rule.id !== id);
+      return this.saveSiteRules(next);
     },
     async getHistory() {
       const stored = await namespace.browserApi.storage.get("local", storageKeys.translationHistory);

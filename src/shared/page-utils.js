@@ -86,6 +86,10 @@
   }
 
   function normalizeModels(list) {
+    var mc = namespace.modelCapabilities;
+    if (mc && typeof mc.normalizeModelIds === "function") {
+      return mc.normalizeModelIds(Array.isArray(list) ? list : []);
+    }
     return Array.from(new Set((Array.isArray(list) ? list : [])
       .map(function(item) { return String(item || "").trim(); })
       .filter(Boolean)));

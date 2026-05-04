@@ -35,6 +35,8 @@
             <nav class="settings-nav" aria-label="Settings sections">
                 <a href="#translation-defaults">Language &amp; model</a>
                 <a href="#selection">Selection</a>
+                <a href="#immersive-translation">Immersive</a>
+                <a href="#site-rules-section">Site rules</a>
                 <a href="#input-button">Input button</a>
                 <a href="#providers-section">Providers</a>
                 <a href="#model-parameters-section">Model parameters</a>
@@ -137,6 +139,76 @@
                         </div>
                     </div>
                 </section>
+                <section id="immersive-translation" class="panel settings-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">Reading</p>
+                            <h2>Immersive translation</h2>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-row settings-row-switch">
+                            <div class="settings-copy">
+                                <label for="immersive-translation-enabled">Enable immersive translation</label>
+                                <p class="setting-desc">Allow inline page translation from the context menu and optional automatic mode.</p>
+                            </div>
+                            <label class="provider-switch" for="immersive-translation-enabled"
+                                aria-label="Enable immersive translation">
+                                <input id="immersive-translation-enabled" type="checkbox">
+                                <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                            </label>
+                        </div>
+                        <div class="settings-row settings-row-switch">
+                            <div class="settings-copy">
+                                <label for="immersive-translation-auto">Automatically translate pages</label>
+                                <p class="setting-desc">Start immersive translation as soon as a page loads. When off, use the page context menu.</p>
+                            </div>
+                            <label class="provider-switch" for="immersive-translation-auto"
+                                aria-label="Automatically translate pages">
+                                <input id="immersive-translation-auto" type="checkbox">
+                                <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                            </label>
+                        </div>
+                        <div class="settings-row settings-row-switch">
+                            <div class="settings-copy">
+                                <label for="immersive-translation-visible-only">Translate visible content first</label>
+                                <p class="setting-desc">Queue paragraphs as they approach the viewport while scrolling.</p>
+                            </div>
+                            <label class="provider-switch" for="immersive-translation-visible-only"
+                                aria-label="Translate visible content first">
+                                <input id="immersive-translation-visible-only" type="checkbox">
+                                <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                            </label>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="immersive-display-mode">Display mode</label>
+                                <p class="setting-desc">Choose how inline translated text is shown beside the original page content.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="immersive-display-mode-wrap"></div>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="immersive-min-text-length">Minimum text length</label>
+                                <p class="setting-desc">Ignore short labels and navigation text below this character count.</p>
+                            </div>
+                            <div class="settings-control">
+                                <input id="immersive-min-text-length" type="number" min="8" max="500" step="1">
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="immersive-max-concurrent">Parallel translations</label>
+                                <p class="setting-desc">Limit simultaneous requests to avoid overwhelming the selected provider.</p>
+                            </div>
+                            <div class="settings-control">
+                                <input id="immersive-max-concurrent" type="number" min="1" max="4" step="1">
+                            </div>
+                        </div>
+                    </div>
+                </section>
                 <section id="input-button" class="panel settings-section">
                     <div class="section-header">
                         <div>
@@ -188,15 +260,25 @@
                         </div>
                         <div class="settings-row">
                             <div class="settings-copy">
-                                <label for="input-context-style">Default input style</label>
-                                <p class="setting-desc">Tone used when translating text you are writing into an input
-                                    field.</p>
+                                <label for="input-context-style">Default translation style</label>
+                                <p class="setting-desc">Fallback tone used when no site rule or preset chooses a
+                                    more specific style.</p>
                             </div>
                             <div class="settings-control">
                                 <div id="input-context-style-wrap"></div>
                             </div>
                         </div>
                     </div>
+                </section>
+                <section id="site-rules-section" class="panel settings-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">Scope</p>
+                            <h2>Site rules</h2>
+                        </div>
+                    </div>
+                    <p class="hint">Rules created by the page area picker limit immersive translation to selected page regions.</p>
+                    <div id="site-rules" class="site-rules"></div>
                 </section>
                 <section id="providers-section" class="panel settings-section">
                     <div class="section-header">
@@ -284,9 +366,12 @@
     <script src="../../shared/constants.js"></script>
     <script src="../../shared/messages.js"></script>
     <script src="../../shared/model-params.js"></script>
+    <script src="../../shared/model-capabilities.js"></script>
     <script src="../../platform/firefox.js"></script>
     <script src="../../platform/chromium.js"></script>
     <script src="../../platform/browser-api.js"></script>
+    <script src="../../rules/presets.js"></script>
+    <script src="../../rules/site-rule-engine.js"></script>
     <script src="../../shared/custom-dropdown.js"></script>
     <script src="../../shared/page-utils.js"></script>
     <script src="./options.js"></script>

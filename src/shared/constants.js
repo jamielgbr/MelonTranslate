@@ -5,6 +5,7 @@
     storageKeys: {
       settings: "settings",
       providerConfigs: "providerConfigs",
+      siteRules: "siteRules",
       translationHistory: "translationHistory",
       installationSecret: "installationSecret"
     },
@@ -33,8 +34,13 @@
     },
     inputContextStyles: [
       { id: "auto", label: "Auto" },
-      { id: "casual-comment", label: "Casual chat/comment" },
-      { id: "formal-academic", label: "Formal academic/professional" }
+      { id: "casual", label: "Casual" },
+      { id: "formal", label: "Formal" },
+      { id: "neutral", label: "Neutral" }
+    ],
+    immersiveDisplayModes: [
+      { id: "below-original", label: "Below original" },
+      { id: "compact", label: "Compact bilingual" }
     ],
     modifierKeys: ["Alt", "Control", "Shift", "Meta"],
     modelCacheTtlMs: 24 * 60 * 60 * 1000,

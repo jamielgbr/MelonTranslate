@@ -153,16 +153,20 @@
         sourceHint,
         styleHint,
         "Preserve names, technical terms, and formatting where possible.",
+        "For short fragments, tags, search keywords, or noun phrases, translate as one concise phrase and preserve uncertain proper names or titles.",
+        "Do not add explanations, alternatives, transliterations, labels, notes, or context not present in the source.",
         "Return only the translated text."
       ].filter(Boolean).join(" ");
     }
 
     buildContextStyleHint(contextStyle) {
       switch (contextStyle) {
-        case "casual-comment":
+        case "casual":
           return "Use a natural, conversational tone suitable for social media comments, chats, and replies.";
-        case "formal-academic":
+        case "formal":
           return "Use a formal, precise tone suitable for academic or professional communication.";
+        case "neutral":
+          return "Use a neutral journalistic tone and avoid adding opinion or emphasis not present in the source.";
         case "auto":
         default:
           return "";

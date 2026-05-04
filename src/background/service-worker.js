@@ -4,8 +4,11 @@
   const messageTypes = namespace.messages.types;
   const getErrorCategory = namespace.providerBase.getErrorCategory;
   const mp = namespace.modelParams;
+  const mc = namespace.modelCapabilities;
   const selectionContextMenuId = "melontranslate-selection";
   const editableContextMenuId = "melontranslate-editable";
+  const immersiveContextMenuId = "melontranslate-immersive-page";
+  const elementPickerContextMenuId = "melontranslate-pick-immersive-area";
   const MODEL_CACHE_TTL_MS = namespace.constants.modelCacheTtlMs;
   const MODEL_TEMPERATURE_DEFAULT = namespace.constants.modelTemperatureDefault;
   const MODEL_TEMPERATURE_MAX = namespace.constants.modelTemperatureMax;
@@ -57,64 +60,6 @@
     return `${base}${suffix}`;
   }
 
-  function collectTypeHints(item) {
-    if (!item || typeof item !== "object") {
-      return [];
-    }
-
-    const candidates = [
-      item.type,
-      item.model_type,
-      item.modality,
-      item.task,
-      item.category,
-      item.endpoint_type,
-      item.capability
-    ];
-
-    return candidates
-      .filter((value) => typeof value === "string")
-      .map((value) => value.trim().toLowerCase())
-      .filter(Boolean);
-  }
-
-  function tokenizeTypeHint(value) {
-    return String(value || "")
-      .toLowerCase()
-      .split(/[^a-z0-9]+/)
-      .filter(Boolean);
-  }
-
-  function shouldIncludeTextModel(item) {
-    if (typeof item === "string") {
-      return true;
-    }
-    if (!item || typeof item !== "object") {
-      return false;
-    }
-
-    const typeHints = collectTypeHints(item);
-    if (!typeHints.length) {
-      return true;
-    }
-
-    const denyTokens = new Set([
-      "image", "images", "video", "videos", "audio", "speech", "voice", "tts", "stt",
-      "embedding", "embeddings", "rerank", "reranker", "moderation", "vision", "transcription"
-    ]);
-
-    for (const hint of typeHints) {
-      const tokens = tokenizeTypeHint(hint);
-      if (tokens.some((token) => denyTokens.has(token))) {
-        return false;
-      }
-    }
-
-    // Unknown type labels are kept to avoid dropping valid text models on providers
-    // that use custom categories.
-    return true;
-  }
-
   function extractModelList(json) {
     if (Array.isArray(json)) return json;
     if (json && Array.isArray(json.data)) return json.data;
@@ -122,17 +67,12 @@
     return [];
   }
 
-  function parseModelIds(json) {
+  function parseModelEntries(json, source, fetchedAt) {
     const list = extractModelList(json);
-
-    return Array.from(new Set(list
-      .filter((item) => shouldIncludeTextModel(item))
-      .map((item) => {
-        if (typeof item === "string") return item.trim();
-        if (!item || typeof item !== "object") return "";
-        return String(item.id || item.canonical_slug || item.name || "").trim();
-      })
-      .filter(Boolean)));
+    return mc.normalizeModelList(list, {
+      source,
+      updatedAt: fetchedAt || Date.now()
+    });
   }
 
   function parseDefaultModelKey(value) {
@@ -251,16 +191,29 @@
       if (!providerIsSelectableForContent(provider, config)) {
         return [];
       }
+      const availableModels = mc.normalizeModelList(config.availableModels || [], {
+        source: provider.id,
+        updatedAt: Number(config.modelsFetchedAt || 0)
+      });
+      const modelById = Object.fromEntries(availableModels.map((model) => [model.id, model]));
       const models = namespace.pageUtils.normalizeModels([
         ...(Array.isArray(config.favoriteModels) ? config.favoriteModels : []),
         config.model || ""
-      ]);
-      return models.map((model) => ({
-        key: namespace.pageUtils.buildDefaultModelKey(provider.id, model),
+      ]).map((model) => ({
+        id: model,
+        meta: modelById[model] || mc.normalizeModelEntry(model, {
+          source: provider.id,
+          updatedAt: Number(config.modelsFetchedAt || 0)
+        })
+      })).filter((item) => mc.isTextGenerationModel(item.meta));
+      return models.map((item) => ({
+        key: namespace.pageUtils.buildDefaultModelKey(provider.id, item.id),
         providerId: provider.id,
         providerName: provider.displayName || provider.id,
-        model,
-        label: `${provider.displayName || provider.id} · ${model}`
+        model: item.id,
+        capabilities: item.meta.capabilities,
+        capabilityLabels: mc.describeModelCapabilities(item.meta),
+        label: mc.formatModelOptionLabel(provider.displayName || provider.id, item.id, item.meta)
       }));
     });
 
@@ -271,7 +224,10 @@
   }
 
   async function fetchProviderModels(catalogEntry, providerConfig, bypassCache) {
-    const cached = Array.isArray(providerConfig.availableModels) ? providerConfig.availableModels : [];
+    const cached = mc.normalizeModelList(providerConfig.availableModels || [], {
+      source: catalogEntry.id,
+      updatedAt: Number(providerConfig.modelsFetchedAt || 0)
+    });
     const fetchedAt = Number(providerConfig.modelsFetchedAt || 0);
     const age = Date.now() - fetchedAt;
     if (!bypassCache && cached.length && age >= 0 && age < MODEL_CACHE_TTL_MS) {
@@ -279,7 +235,15 @@
     }
 
     if (Array.isArray(catalogEntry.staticModels) && catalogEntry.staticModels.length) {
-      return { models: catalogEntry.staticModels.slice(), fromCache: false, fetchedAt: Date.now() };
+      const staticFetchedAt = Date.now();
+      return {
+        models: mc.normalizeModelList(catalogEntry.staticModels, {
+          source: catalogEntry.id,
+          updatedAt: staticFetchedAt
+        }),
+        fromCache: false,
+        fetchedAt: staticFetchedAt
+      };
     }
 
     const modelListPath = catalogEntry.modelListPath || "/models";
@@ -332,7 +296,7 @@
     }
 
     const json = await response.json();
-    const models = parseModelIds(json);
+    const models = parseModelEntries(json, catalogEntry.id, Date.now());
     if (!models.length) {
       throw new Error("The provider did not return any models.");
     }
@@ -351,7 +315,7 @@
     const nextFavoriteModels = Array.from(new Set([
       ...(Array.isArray(config.favoriteModels) ? config.favoriteModels : []),
       currentModel
-    ].filter(Boolean))).slice(0, namespace.constants.maxFavoriteModelsPerProvider);
+    ].map((item) => mc.normalizeModelId(item)).filter(Boolean))).slice(0, namespace.constants.maxFavoriteModelsPerProvider);
 
     decryptedConfigs[providerId] = Object.assign({}, config, {
       availableModels: models,
@@ -445,14 +409,32 @@
       title: "Translate input text",
       contexts: ["editable"]
     });
+    await api.contextMenus.create({
+      id: immersiveContextMenuId,
+      title: "Translate page inline",
+      contexts: ["page", "frame"]
+    });
+    await api.contextMenus.create({
+      id: elementPickerContextMenuId,
+      title: "Select inline translation area",
+      contexts: ["page", "frame"]
+    });
   }
 
-  function buildStreamPayload(message, settings) {
+  function resolveRequestContextStyle(message, settings, siteRules) {
+    return namespace.siteRuleEngine.resolveContextStyleForUrl(message.url || "", {
+      explicitContextStyle: message.contextStyle,
+      userRules: siteRules,
+      defaultContextStyle: settings.defaultInputContextStyle
+    });
+  }
+
+  function buildStreamPayload(message, settings, siteRules) {
     const text = (message.text || "").trim().slice(0, namespace.constants.maxSelectionLength);
     const explicitSourceLanguage = String(message.sourceLanguage || "").trim();
     const hasExplicitSource = !!explicitSourceLanguage && explicitSourceLanguage.toLowerCase() !== "auto";
     const targetDecision = maybeSwitchTargetLanguage(settings, message.targetLanguage, text);
-    const contextStyle = namespace.pageUtils.getInputContextStyle(message.contextStyle);
+    const contextStyle = resolveRequestContextStyle(message, settings, siteRules);
     const dictionaryMode = message.dictionaryModeForSingleWord === false
       ? false
       : settings.dictionaryModeForSingleWord !== false;
@@ -470,11 +452,12 @@
   }
 
   async function prepareTranslationContext(message) {
-    const [settings, configuredProviders] = await Promise.all([
+    const [settings, configuredProviders, siteRules] = await Promise.all([
       namespace.configManager.getSettings(),
-      namespace.providerRegistry.buildConfiguredProviders()
+      namespace.providerRegistry.buildConfiguredProviders(),
+      namespace.configManager.getSiteRules()
     ]);
-    const request = buildStreamPayload(message, settings);
+    const request = buildStreamPayload(message, settings, siteRules);
     const route = resolveEffectiveRoute(message.providerIds || [], message.modelOverrides || {}, settings, configuredProviders);
     const providerIds = route.providerIds;
     const modelOverrides = route.modelOverrides;
@@ -701,16 +684,18 @@
         return namespace.messages.ok({ settings });
       }
       case messageTypes.getOptionsBootstrap: {
-        const [settings, providerConfigs, history] = await Promise.all([
+        const [settings, providerConfigs, history, siteRules] = await Promise.all([
           namespace.configManager.getSettings(),
           namespace.configManager.getDecryptedProviderConfigs(),
-          namespace.configManager.getHistory()
+          namespace.configManager.getHistory(),
+          namespace.configManager.getSiteRules()
         ]);
         return namespace.messages.ok({
           settings,
           providers: namespace.providerRegistry.listProviders(),
           providerConfigs,
-          history
+          history,
+          siteRules
         });
       }
       case messageTypes.getTranslationModelOptions:
@@ -730,6 +715,26 @@
       case messageTypes.openComparePage:
         await openComparePage(message.providerId || "");
         return namespace.messages.ok();
+      case messageTypes.getSiteRules: {
+        const siteRules = await namespace.configManager.getSiteRules();
+        return namespace.messages.ok({ siteRules });
+      }
+      case messageTypes.saveSiteRules: {
+        const siteRules = await namespace.configManager.saveSiteRules(message.siteRules || []);
+        return namespace.messages.ok({ siteRules });
+      }
+      case messageTypes.saveSiteRuleFromPicker: {
+        const result = await namespace.configManager.saveSiteRuleFromPicker({
+          hostPattern: message.hostPattern,
+          selector: message.selector,
+          mode: message.mode
+        });
+        return namespace.messages.ok(result);
+      }
+      case messageTypes.deleteSiteRule: {
+        const siteRules = await namespace.configManager.deleteSiteRule(message.ruleId);
+        return namespace.messages.ok({ siteRules });
+      }
       case messageTypes.clearHistory:
         await namespace.configManager.clearHistory();
         return namespace.messages.ok();
@@ -786,7 +791,11 @@
       ? { type: messageTypes.manualTranslateSelection, text: info.selectionText || "" }
       : (info.menuItemId === editableContextMenuId
         ? { type: messageTypes.manualTranslateEditable }
-        : null);
+        : (info.menuItemId === immersiveContextMenuId
+          ? { type: messageTypes.manualTranslateImmersivePage }
+          : (info.menuItemId === elementPickerContextMenuId
+            ? { type: messageTypes.startElementPicker }
+            : null)));
 
     if (!message) {
       return;

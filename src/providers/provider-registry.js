@@ -2,6 +2,7 @@
   const namespace = root.MelonTranslate = root.MelonTranslate || {};
   const getErrorCategory = namespace.providerBase.getErrorCategory;
   const mp = namespace.modelParams;
+  const mc = namespace.modelCapabilities;
   const MODEL_TEMPERATURE_DEFAULT = namespace.constants.modelTemperatureDefault;
   const MODEL_TEMPERATURE_MAX = namespace.constants.modelTemperatureMax;
 
@@ -55,21 +56,56 @@
     }, prompt === undefined ? {} : { prompt: prompt });
   }
 
+  function resolveTextModel(providerConfig, preferredModel) {
+    const sourceModel = String(preferredModel || "").trim();
+    const availableModels = mc.normalizeModelList(providerConfig.availableModels || [], {
+      source: providerConfig.id,
+      updatedAt: Number(providerConfig.modelsFetchedAt || 0)
+    });
+    const modelById = Object.fromEntries(availableModels.map((model) => [model.id, model]));
+
+    if (sourceModel) {
+      const meta = modelById[sourceModel] || mc.normalizeModelEntry(sourceModel, {
+        source: providerConfig.id,
+        updatedAt: Number(providerConfig.modelsFetchedAt || 0)
+      });
+      if (mc.isTextGenerationModel(meta)) {
+        return sourceModel;
+      }
+    }
+
+    const candidates = namespace.pageUtils.normalizeModels([
+      ...(Array.isArray(providerConfig.favoriteModels) ? providerConfig.favoriteModels : []),
+      ...(providerConfig.model ? [providerConfig.model] : []),
+      ...availableModels
+    ]);
+    return candidates.find((modelId) => {
+      const meta = modelById[modelId] || mc.normalizeModelEntry(modelId, {
+        source: providerConfig.id,
+        updatedAt: Number(providerConfig.modelsFetchedAt || 0)
+      });
+      return mc.isTextGenerationModel(meta);
+    }) || sourceModel;
+  }
+
   function resolveProviderConfig(providerConfig, overrides, tempOverrides) {
-    const resolvedModel = overrides[providerConfig.id] || providerConfig.model;
+    const resolvedModel = resolveTextModel(providerConfig, overrides[providerConfig.id] || providerConfig.model);
     const config = overrides[providerConfig.id]
       ? Object.assign({}, providerConfig, { model: resolvedModel })
       : providerConfig;
+    const configWithModel = config.model === resolvedModel
+      ? config
+      : Object.assign({}, config, { model: resolvedModel });
     const normalizedTemperature = mp.resolveProviderTemperature(
-      config,
+      configWithModel,
       tempOverrides[providerConfig.id],
       resolvedModel,
       MODEL_TEMPERATURE_MAX,
       MODEL_TEMPERATURE_DEFAULT
     );
     return normalizedTemperature === null
-      ? config
-      : Object.assign({}, config, { temperature: normalizedTemperature });
+      ? configWithModel
+      : Object.assign({}, configWithModel, { temperature: normalizedTemperature });
   }
 
   function normalizeStreamChunk(chunk) {
