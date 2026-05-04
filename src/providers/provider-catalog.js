@@ -96,7 +96,7 @@
       transport: "openai-compatible",
       defaultModel: "accounts/fireworks/models/minimax-m2p7",
       baseUrl: "https://api.fireworks.ai/inference/v1",
-      modelListPath: "https://api.fireworks.ai/v1/accounts/{account_id}/models",
+      modelListPath: "/models",
       modelListAuth: "bearer",
       enabledByDefault: false,
       experimental: false
