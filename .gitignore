@@ -3,3 +3,10 @@ dist/
 .codex/
 .vscode/
 .codex
+.tools/
+.env.test
+test-results/
+.sample
+.env.test.example
+package.json
+tests/
