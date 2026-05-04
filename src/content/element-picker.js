@@ -206,7 +206,11 @@
 
   function showToast(message) {
     var panel = state.panel;
-    panel.innerHTML = '<p class="mt-picker-title">' + String(message || "Saved.") + "</p>";
+    panel.textContent = "";
+    var title = document.createElement("p");
+    title.className = "mt-picker-title";
+    title.textContent = String(message || "Saved.");
+    panel.appendChild(title);
     setTimeout(function() {
       if (panel.isConnected) {
         panel.remove();
