@@ -2,6 +2,70 @@
   const namespace = root.MelonTranslate = root.MelonTranslate || {};
   const BaseProvider = namespace.providerBase.BaseProvider;
   const resolveTemperature = namespace.providerBase.resolveTemperature;
+  const mp = namespace.modelParams;
+  const mc = namespace.modelCapabilities;
+
+  function getConfiguredModelMeta(config) {
+    const modelId = String(config && config.model || "").trim();
+    return mc.findModelMeta((config && config.availableModels) || [], modelId) || mc.normalizeModelEntry(modelId, {
+      source: (config && config.id) || "provider",
+      updatedAt: Number(config && config.modelsFetchedAt || 0)
+    });
+  }
+
+  function buildReasoningEffortPayload(config) {
+    const effort = mp.normalizeReasoningEffort(config && config.reasoningEffort);
+    const meta = getConfiguredModelMeta(config);
+    if (config && config.id === "groq") {
+      return {};
+    }
+    if (!effort || !mc.isOpenAICompatibleReasoningControlModel(meta)) {
+      return {};
+    }
+    if (effort === "off") {
+      if (config && config.id === "openrouter") {
+        return { reasoning: { enabled: false, exclude: true } };
+      }
+      if (config && config.id === "together") {
+        return { reasoning: { enabled: false } };
+      }
+      if (mc.isDeepSeekV4PlusReasoningModel(meta)) {
+        return { thinking: { type: "disabled" } };
+      }
+      return {};
+    }
+    if (config && config.id === "openrouter") {
+      if (mc.isGrok4FastReasoningModel(meta)) {
+        return { reasoning: { enabled: true } };
+      }
+      return { reasoning: { effort } };
+    }
+    if (config && config.id === "grok") {
+      if (!mc.isXaiGrokReasoningEffortModel(meta)) {
+        return {};
+      }
+      return { reasoning_effort: effort === "high" ? "high" : "low" };
+    }
+    if (mc.isDeepSeekV4PlusReasoningModel(meta)) {
+      return {
+        thinking: { type: "enabled" },
+        reasoning_effort: "high"
+      };
+    }
+    if (mc.isDeepSeekHybridReasoningModel(meta)) {
+      if (config && config.id === "together") {
+        return { reasoning: { enabled: true } };
+      }
+      return { thinking: { type: "enabled" } };
+    }
+    if (config && config.id === "together") {
+      return {
+        reasoning_effort: effort,
+        reasoning: { enabled: true }
+      };
+    }
+    return { reasoning_effort: effort };
+  }
 
   function collectReasoningText(value) {
     if (!value) return "";
@@ -42,6 +106,7 @@
           { role: "user", content: request.text }
         ]
       };
+      Object.assign(payload, buildReasoningEffortPayload(this.config));
 
       const json = await this.fetchJsonWithRetry(`${this.normalizedBaseUrl()}/chat/completions`, {
         method: "POST",
@@ -72,6 +137,7 @@
           { role: "user", content: request.text }
         ]
       };
+      Object.assign(payload, buildReasoningEffortPayload(this.config));
 
       let translatedText = "";
       let thinkingText = "";

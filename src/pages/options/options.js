@@ -103,6 +103,51 @@
     return resolved === null ? namespace.constants.modelTemperatureDefault : resolved;
   }
 
+  function formatReasoningEffortLabel(value) {
+    const normalized = String(value || "off").trim().toLowerCase();
+    if (normalized === "off") {
+      return "Off";
+    }
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+
+  function formatReasoningEffortValue(value) {
+    return mp.normalizeReasoningEffort(value) || namespace.constants.modelReasoningEffortDefault || "off";
+  }
+
+  function getModelReasoningEffortValue(config, modelId) {
+    return mp.resolveProviderReasoningEffort(
+      config,
+      null,
+      modelId,
+      namespace.constants.modelReasoningEffortDefault || "off"
+    ) || namespace.constants.modelReasoningEffortDefault || "off";
+  }
+
+  function supportsReasoningEffortControl(provider, config, modelId) {
+    const transport = String((provider && provider.transport) || (config && config.transport) || "").trim();
+    const meta = getModelMeta(config, provider && provider.id, modelId);
+    if (provider && provider.id === "groq") {
+      return false;
+    }
+    if (provider && provider.id === "grok") {
+      return mc.isXaiGrokReasoningEffortModel(meta);
+    }
+    return (transport === "openai-compatible" && mc.isOpenAICompatibleReasoningControlModel(meta))
+      || (transport === "anthropic" && mc.isAnthropicReasoningControlModel(meta));
+  }
+
+  function renderReasoningEffortOptions(selectedValue) {
+    const currentValue = formatReasoningEffortValue(selectedValue);
+    return (namespace.constants.modelReasoningEffortOptions || ["off", "low", "medium", "high"]).map((value) => {
+      const normalized = String(value || "").trim().toLowerCase();
+      if (!normalized) {
+        return "";
+      }
+      return `<option value="${pu.escapeHtml(normalized)}"${currentValue === normalized ? " selected" : ""}>${pu.escapeHtml(formatReasoningEffortLabel(normalized))}</option>`;
+    }).join("");
+  }
+
   function getAvailableModelMetas(config, providerId) {
     return mc.normalizeModelList((config && config.availableModels) || [], {
       source: providerId || (config && config.id) || "provider",
@@ -180,7 +225,11 @@
     pu.setHtml(container, groups.map(({ provider, config, models }) => {
       const rows = models.map((modelId) => {
         const temperature = formatTemperatureInputValue(getModelTemperatureValue(config, modelId));
-        return `<label class="model-parameter-row"><span class="model-parameter-name">${pu.escapeHtml(modelId)}</span><span class="model-parameter-controls"><span class="model-parameter-label">Temp</span><input data-provider-id="${pu.escapeHtml(provider.id)}" data-model-id="${pu.escapeHtml(modelId)}" data-parameter="temperature" type="number" min="0" max="2" step="0.1" value="${pu.escapeHtml(temperature)}"></span></label>`;
+        const effort = getModelReasoningEffortValue(config, modelId);
+        const effortControl = supportsReasoningEffortControl(provider, config, modelId)
+          ? `<span class="model-parameter-control"><span class="model-parameter-label">Effort</span><select data-provider-id="${pu.escapeHtml(provider.id)}" data-model-id="${pu.escapeHtml(modelId)}" data-parameter="reasoningEffort">${renderReasoningEffortOptions(effort)}</select></span>`
+          : "";
+        return `<label class="model-parameter-row"><span class="model-parameter-name">${pu.escapeHtml(modelId)}</span><span class="model-parameter-controls"><span class="model-parameter-control"><span class="model-parameter-label">Temp</span><input data-provider-id="${pu.escapeHtml(provider.id)}" data-model-id="${pu.escapeHtml(modelId)}" data-parameter="temperature" type="number" min="0" max="2" step="0.1" value="${pu.escapeHtml(temperature)}"></span>${effortControl}</span></label>`;
       }).join("");
 
       return `<article class="model-parameter-provider"><h3 class="model-parameter-provider-title">${pu.escapeHtml(provider.displayName)}</h3><div class="model-parameter-list">${rows}</div></article>`;
@@ -585,7 +634,12 @@
 
   function renderModelFavoriteRows(config) {
     const favorites = pu.normalizeModels(config.favoriteModels || []);
-    const allModels = getAvailableModelMetas(config, config.id);
+    const availableModels = getAvailableModelMetas(config, config.id);
+    const availableIds = new Set(availableModels.map((meta) => meta.id));
+    const fallbackModels = pu.normalizeModels([getPreferredModel(config), ...favorites])
+      .filter((modelId) => !availableIds.has(modelId))
+      .map((modelId) => getModelMeta(config, config.id, modelId));
+    const allModels = availableModels.concat(fallbackModels);
     if (!allModels.length) {
       return '<p class="hint">No available models.</p>';
     }
@@ -1351,6 +1405,24 @@
 
     input.value = formatTemperatureInputValue(normalized);
     updateModelParameter(providerId, modelId, { temperature: normalized });
+    renderDefaultModelSelect();
+  });
+
+  document.getElementById("model-parameters").addEventListener("change", (event) => {
+    const input = event.target;
+    if (!input || !input.dataset || input.dataset.parameter !== "reasoningEffort") {
+      return;
+    }
+
+    const providerId = String(input.dataset.providerId || "").trim();
+    const modelId = String(input.dataset.modelId || "").trim();
+    if (!providerId || !modelId) {
+      return;
+    }
+
+    const normalized = mp.normalizeReasoningEffort(input.value);
+    input.value = normalized || namespace.constants.modelReasoningEffortDefault || "off";
+    updateModelParameter(providerId, modelId, { reasoningEffort: normalized });
     renderDefaultModelSelect();
   });
 

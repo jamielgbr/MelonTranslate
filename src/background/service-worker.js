@@ -381,8 +381,29 @@
         const effectiveModel = overrides[provider.id] || provider.model || "";
         const effectiveBaseUrl = provider.baseUrl || "";
         const effectiveTemperature = mp.normalizeTemperature(temperatureMap[provider.id], MODEL_TEMPERATURE_MAX);
+        const modelMeta = mc.findModelMeta(provider.availableModels || [], effectiveModel) || mc.normalizeModelEntry(effectiveModel, {
+          source: provider.id,
+          updatedAt: Number(provider.modelsFetchedAt || 0)
+        });
+        const supportsReasoningEffort = (
+          String(provider.transport || "") === "openai-compatible"
+          && provider.id !== "groq"
+          && (provider.id === "grok" ? mc.isXaiGrokReasoningEffortModel(modelMeta) : mc.isOpenAICompatibleReasoningControlModel(modelMeta))
+        ) || (
+          String(provider.transport || "") === "anthropic"
+          && mc.isAnthropicReasoningControlModel(modelMeta)
+        );
+        const effectiveReasoningEffort = supportsReasoningEffort
+          ? mp.resolveProviderReasoningEffort(
+            provider,
+            null,
+            effectiveModel,
+            namespace.constants.modelReasoningEffortDefault || "off"
+          )
+          : null;
         const tempLabel = effectiveTemperature === null ? "" : String(effectiveTemperature);
-        return `${provider.id}:${effectiveModel}:${effectiveBaseUrl}:${tempLabel}`;
+        const effortLabel = effectiveReasoningEffort === null ? "" : String(effectiveReasoningEffort);
+        return `${provider.id}:${effectiveModel}:${effectiveBaseUrl}:${tempLabel}:${effortLabel}`;
       })
       .sort()
       .join("|");

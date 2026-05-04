@@ -491,8 +491,16 @@ textarea:focus {
 .model-parameter-controls {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.model-parameter-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .model-parameter-label {
@@ -500,12 +508,18 @@ textarea:focus {
   color: var(--muted);
 }
 
-.model-parameter-controls input {
+.model-parameter-controls input,
+.model-parameter-controls select {
   width: 88px;
   min-width: 88px;
   padding: 6px 8px;
   border-radius: 8px;
   font-size: 12px;
+}
+
+.model-parameter-controls select {
+  width: 104px;
+  min-width: 104px;
 }
 
 .provider-card {
@@ -975,6 +989,10 @@ textarea:focus {
   .model-parameter-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .model-parameter-controls {
+    justify-content: flex-start;
   }
 
   .history-title-meta {

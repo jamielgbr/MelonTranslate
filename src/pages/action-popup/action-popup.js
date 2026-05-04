@@ -294,10 +294,10 @@
         updatedAt: Number(config.modelsFetchedAt || 0)
       });
       const modelById = Object.fromEntries(availableModels.map((model) => [model.id, model]));
-      const models = Array.from(new Set([
+      const models = pu.normalizeModels([
         ...(Array.isArray(config.favoriteModels) ? config.favoriteModels : []),
         config.model || ""
-      ].map((item) => String(item || "").trim()).filter(Boolean)));
+      ]);
       return models.map((model) => {
         const meta = modelById[model] || mc.normalizeModelEntry(model, {
           source: provider.id,

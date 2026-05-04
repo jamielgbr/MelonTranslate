@@ -49,6 +49,8 @@
     maxSelectionLength: 4000,
     popupId: "melontranslate-popup-host",
     modelTemperatureDefault: 0.8,
-    modelTemperatureMax: 2
+    modelTemperatureMax: 2,
+    modelReasoningEffortDefault: "off",
+    modelReasoningEffortOptions: ["off", "low", "medium", "high"]
   };
 }(globalThis));

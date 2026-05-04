@@ -76,14 +76,31 @@
       .filter(Boolean);
   }
 
-  function normalizeModelId(item) {
+  function normalizeModelId(item, depth) {
+    const level = Number(depth || 0);
+    if (level > 4) {
+      return "";
+    }
     if (typeof item === "string") {
-      return item.trim();
+      const id = item.trim();
+      return id === "[object Object]" ? "" : id;
+    }
+    if (typeof item === "number") {
+      return String(item).trim();
     }
     if (!item || typeof item !== "object") {
       return "";
     }
-    return String(item.id || item.canonical_slug || item.slug || item.name || "").trim();
+    const fields = ["id", "canonical_slug", "slug", "name", "model", "model_id"];
+    for (const field of fields) {
+      if (Object.prototype.hasOwnProperty.call(item, field)) {
+        const normalized = normalizeModelId(item[field], level + 1);
+        if (normalized) {
+          return normalized;
+        }
+      }
+    }
+    return "";
   }
 
   function normalizeModelLabel(item, id) {
@@ -93,7 +110,8 @@
     if (!item || typeof item !== "object") {
       return id || "";
     }
-    return String(item.label || item.name || item.display_name || id || "").trim();
+    const label = normalizeModelId(item.label || item.name || item.display_name || "");
+    return label || id || "";
   }
 
   function readModalities(value) {
@@ -253,7 +271,7 @@
 
   function normalizeModelIds(list) {
     return Array.from(new Set((Array.isArray(list) ? list : [])
-      .map(normalizeModelId)
+      .map(function(item) { return normalizeModelId(item); })
       .filter(Boolean)));
   }
 
@@ -294,6 +312,90 @@
     return modelHasInput(meta, "text") && modelHasOutput(meta, "text");
   }
 
+  function normalizeReasoningModelName(meta) {
+    const label = meta && meta.label && meta.label !== meta.id ? ` ${meta.label}` : "";
+    return String(`${meta && meta.id || ""}${label}`).toLowerCase();
+  }
+
+  function isDeepSeekV4PlusReasoningModel(item) {
+    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
+    if (!meta) {
+      return false;
+    }
+    return /(?:^|[/:\s-])(?:\w+-)?deepseek-v(?:[4-9]|\d{2,})(?:[.-]\w+)*\b/.test(normalizeReasoningModelName(meta));
+  }
+
+  function isDeepSeekHybridReasoningModel(item) {
+    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
+    if (!meta) {
+      return false;
+    }
+    const modelName = normalizeReasoningModelName(meta);
+    if (/\bdeepseek-v3[.-]2-speciale\b/.test(modelName)) {
+      return false;
+    }
+    return isDeepSeekV4PlusReasoningModel(meta)
+      || /(?:^|[/:\s-])(?:\w+-)?deepseek-v3(?:\.\d|-\d)(?:(?:\.|-)(?!speciale\b)\w+)?\b/.test(modelName)
+      || /\bdeepseek-v3p[12]\b/.test(modelName)
+      || /\bdeepseek-chat(?:-v3\.1)?\b/.test(modelName);
+  }
+
+  function isAnthropicReasoningControlModel(item) {
+    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
+    if (!meta || !isTextGenerationModel(meta)) {
+      return false;
+    }
+    const modelName = normalizeReasoningModelName(meta);
+    return /\bclaude-3[.-]7\b.*\bsonnet\b/.test(modelName)
+      || /\bclaude-(?:sonnet|opus|haiku)-4(?:[.-]\d+)?(?:[@:.-][\w:-]+)?\b/.test(modelName);
+  }
+
+  function isXaiGrokReasoningEffortModel(item) {
+    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
+    if (!meta || !isTextGenerationModel(meta)) {
+      return false;
+    }
+    const modelName = normalizeReasoningModelName(meta);
+    return !/\bnon[-_ ]?reasoning\b/.test(modelName) && /\bgrok-3-mini\b/.test(modelName);
+  }
+
+  function isGrok4FastReasoningModel(item) {
+    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
+    if (!meta || !isTextGenerationModel(meta)) {
+      return false;
+    }
+    const modelName = normalizeReasoningModelName(meta);
+    return !/\bnon[-_ ]?reasoning\b/.test(modelName) && /\bgrok-4-fast\b/.test(modelName);
+  }
+
+  function isOpenAICompatibleReasoningControlModel(item) {
+    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
+    if (!meta || !isTextGenerationModel(meta)) {
+      return false;
+    }
+
+    const modelName = normalizeReasoningModelName(meta);
+    if (!modelName || /\bnon[-_ ]?reasoning\b/.test(modelName)) {
+      return false;
+    }
+
+    if (modelHasFeature(meta, "reasoning")) {
+      return true;
+    }
+
+    return (
+      /(?:^|[/:\s-])o[134](?:[\w.-]*)?\b/.test(modelName) ||
+      /(?:^|[/:\s-])gpt-5(?:[\w.-]*)?\b/.test(modelName) && !/\bgpt-5(?:[\w.-]*)?-chat\b/.test(modelName) ||
+      /\bgpt[-_]?oss\b/.test(modelName) ||
+      /\b(?:reasoning|reasoner|thinking|think)\b/.test(modelName) ||
+      isDeepSeekHybridReasoningModel(meta) ||
+      isXaiGrokReasoningEffortModel(meta) ||
+      isGrok4FastReasoningModel(meta) ||
+      /\bmistral-small-2603\b/.test(modelName) ||
+      /\b(?:qwen3|qwq|qvq)(?:[\w.-]*)?\b/.test(modelName)
+    );
+  }
+
   function describeModelCapabilities(item) {
     const meta = normalizeModelEntry(item);
     if (!meta) {
@@ -320,7 +422,7 @@
     } else if (input.includes("text") && output.includes("text")) {
       labels.push("Text");
     }
-    if (features.includes("reasoning")) {
+    if (features.includes("reasoning") || isOpenAICompatibleReasoningControlModel(meta) || isAnthropicReasoningControlModel(meta)) {
       labels.push("Reasoning");
     }
     if (features.includes("streaming")) {
@@ -341,6 +443,12 @@
     normalizeModelIds,
     findModelMeta,
     isTextGenerationModel,
+    isOpenAICompatibleReasoningControlModel,
+    isDeepSeekV4PlusReasoningModel,
+    isDeepSeekHybridReasoningModel,
+    isAnthropicReasoningControlModel,
+    isXaiGrokReasoningEffortModel,
+    isGrok4FastReasoningModel,
     describeModelCapabilities,
     formatModelOptionLabel,
     modelHasInput,

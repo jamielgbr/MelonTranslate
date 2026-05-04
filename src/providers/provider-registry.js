@@ -103,9 +103,33 @@
       MODEL_TEMPERATURE_MAX,
       MODEL_TEMPERATURE_DEFAULT
     );
-    return normalizedTemperature === null
-      ? configWithModel
-      : Object.assign({}, configWithModel, { temperature: normalizedTemperature });
+    const modelMeta = mc.findModelMeta(configWithModel.availableModels || [], resolvedModel) || mc.normalizeModelEntry(resolvedModel, {
+      source: configWithModel.id,
+      updatedAt: Number(configWithModel.modelsFetchedAt || 0)
+    });
+    const supportsReasoningEffort = (
+      String(configWithModel.transport || "") === "openai-compatible"
+      && configWithModel.id !== "groq"
+      && (configWithModel.id === "grok" ? mc.isXaiGrokReasoningEffortModel(modelMeta) : mc.isOpenAICompatibleReasoningControlModel(modelMeta))
+    ) || (
+      String(configWithModel.transport || "") === "anthropic"
+      && mc.isAnthropicReasoningControlModel(modelMeta)
+    );
+    const normalizedReasoningEffort = supportsReasoningEffort
+      ? mp.resolveProviderReasoningEffort(
+        configWithModel,
+        null,
+        resolvedModel,
+        namespace.constants.modelReasoningEffortDefault || "off"
+      )
+      : null;
+    const resolvedConfig = Object.assign(
+      {},
+      configWithModel,
+      normalizedTemperature === null ? {} : { temperature: normalizedTemperature },
+      normalizedReasoningEffort === null ? {} : { reasoningEffort: normalizedReasoningEffort }
+    );
+    return resolvedConfig;
   }
 
   function normalizeStreamChunk(chunk) {
