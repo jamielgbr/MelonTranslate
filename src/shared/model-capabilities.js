@@ -122,11 +122,25 @@
     });
   }
 
+  function collectDeclaredTypeHints(source) {
+    const hints = [];
+    [
+      source.type,
+      source.model_type,
+      source.modality,
+      source.task,
+      source.category,
+      source.endpoint_type
+    ].forEach(function(value) { flattenHints(value, hints); });
+    return unique(hints);
+  }
+
   function inferCapabilities(item, rawHints) {
     const input = [];
     const output = [];
     const features = [];
     const source = item && typeof item === "object" ? item : {};
+    const hasStructuredMetadata = !!source && typeof item === "object";
     const architecture = source.architecture && typeof source.architecture === "object" ? source.architecture : {};
 
     readModalities(source.input_modalities || architecture.input_modalities).forEach(function(type) {
@@ -134,6 +148,14 @@
     });
     readModalities(source.output_modalities || architecture.output_modalities).forEach(function(type) {
       if (OUTPUT_TYPES.has(type)) output.push(type);
+    });
+
+    collectDeclaredTypeHints(source).forEach(function(hint) {
+      if (/^(?:text|text[-_ ]?(?:generation|to[-_ ]?text)|chat|chat[-_ ]?completions?)$/i.test(hint)) {
+        input.push("text");
+        output.push("text");
+        features.push("chat");
+      }
     });
 
     rawHints.forEach(function(hint) {
@@ -146,12 +168,12 @@
         input.push("text");
         output.push("image");
       }
-      if (/\btext\s*[-/]?>\s*audio\b/i.test(hint) || /\btext\s+to\s+speech\b/i.test(hint)) {
+      if (/\btext\s*[-/]?>\s*audio\b/i.test(hint) || /\btext[-_\s]+to[-_\s]+speech\b/i.test(hint)) {
         input.push("text");
         output.push("audio");
         features.push("tts");
       }
-      if (/\baudio\s*[-/]?>\s*text\b/i.test(hint) || /\bspeech\s+to\s+text\b/i.test(hint)) {
+      if (/\baudio\s*[-/]?>\s*text\b/i.test(hint) || /\bspeech[-_\s]+to[-_\s]+text\b/i.test(hint)) {
         input.push("audio");
         output.push("text");
         features.push("stt");
@@ -177,7 +199,7 @@
         } else if (token === "image" || token === "images") {
           if (!input.length) input.push("text");
           output.push("image");
-        } else if (token === "audio" || token === "speech" || token === "voice") {
+        } else if ((token === "audio" || token === "speech" || token === "voice") && !features.includes("stt") && !output.includes("text")) {
           output.push("audio");
         } else if (token === "tts") {
           input.push("text");
@@ -200,7 +222,7 @@
       });
     });
 
-    if (!input.length && !output.length && !features.some(function(feature) {
+    if (!hasStructuredMetadata && !input.length && !output.length && !features.some(function(feature) {
       return NON_TRANSLATION_FEATURES.has(feature);
     })) {
       input.push("text");
@@ -230,21 +252,47 @@
     };
   }
 
+  function inferNamedCapabilities(id, label) {
+    const modelName = String(`${id || ""} ${label || ""}`).toLowerCase();
+    const input = [];
+    const output = [];
+    const features = [];
+
+    if (/(?:^|[/\s:_-])(?:whisper(?:-[\w.]+)?|asr|stt|speech-to-text|speech2text|transcri(?:be|ption)(?:-[\w.]+)?)(?:$|[/\s:_.-])/.test(modelName)) {
+      input.push("audio");
+      output.push("text");
+      features.push("stt");
+    }
+
+    if (/(?:^|[/\s:_-])(?:tts(?:-[\w.]+)?|text-to-speech|text2speech|speech-synthesis|gpt-4o-mini-tts)(?:$|[/\s:_.-])/.test(modelName)) {
+      input.push("text");
+      output.push("audio");
+      features.push("tts");
+    }
+
+    return {
+      input,
+      output,
+      features
+    };
+  }
+
   function normalizeModelEntry(item, options) {
     const opts = options || {};
     const id = normalizeModelId(item);
     if (!id) {
       return null;
     }
+    const label = normalizeModelLabel(item, id);
     const rawTypeHints = collectRawTypeHints(item);
     const existing = readExistingCapabilities(item);
     const inferred = inferCapabilities(item, rawTypeHints);
+    const named = inferNamedCapabilities(id, label);
     const capabilities = {
-      input: unique([].concat(existing.input, inferred.input)),
-      output: unique([].concat(existing.output, inferred.output)),
-      features: unique([].concat(existing.features, inferred.features))
+      input: unique([].concat(existing.input, inferred.input, named.input)),
+      output: unique([].concat(existing.output, inferred.output, named.output)),
+      features: unique([].concat(existing.features, inferred.features, named.features))
     };
-    const label = normalizeModelLabel(item, id);
     return {
       id,
       label: label || id,
@@ -309,7 +357,17 @@
     if (features.some(function(feature) { return NON_TRANSLATION_FEATURES.has(feature); })) {
       return false;
     }
-    return modelHasInput(meta, "text") && modelHasOutput(meta, "text");
+    if (modelHasInput(meta, "text") && modelHasOutput(meta, "text")) {
+      return true;
+    }
+    if (features.includes("chat") || features.includes("completion") || features.includes("reasoning")) {
+      return true;
+    }
+    const input = meta.capabilities.input || [];
+    const output = meta.capabilities.output || [];
+    return !input.length && !output.length && features.every(function(feature) {
+      return feature === "streaming";
+    });
   }
 
   function normalizeReasoningModelName(meta) {
@@ -428,12 +486,12 @@
     if (features.includes("streaming")) {
       labels.push("Streaming");
     }
-    return labels.length ? Array.from(new Set(labels)) : ["Unknown"];
+    return Array.from(new Set(labels));
   }
 
   function formatModelOptionLabel(providerName, model, meta) {
     const capabilityText = describeModelCapabilities(meta || model).join(", ");
-    return `${providerName} · ${model} · ${capabilityText}`;
+    return capabilityText ? `${providerName} · ${model} · ${capabilityText}` : `${providerName} · ${model}`;
   }
 
   namespace.modelCapabilities = {
