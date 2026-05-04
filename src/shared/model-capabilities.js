@@ -58,12 +58,18 @@
       item.capability,
       item.capabilities,
       item.supported_generation_methods,
+      item.supportedGenerationMethods,
       item.supported_parameters,
+      item.supportedParameters,
       item.input_modalities,
+      item.inputModalities,
       item.output_modalities,
+      item.outputModalities,
       architecture.modality,
       architecture.input_modalities,
+      architecture.inputModalities,
       architecture.output_modalities,
+      architecture.outputModalities,
       topProvider.modality
     ].forEach(function(value) { flattenHints(value, hints); });
     return unique(hints);

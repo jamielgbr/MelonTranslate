@@ -35,6 +35,7 @@
       "src/storage/config-manager.js",
       "src/providers/base.js",
       "src/providers/openai-compatible.js",
+      "src/providers/gemini.js",
       "src/providers/anthropic.js",
       "src/providers/google-translate.js",
       "src/providers/provider-registry.js",

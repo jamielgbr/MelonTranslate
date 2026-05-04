@@ -4,9 +4,12 @@
 
   const PROVIDER_ICON_SVG = new Set([
     "google-translate",
-    "openai", "anthropic", "deepseek", "openrouter",
-    "grok", "groq", "fireworks", "together",
-    "baseten", "zhipu", "zhipu-global", "moonshot", "ollama"
+    "openai", "anthropic", "gemini", "grok", "deepseek",
+    "openrouter", "groq", "fireworks", "together",
+    "vercelai", "huggingface", "nvidia", "poe", "cerebras",
+    "baseten", "zhipu", "zhipu-global", "moonshot",
+    "volcengine", "minimax", "minimax-cn", "sicflow",
+    "ollama", "lmstudio"
   ]);
 
   function escapeHtml(str) {

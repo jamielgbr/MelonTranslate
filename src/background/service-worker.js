@@ -60,6 +60,11 @@
     return `${base}${suffix}`;
   }
 
+  function appendQueryParam(url, key, value) {
+    const separator = String(url || "").includes("?") ? "&" : "?";
+    return `${url}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+  }
+
   function extractModelList(json) {
     if (Array.isArray(json)) return json;
     if (json && Array.isArray(json.data)) return json.data;
@@ -69,6 +74,21 @@
 
   function parseModelEntries(json, source, fetchedAt) {
     const list = extractModelList(json);
+    if (source === "gemini") {
+      return mc.normalizeModelList(list.map((item) => {
+        const value = item && typeof item === "object" ? item : {};
+        const name = String(value.name || "").trim();
+        const id = name.startsWith("models/") ? name.slice(7) : name;
+        return Object.assign({}, value, {
+          id,
+          name: value.displayName || id,
+          supported_generation_methods: value.supportedGenerationMethods || value.supported_generation_methods || []
+        });
+      }), {
+        source,
+        updatedAt: fetchedAt || Date.now()
+      });
+    }
     return mc.normalizeModelList(list, {
       source,
       updatedAt: fetchedAt || Date.now()
@@ -234,19 +254,10 @@
       return { models: cached, fromCache: true, fetchedAt };
     }
 
-    if (Array.isArray(catalogEntry.staticModels) && catalogEntry.staticModels.length) {
-      const staticFetchedAt = Date.now();
-      return {
-        models: mc.normalizeModelList(catalogEntry.staticModels, {
-          source: catalogEntry.id,
-          updatedAt: staticFetchedAt
-        }),
-        fromCache: false,
-        fetchedAt: staticFetchedAt
-      };
+    const modelListPath = String(catalogEntry.modelListPath || "").trim();
+    if (!modelListPath) {
+      throw new Error("This provider does not expose a model list endpoint.");
     }
-
-    const modelListPath = catalogEntry.modelListPath || "/models";
     const baseUrl = providerConfig.baseUrl || catalogEntry.baseUrl || "";
     if (!baseUrl && !/^https?:\/\//i.test(modelListPath)) {
       throw new Error("A base URL is required to load the model list.");
@@ -263,19 +274,21 @@
       throw new Error("This provider needs an account ID before it can list models.");
     }
 
-    const url = toAbsoluteUrl(baseUrl, resolvedPath);
+    let url = toAbsoluteUrl(baseUrl, resolvedPath);
     const headers = Object.assign({ Accept: "application/json" }, providerConfig.extraHeaders || {});
     const authMode = catalogEntry.modelListAuth || "bearer";
     if (authMode === "bearer") {
-      if (!providerConfig.apiKey) {
-        throw new Error("Add an API key first.");
+      if (providerConfig.apiKey) {
+        headers.Authorization = `Bearer ${providerConfig.apiKey}`;
       }
-      headers.Authorization = `Bearer ${providerConfig.apiKey}`;
     } else if (authMode === "baseten-api-key") {
-      if (!providerConfig.apiKey) {
-        throw new Error("Add an API key first.");
+      if (providerConfig.apiKey) {
+        headers.Authorization = `Api-Key ${providerConfig.apiKey}`;
       }
-      headers.Authorization = `Api-Key ${providerConfig.apiKey}`;
+    } else if (authMode === "gemini-api-key") {
+      if (providerConfig.apiKey) {
+        url = appendQueryParam(url, "key", providerConfig.apiKey);
+      }
     }
 
     const controller = new AbortController();
@@ -292,6 +305,9 @@
     }
 
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error("The provider rejected the model list request. Add or check the API key, then try again.");
+      }
       throw new Error(`Could not load the model list (${response.status}).`);
     }
 

@@ -3,6 +3,46 @@
   const { storageKeys, selectionTriggers, modifierKeys } = namespace.constants;
   const mp = namespace.modelParams;
   const mc = namespace.modelCapabilities;
+  const providerIdAliases = {
+    gateway: "vercelai",
+    silicon: "sicflow"
+  };
+
+  function normalizeProviderId(providerId) {
+    const id = String(providerId || "").trim();
+    return providerIdAliases[id] || id;
+  }
+
+  function normalizeDefaultModelKey(modelKey) {
+    const raw = String(modelKey || "");
+    const separatorIndex = raw.indexOf("::");
+    if (separatorIndex <= 0) {
+      return raw;
+    }
+    const providerId = normalizeProviderId(raw.slice(0, separatorIndex));
+    return `${providerId}${raw.slice(separatorIndex)}`;
+  }
+
+  function normalizeSettings(settings) {
+    const merged = Object.assign(getDefaultSettings(), settings || {});
+    return Object.assign({}, merged, {
+      defaultTranslationProviderId: normalizeProviderId(merged.defaultTranslationProviderId),
+      defaultTranslationModelKey: normalizeDefaultModelKey(merged.defaultTranslationModelKey)
+    });
+  }
+
+  function normalizeProviderConfigIds(providerConfigs) {
+    const source = providerConfigs && typeof providerConfigs === "object" ? providerConfigs : {};
+    const normalized = {};
+    Object.entries(source).forEach(([providerId, config]) => {
+      const nextProviderId = normalizeProviderId(providerId);
+      if (normalized[nextProviderId] && nextProviderId !== providerId) {
+        return;
+      }
+      normalized[nextProviderId] = Object.assign({}, config || {}, { id: nextProviderId });
+    });
+    return normalized;
+  }
 
   function getDefaultSettings() {
     return {
@@ -38,10 +78,7 @@
         enabled: provider.enabledByDefault,
         model: provider.defaultModel,
         baseUrl: provider.baseUrl,
-        availableModels: provider.staticModels ? mc.normalizeModelList(provider.staticModels, {
-          source: provider.id,
-          updatedAt: 0
-        }) : [],
+        availableModels: [],
         favoriteModels: provider.defaultModel ? [provider.defaultModel] : [],
         modelParameters: {},
         modelsFetchedAt: 0,
@@ -59,7 +96,16 @@
     const source = config && typeof config === "object" ? config : {};
     const base = fallback && typeof fallback === "object" ? fallback : {};
     const merged = Object.assign({}, base, source);
+    const modelsFetchedAt = Number(merged.modelsFetchedAt || 0);
+    const availableModels = modelsFetchedAt > 0
+      ? mc.normalizeModelList(merged.availableModels || [], {
+        source: merged.id,
+        updatedAt: modelsFetchedAt
+      })
+      : [];
     return Object.assign({}, merged, {
+      availableModels,
+      modelsFetchedAt: availableModels.length ? modelsFetchedAt : 0,
       modelParameters: mp.getProviderModelParameters(merged)
     });
   }
@@ -97,11 +143,11 @@
     async getSettings() {
       const api = namespace.browserApi;
       const stored = await api.storage.get("sync", storageKeys.settings);
-      return Object.assign(getDefaultSettings(), stored[storageKeys.settings] || {});
+      return normalizeSettings(stored[storageKeys.settings]);
     },
     async saveSettings(settings) {
       const api = namespace.browserApi;
-      const merged = Object.assign(getDefaultSettings(), settings || {});
+      const merged = normalizeSettings(settings);
       await api.storage.set("sync", { [storageKeys.settings]: merged });
       return merged;
     },
@@ -109,7 +155,8 @@
       const api = namespace.browserApi;
       const stored = await api.storage.get("local", storageKeys.providerConfigs);
       const defaults = buildDefaultProviderConfigs();
-      const merged = Object.assign({}, defaults, stored[storageKeys.providerConfigs] || {});
+      const storedProviderConfigs = normalizeProviderConfigIds(stored[storageKeys.providerConfigs]);
+      const merged = Object.assign({}, defaults, storedProviderConfigs);
       Object.keys(merged).forEach((providerId) => {
         merged[providerId] = normalizeStoredProviderConfig(merged[providerId], defaults[providerId] || {});
       });
@@ -133,7 +180,8 @@
     },
     async saveProviderConfigs(providerConfigs) {
       const secret = await getInstallationSecret();
-      const sanitizedEntries = await Promise.all(Object.values(providerConfigs).map(async (config) => {
+      const normalizedProviderConfigs = normalizeProviderConfigIds(providerConfigs);
+      const sanitizedEntries = await Promise.all(Object.values(normalizedProviderConfigs).map(async (config) => {
         const encryptedApiKey = config.apiKey
           ? await namespace.encryption.encryptText(secret, config.apiKey)
           : config.encryptedApiKey || "";

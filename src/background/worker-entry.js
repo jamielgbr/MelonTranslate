@@ -13,6 +13,7 @@ importScripts(
   '../storage/config-manager.js',
   '../providers/base.js',
   '../providers/openai-compatible.js',
+  '../providers/gemini.js',
   '../providers/anthropic.js',
   '../providers/google-translate.js',
   '../providers/provider-registry.js',

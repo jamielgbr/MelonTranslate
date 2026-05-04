@@ -28,6 +28,8 @@
         return new namespace.googleTranslateProvider.GoogleTranslateProvider(config);
       case "openai-compatible":
         return new namespace.openAICompatibleProvider.OpenAICompatibleProvider(config);
+      case "gemini":
+        return new namespace.geminiProvider.GeminiProvider(config);
       case "anthropic":
         return new namespace.anthropicProvider.AnthropicProvider(config);
       case "unsupported":
@@ -176,9 +178,6 @@
           reason: catalogEntry ? catalogEntry.reason : "",
           requiresApiKey: catalogEntry ? catalogEntry.requiresApiKey !== false : true,
           supportsReadAloud: !!(catalogEntry && catalogEntry.supportsReadAloud),
-          staticModels: catalogEntry && Array.isArray(catalogEntry.staticModels)
-            ? catalogEntry.staticModels.slice()
-            : [],
           extraHeaders: config.extraHeaders || (catalogEntry ? catalogEntry.extraHeaders || {} : {})
         });
       });

@@ -256,8 +256,12 @@
     return provider ? provider.requiresApiKey !== false : true;
   }
 
-  function providerHasStaticModels(provider) {
-    return !!(provider && Array.isArray(provider.staticModels) && provider.staticModels.length);
+  function providerCanListModels(provider) {
+    return !!(provider && String(provider.modelListPath || "").trim());
+  }
+
+  function providerUsesDefaultModelOnly(provider) {
+    return !!(provider && !providerCanListModels(provider));
   }
 
   function getConfiguredProviders() {
@@ -770,10 +774,10 @@
       const baseUrlValue = typeof draft.baseUrl === "string" ? draft.baseUrl : (config.baseUrl || "");
       const apiKeyValue = typeof draft.apiKey === "string" ? draft.apiKey : "";
       const requiresApiKey = providerRequiresApiKey(provider);
-      const hasStaticModels = providerHasStaticModels(provider);
+      const canListModels = providerCanListModels(provider);
       const modelListAccountIdValue = typeof draft.modelListAccountId === "string" ? draft.modelListAccountId : (config.modelListAccountId || "");
       const fetchedAt = config.modelsFetchedAt ? new Date(config.modelsFetchedAt).toLocaleString() : "Never";
-      const isSimpleProvider = !providerRequiresApiKey(provider) && providerHasStaticModels(provider) && !provider.modelListPath;
+      const isSimpleProvider = !providerRequiresApiKey(provider) && providerUsesDefaultModelOnly(provider);
       const providerMeta = currentModel ? `Model: ${currentModel}` : "No model selected";
       pu.setHtml(card, isSimpleProvider ? `
         <div class="provider-header-wrap">
@@ -831,11 +835,11 @@
             <div class="model-tools-header">
               <strong>Favorite models</strong>
               <div>
-                ${hasStaticModels ? "" : `<button class="secondary" type="button" data-action="fetch-models" data-provider-id="${provider.id}">List models</button>
-                <button class="secondary" type="button" data-action="refresh-models" data-provider-id="${provider.id}">Refresh</button>`}
+                ${canListModels ? `<button class="secondary" type="button" data-action="fetch-models" data-provider-id="${provider.id}">List models</button>
+                <button class="secondary" type="button" data-action="refresh-models" data-provider-id="${provider.id}">Refresh</button>` : ""}
               </div>
             </div>
-            <p class="hint">${hasStaticModels ? "Built-in model list." : `Last updated: ${pu.escapeHtml(fetchedAt)}`}</p>
+            <p class="hint">${canListModels ? `Last updated: ${pu.escapeHtml(fetchedAt)}` : "Use the default model or enter a custom model ID."}</p>
             <input class="model-search-input" data-provider-id="${provider.id}" type="text" value="${pu.escapeHtml(searchTerm)}" placeholder="Filter models">
             <div class="model-list" data-provider-id="${provider.id}">
               ${renderModelFavoriteRows(config)}
@@ -915,14 +919,12 @@
     const tempBaseUrl = baseUrlInput ? baseUrlInput.value.trim() : "";
     const tempApiKey = apiKeyInput ? apiKeyInput.value.trim() : "";
     const tempModelListAccountId = accountIdInput ? accountIdInput.value.trim() : "";
-    const requiresAuth = String(provider.modelListAuth || "bearer") !== "none";
-    const requiresAccountId = String(provider.modelListPath || "").includes("{account_id}");
-    const savedApiKey = String(config.apiKey || "").trim();
-    const savedModelListAccountId = String(config.modelListAccountId || "").trim();
-    if (requiresAuth && !savedApiKey && !tempApiKey) {
-      status(`Add an API key for ${provider.displayName || providerId} before loading models.`);
+    if (!providerCanListModels(provider)) {
+      status(`${provider.displayName || providerId} does not expose a model list endpoint.`);
       return;
     }
+    const requiresAccountId = String(provider.modelListPath || "").includes("{account_id}");
+    const savedModelListAccountId = String(config.modelListAccountId || "").trim();
     if (requiresAccountId && !savedModelListAccountId && !tempModelListAccountId) {
       status(`Add an account ID for ${provider.displayName || providerId} before loading models.`);
       return;
@@ -957,7 +959,7 @@
       .map((provider) => ({ provider, config: state.providerConfigs[provider.id] || {} }))
       .filter(({ provider, config }) => (
         pu.providerIsConfigured(provider, config)
-        && !providerHasStaticModels(provider)
+        && providerCanListModels(provider)
         && (!Array.isArray(config.availableModels) || !config.availableModels.length)
       ));
     for (const { config } of candidates) {
@@ -1140,7 +1142,7 @@
       const enabledInput = document.querySelector(`[data-provider-id="${provider.id}"][data-field="enabled"]`);
       const card = enabledInput ? enabledInput.closest(".provider-card") : null;
       const enabled = enabledInput ? enabledInput.checked : false;
-      const isSimple = !providerRequiresApiKey(provider) && providerHasStaticModels(provider) && !provider.modelListPath;
+      const isSimple = !providerRequiresApiKey(provider) && providerUsesDefaultModelOnly(provider);
 
       // Simple providers (e.g. Google Translate) have no model/favorite UI in
       // their card, so preserve state values instead of reading from the DOM.
