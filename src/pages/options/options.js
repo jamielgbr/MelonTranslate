@@ -133,12 +133,6 @@
     return formatReasoningEffortValue(resolved, providerContext, meta);
   }
 
-  function supportsReasoningEffortControl(provider, config, modelId) {
-    const providerContext = getProviderReasoningContext(provider, config);
-    const meta = getModelMeta(config, provider && provider.id, modelId);
-    return mc.providerSupportsReasoningControl(providerContext, meta);
-  }
-
   function renderReasoningEffortOptions(selectedValue, providerContext, meta) {
     const currentValue = formatReasoningEffortValue(selectedValue, providerContext, meta);
     const options = (namespace.constants.modelReasoningEffortOptions || ["off", "low", "medium", "high"])
@@ -173,6 +167,19 @@
     return mc.describeModelCapabilities(meta).map((label) => (
       `<span class="model-capability-badge">${pu.escapeHtml(label)}</span>`
     )).join("");
+  }
+
+  function renderCapabilityBadgeGroup(meta, extraClass) {
+    const badges = renderCapabilityBadges(meta);
+    if (!badges) {
+      return "";
+    }
+    const classes = ["model-capability-badges", extraClass].filter(Boolean).join(" ");
+    return `<span class="${classes}">${badges}</span>`;
+  }
+
+  function renderModelParameterControl(label, fieldHtml) {
+    return `<label class="model-parameter-control"><span class="model-parameter-label">${pu.escapeHtml(label)}</span>${fieldHtml}</label>`;
   }
 
   function updateModelParameter(providerId, modelId, patch) {
@@ -213,6 +220,70 @@
       .filter(Boolean);
   }
 
+  function renderModelParameterRow(provider, config, modelId) {
+    const providerName = provider.displayName || provider.id;
+    const providerContext = getProviderReasoningContext(provider, config);
+    const meta = getModelMeta(config, provider.id, modelId);
+    const escapedProviderId = pu.escapeHtml(provider.id);
+    const escapedModelId = pu.escapeHtml(modelId);
+    const escapedControlLabel = pu.escapeHtml(`${providerName} ${modelId}`);
+    const temperature = formatTemperatureInputValue(getModelTemperatureValue(config, modelId));
+    const capabilityBadges = renderCapabilityBadgeGroup(meta, "model-parameter-badges");
+    const temperatureControl = renderModelParameterControl("Temp", `
+      <input
+        aria-label="${escapedControlLabel} temperature"
+        data-provider-id="${escapedProviderId}"
+        data-model-id="${escapedModelId}"
+        data-parameter="temperature"
+        type="number"
+        min="0"
+        max="2"
+        step="0.1"
+        value="${pu.escapeHtml(temperature)}">
+    `);
+    let effortControl = "";
+    if (mc.providerSupportsReasoningControl(providerContext, meta)) {
+      const effort = getModelReasoningEffortValue(provider, config, modelId);
+      effortControl = renderModelParameterControl("Effort", `
+        <select
+          aria-label="${escapedControlLabel} reasoning effort"
+          data-provider-id="${escapedProviderId}"
+          data-model-id="${escapedModelId}"
+          data-parameter="reasoningEffort">
+          ${renderReasoningEffortOptions(effort, providerContext, meta)}
+        </select>
+      `);
+    }
+
+    return `
+      <div class="model-parameter-row">
+        <div class="model-parameter-model">
+          <span class="model-parameter-name">${escapedModelId}</span>
+          ${capabilityBadges}
+        </div>
+        <div class="model-parameter-controls">
+          ${temperatureControl}
+          ${effortControl}
+        </div>
+      </div>`;
+  }
+
+  function renderModelParameterProvider(group) {
+    const { provider, config, models } = group;
+    const providerName = provider.displayName || provider.id;
+    const countLabel = `${models.length} ${models.length === 1 ? "model" : "models"}`;
+    const rows = models.map((modelId) => renderModelParameterRow(provider, config, modelId)).join("");
+
+    return `
+      <article class="model-parameter-provider">
+        <div class="model-parameter-provider-header">
+          <h3 class="model-parameter-provider-title">${pu.escapeHtml(providerName)}</h3>
+          <span class="model-parameter-count">${pu.escapeHtml(countLabel)}</span>
+        </div>
+        <div class="model-parameter-list">${rows}</div>
+      </article>`;
+  }
+
   function renderModelParametersPanel() {
     const container = document.getElementById("model-parameters");
     if (!container) {
@@ -224,20 +295,7 @@
       return;
     }
 
-    pu.setHtml(container, groups.map(({ provider, config, models }) => {
-      const rows = models.map((modelId) => {
-        const temperature = formatTemperatureInputValue(getModelTemperatureValue(config, modelId));
-        const providerContext = getProviderReasoningContext(provider, config);
-        const meta = getModelMeta(config, provider.id, modelId);
-        const effort = getModelReasoningEffortValue(provider, config, modelId);
-        const effortControl = supportsReasoningEffortControl(provider, config, modelId)
-          ? `<span class="model-parameter-control"><span class="model-parameter-label">Effort</span><select data-provider-id="${pu.escapeHtml(provider.id)}" data-model-id="${pu.escapeHtml(modelId)}" data-parameter="reasoningEffort">${renderReasoningEffortOptions(effort, providerContext, meta)}</select></span>`
-          : "";
-        return `<label class="model-parameter-row"><span class="model-parameter-name">${pu.escapeHtml(modelId)}</span><span class="model-parameter-controls"><span class="model-parameter-control"><span class="model-parameter-label">Temp</span><input data-provider-id="${pu.escapeHtml(provider.id)}" data-model-id="${pu.escapeHtml(modelId)}" data-parameter="temperature" type="number" min="0" max="2" step="0.1" value="${pu.escapeHtml(temperature)}"></span>${effortControl}</span></label>`;
-      }).join("");
-
-      return `<article class="model-parameter-provider"><h3 class="model-parameter-provider-title">${pu.escapeHtml(provider.displayName)}</h3><div class="model-parameter-list">${rows}</div></article>`;
-    }).join(""));
+    pu.setHtml(container, groups.map(renderModelParameterProvider).join(""));
   }
 
   function getPreferredModel(config) {
@@ -653,18 +711,34 @@
     }
 
     return allModels.map((meta) => {
-      const checked = favorites.includes(meta.id) ? "checked" : "";
-      const textModel = mc.isTextGenerationModel(meta);
-      const disabled = textModel ? "" : "disabled";
-      const title = textModel ? "" : ' title="This model is not available for text translation."';
-      return `<label class="checkbox-row model-favorite-row${textModel ? "" : " model-favorite-row-disabled"}" data-model="${pu.escapeHtml(meta.id)}"${title}><input data-model-favorite="${pu.escapeHtml(meta.id)}" type="checkbox" ${checked} ${disabled}> <span class="model-favorite-name">${pu.escapeHtml(meta.id)}</span><span class="model-capability-badges">${renderCapabilityBadges(meta)}</span></label>`;
+      const modelId = meta.id;
+      const escapedModelId = pu.escapeHtml(modelId);
+      const isFavorite = favorites.includes(modelId);
+      const isTextModel = mc.isTextGenerationModel(meta);
+      const rowClasses = [
+        "model-favorite-row",
+        isFavorite ? "model-favorite-row-checked" : "",
+        isTextModel ? "" : "model-favorite-row-disabled"
+      ].filter(Boolean).join(" ");
+      const checkedAttribute = isFavorite ? " checked" : "";
+      const disabledAttribute = isTextModel ? "" : " disabled";
+      const titleAttribute = isTextModel ? "" : ' title="This model is not available for text translation."';
+      const favoriteBadges = renderCapabilityBadgeGroup(meta);
+      return `
+        <label class="${rowClasses}" data-model="${escapedModelId}"${titleAttribute}>
+          <input class="model-favorite-input" data-model-favorite="${escapedModelId}" type="checkbox"${checkedAttribute}${disabledAttribute}>
+          <span class="model-favorite-check" aria-hidden="true"></span>
+          <span class="model-favorite-content">
+            <span class="model-favorite-name">${escapedModelId}</span>
+            ${favoriteBadges}
+          </span>
+        </label>`;
     }).join("");
   }
 
   function applyModelFilter(providerId, query) {
-    const card = document.querySelector(`.provider-card [data-provider-id="${providerId}"][data-field="enabled"]`)
-      ? document.querySelector(`.provider-card [data-provider-id="${providerId}"][data-field="enabled"]`).closest(".provider-card")
-      : null;
+    const enabledInput = document.querySelector(`.provider-card [data-provider-id="${providerId}"][data-field="enabled"]`);
+    const card = enabledInput ? enabledInput.closest(".provider-card") : null;
     if (!card) return;
 
     const modelList = card.querySelector(`.model-list[data-provider-id="${providerId}"]`);
@@ -677,7 +751,7 @@
     rows.forEach((row) => {
       const model = String(row.dataset.model || "").toLowerCase();
       const matched = !normalizedQuery || model.includes(normalizedQuery);
-      row.style.display = matched ? "flex" : "none";
+      row.style.display = matched ? "" : "none";
       if (matched) {
         visibleCount += 1;
       }
@@ -1354,6 +1428,10 @@
       return;
     }
     if (!input || !input.dataset || !input.dataset.modelFavorite) return;
+    const favoriteRow = input.closest(".model-favorite-row");
+    if (favoriteRow) {
+      favoriteRow.classList.toggle("model-favorite-row-checked", input.checked);
+    }
     const card = input.closest(".provider-card");
     const enabledInput = card ? card.querySelector("input[data-field='enabled']") : null;
     if (!enabledInput) return;
