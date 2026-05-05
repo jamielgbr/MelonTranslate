@@ -401,19 +401,8 @@
           source: provider.id,
           updatedAt: Number(provider.modelsFetchedAt || 0)
         });
-        const supportsReasoningEffort = (
-          String(provider.transport || "") === "openai-compatible"
-          && provider.id !== "groq"
-          && (provider.id === "grok"
-            ? mc.isXaiGrokReasoningEffortModel(modelMeta)
-            : (provider.id === "volcengine"
-              ? mc.isVolcengineDoubaoReasoningModel(modelMeta)
-              : mc.isOpenAICompatibleReasoningControlModel(modelMeta)))
-        ) || (
-          String(provider.transport || "") === "anthropic"
-          && mc.isAnthropicReasoningControlModel(modelMeta)
-        );
-        const effectiveReasoningEffort = supportsReasoningEffort
+        const supportsReasoningEffort = mc.providerSupportsReasoningControl(provider, modelMeta);
+        const resolvedReasoningEffort = supportsReasoningEffort
           ? mp.resolveProviderReasoningEffort(
             provider,
             null,
@@ -421,6 +410,9 @@
             namespace.constants.modelReasoningEffortDefault || "off"
           )
           : null;
+        const effectiveReasoningEffort = resolvedReasoningEffort === null
+          ? null
+          : mc.normalizeProviderReasoningEffort(provider, modelMeta, resolvedReasoningEffort);
         const tempLabel = effectiveTemperature === null ? "" : String(effectiveTemperature);
         const effortLabel = effectiveReasoningEffort === null ? "" : String(effectiveReasoningEffort);
         return `${provider.id}:${effectiveModel}:${effectiveBaseUrl}:${tempLabel}:${effortLabel}`;

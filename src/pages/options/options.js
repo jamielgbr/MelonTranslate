@@ -111,42 +111,41 @@
     return normalized.charAt(0).toUpperCase() + normalized.slice(1);
   }
 
-  function formatReasoningEffortValue(value) {
-    return mp.normalizeReasoningEffort(value) || namespace.constants.modelReasoningEffortDefault || "off";
+  function getProviderReasoningContext(provider, config) {
+    const transport = String((provider && provider.transport) || (config && config.transport) || "").trim();
+    return Object.assign({}, config || {}, provider || {}, { transport });
   }
 
-  function getModelReasoningEffortValue(config, modelId) {
-    return mp.resolveProviderReasoningEffort(
+  function formatReasoningEffortValue(value, providerContext, meta) {
+    const normalized = mp.normalizeReasoningEffort(value) || namespace.constants.modelReasoningEffortDefault || "off";
+    return mc.normalizeProviderReasoningEffort(providerContext, meta, normalized) || normalized;
+  }
+
+  function getModelReasoningEffortValue(provider, config, modelId) {
+    const providerContext = getProviderReasoningContext(provider, config);
+    const meta = getModelMeta(config, provider && provider.id, modelId);
+    const resolved = mp.resolveProviderReasoningEffort(
       config,
       null,
       modelId,
       namespace.constants.modelReasoningEffortDefault || "off"
-    ) || namespace.constants.modelReasoningEffortDefault || "off";
+    );
+    return formatReasoningEffortValue(resolved, providerContext, meta);
   }
 
   function supportsReasoningEffortControl(provider, config, modelId) {
-    const transport = String((provider && provider.transport) || (config && config.transport) || "").trim();
+    const providerContext = getProviderReasoningContext(provider, config);
     const meta = getModelMeta(config, provider && provider.id, modelId);
-    if (provider && provider.id === "groq") {
-      return false;
-    }
-    if (provider && provider.id === "grok") {
-      return mc.isXaiGrokReasoningEffortModel(meta);
-    }
-    if (provider && provider.id === "volcengine") {
-      return mc.isVolcengineDoubaoReasoningModel(meta);
-    }
-    return (transport === "openai-compatible" && mc.isOpenAICompatibleReasoningControlModel(meta))
-      || (transport === "anthropic" && mc.isAnthropicReasoningControlModel(meta));
+    return mc.providerSupportsReasoningControl(providerContext, meta);
   }
 
-  function renderReasoningEffortOptions(selectedValue) {
-    const currentValue = formatReasoningEffortValue(selectedValue);
-    return (namespace.constants.modelReasoningEffortOptions || ["off", "low", "medium", "high"]).map((value) => {
-      const normalized = String(value || "").trim().toLowerCase();
-      if (!normalized) {
-        return "";
-      }
+  function renderReasoningEffortOptions(selectedValue, providerContext, meta) {
+    const currentValue = formatReasoningEffortValue(selectedValue, providerContext, meta);
+    const options = (namespace.constants.modelReasoningEffortOptions || ["off", "low", "medium", "high"])
+      .map((value) => String(value || "").trim().toLowerCase())
+      .filter(Boolean)
+      .filter((value) => value !== "off" || !mc.providerCannotDisableReasoning(providerContext, meta));
+    return options.map((normalized) => {
       return `<option value="${pu.escapeHtml(normalized)}"${currentValue === normalized ? " selected" : ""}>${pu.escapeHtml(formatReasoningEffortLabel(normalized))}</option>`;
     }).join("");
   }
@@ -228,9 +227,11 @@
     pu.setHtml(container, groups.map(({ provider, config, models }) => {
       const rows = models.map((modelId) => {
         const temperature = formatTemperatureInputValue(getModelTemperatureValue(config, modelId));
-        const effort = getModelReasoningEffortValue(config, modelId);
+        const providerContext = getProviderReasoningContext(provider, config);
+        const meta = getModelMeta(config, provider.id, modelId);
+        const effort = getModelReasoningEffortValue(provider, config, modelId);
         const effortControl = supportsReasoningEffortControl(provider, config, modelId)
-          ? `<span class="model-parameter-control"><span class="model-parameter-label">Effort</span><select data-provider-id="${pu.escapeHtml(provider.id)}" data-model-id="${pu.escapeHtml(modelId)}" data-parameter="reasoningEffort">${renderReasoningEffortOptions(effort)}</select></span>`
+          ? `<span class="model-parameter-control"><span class="model-parameter-label">Effort</span><select data-provider-id="${pu.escapeHtml(provider.id)}" data-model-id="${pu.escapeHtml(modelId)}" data-parameter="reasoningEffort">${renderReasoningEffortOptions(effort, providerContext, meta)}</select></span>`
           : "";
         return `<label class="model-parameter-row"><span class="model-parameter-name">${pu.escapeHtml(modelId)}</span><span class="model-parameter-controls"><span class="model-parameter-control"><span class="model-parameter-label">Temp</span><input data-provider-id="${pu.escapeHtml(provider.id)}" data-model-id="${pu.escapeHtml(modelId)}" data-parameter="temperature" type="number" min="0" max="2" step="0.1" value="${pu.escapeHtml(temperature)}"></span>${effortControl}</span></label>`;
       }).join("");
@@ -1425,9 +1426,16 @@
       return;
     }
 
+    const provider = state.providers.find((item) => item && item.id === providerId) || { id: providerId };
+    const config = state.providerConfigs[providerId] || {};
+    const providerContext = getProviderReasoningContext(provider, config);
+    const meta = getModelMeta(config, providerId, modelId);
     const normalized = mp.normalizeReasoningEffort(input.value);
-    input.value = normalized || namespace.constants.modelReasoningEffortDefault || "off";
-    updateModelParameter(providerId, modelId, { reasoningEffort: normalized });
+    const effective = normalized
+      ? mc.normalizeProviderReasoningEffort(providerContext, meta, normalized)
+      : normalized;
+    input.value = effective || namespace.constants.modelReasoningEffortDefault || "off";
+    updateModelParameter(providerId, modelId, { reasoningEffort: effective });
     renderDefaultModelSelect();
   });
 

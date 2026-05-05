@@ -109,19 +109,8 @@
       source: configWithModel.id,
       updatedAt: Number(configWithModel.modelsFetchedAt || 0)
     });
-    const supportsReasoningEffort = (
-      String(configWithModel.transport || "") === "openai-compatible"
-      && configWithModel.id !== "groq"
-      && (configWithModel.id === "grok"
-        ? mc.isXaiGrokReasoningEffortModel(modelMeta)
-        : (configWithModel.id === "volcengine"
-          ? mc.isVolcengineDoubaoReasoningModel(modelMeta)
-          : mc.isOpenAICompatibleReasoningControlModel(modelMeta)))
-    ) || (
-      String(configWithModel.transport || "") === "anthropic"
-      && mc.isAnthropicReasoningControlModel(modelMeta)
-    );
-    const normalizedReasoningEffort = supportsReasoningEffort
+    const supportsReasoningEffort = mc.providerSupportsReasoningControl(configWithModel, modelMeta);
+    const resolvedReasoningEffort = supportsReasoningEffort
       ? mp.resolveProviderReasoningEffort(
         configWithModel,
         null,
@@ -129,6 +118,9 @@
         namespace.constants.modelReasoningEffortDefault || "off"
       )
       : null;
+    const normalizedReasoningEffort = resolvedReasoningEffort === null
+      ? null
+      : mc.normalizeProviderReasoningEffort(configWithModel, modelMeta, resolvedReasoningEffort);
     const resolvedConfig = Object.assign(
       {},
       configWithModel,

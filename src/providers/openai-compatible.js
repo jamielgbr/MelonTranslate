@@ -13,11 +13,56 @@
     });
   }
 
+  function buildBasetenReasoningPayload(effort, meta) {
+    if (!effort || !mc.isBasetenReasoningControlModel(meta)) {
+      return {};
+    }
+    if (effort === "off") {
+      return {};
+    }
+    if (mc.isBasetenChatTemplateReasoningModel(meta)) {
+      return { chat_template_args: { enable_thinking: true } };
+    }
+    if (mc.isBasetenReasoningEffortModel(meta)) {
+      return { reasoning_effort: effort };
+    }
+    return {};
+  }
+
+  function mapTogetherReasoningEffort(effort, meta) {
+    if (mc.isDeepSeekV4PlusReasoningModel(meta)) {
+      return effort === "high" ? "max" : "high";
+    }
+    return effort;
+  }
+
+  function buildTogetherReasoningPayload(effort, meta) {
+    if (!effort || !mc.isTogetherReasoningControlModel(meta)) {
+      return {};
+    }
+    if (mc.isTogetherReasoningEffortModel(meta)) {
+      return effort === "off" ? {} : { reasoning_effort: mapTogetherReasoningEffort(effort, meta) };
+    }
+    if (mc.isTogetherHybridReasoningModel(meta)) {
+      return { reasoning: { enabled: effort !== "off" } };
+    }
+    return {};
+  }
+
   function buildReasoningEffortPayload(config) {
-    const effort = mp.normalizeReasoningEffort(config && config.reasoningEffort);
     const meta = getConfiguredModelMeta(config);
+    const requestedEffort = mp.normalizeReasoningEffort(config && config.reasoningEffort);
+    const effort = requestedEffort
+      ? mc.normalizeProviderReasoningEffort(config, meta, requestedEffort)
+      : requestedEffort;
     if (config && config.id === "groq") {
       return {};
+    }
+    if (config && config.id === "baseten") {
+      return buildBasetenReasoningPayload(effort, meta);
+    }
+    if (config && config.id === "together") {
+      return buildTogetherReasoningPayload(effort, meta);
     }
     if (config && config.id === "volcengine") {
       if (!effort || !mc.isVolcengineDoubaoReasoningModel(meta)) {
@@ -40,9 +85,6 @@
     if (effort === "off") {
       if (config && config.id === "openrouter") {
         return { reasoning: { enabled: false, exclude: true } };
-      }
-      if (config && config.id === "together") {
-        return { reasoning: { enabled: false } };
       }
       if (mc.isDeepSeekV4PlusReasoningModel(meta)) {
         return { thinking: { type: "disabled" } };
@@ -68,16 +110,7 @@
       };
     }
     if (mc.isDeepSeekHybridReasoningModel(meta)) {
-      if (config && config.id === "together") {
-        return { reasoning: { enabled: true } };
-      }
       return { thinking: { type: "enabled" } };
-    }
-    if (config && config.id === "together") {
-      return {
-        reasoning_effort: effort,
-        reasoning: { enabled: true }
-      };
     }
     return { reasoning_effort: effort };
   }
@@ -129,10 +162,12 @@
         body: JSON.stringify(payload)
       }, undefined, signal);
 
+      const message = json.choices && json.choices[0] && json.choices[0].message
+        ? json.choices[0].message
+        : {};
       return this.buildResult(startedAt, {
-        translatedText: json.choices && json.choices[0] && json.choices[0].message
-          ? json.choices[0].message.content.trim()
-          : "",
+        translatedText: typeof message.content === "string" ? message.content.trim() : "",
+        thinkingText: collectReasoningText(message.reasoning_content || message.reasoning || message.reasoning_text).trim(),
         outputTokens: this.readOutputTokens(json)
       });
     }

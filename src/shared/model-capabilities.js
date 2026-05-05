@@ -4,7 +4,7 @@
   const INPUT_TYPES = new Set(["text", "image", "audio", "video"]);
   const OUTPUT_TYPES = new Set(["text", "image", "audio", "video"]);
   const FEATURE_TYPES = new Set([
-    "chat", "completion", "streaming", "reasoning",
+    "chat", "completion", "streaming", "reasoning", "reasoning-effort",
     "tts", "stt", "embedding", "rerank", "moderation", "vision"
   ]);
   const NON_TRANSLATION_FEATURES = new Set(["tts", "stt", "embedding", "rerank", "moderation"]);
@@ -184,6 +184,9 @@
         output.push("text");
         features.push("stt");
       }
+      if (/\breasoning[-_\s]?effort\b/i.test(hint)) {
+        features.push("reasoning-effort");
+      }
 
       tokens.forEach(function(token) {
         if (token === "llm" || token === "language" || token === "chat") {
@@ -354,8 +357,7 @@
       && meta.capabilities.features.includes(feature);
   }
 
-  function isTextGenerationModel(item) {
-    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
+  function isTextGenerationMeta(meta) {
     if (!meta) {
       return false;
     }
@@ -366,7 +368,12 @@
     if (modelHasInput(meta, "text") && modelHasOutput(meta, "text")) {
       return true;
     }
-    if (features.includes("chat") || features.includes("completion") || features.includes("reasoning")) {
+    if (
+      features.includes("chat")
+      || features.includes("completion")
+      || features.includes("reasoning")
+      || features.includes("reasoning-effort")
+    ) {
       return true;
     }
     const input = meta.capabilities.input || [];
@@ -376,13 +383,17 @@
     });
   }
 
+  function isTextGenerationModel(item) {
+    return isTextGenerationMeta(normalizeModelEntry(item));
+  }
+
   function normalizeReasoningModelName(meta) {
     const label = meta && meta.label && meta.label !== meta.id ? ` ${meta.label}` : "";
     return String(`${meta && meta.id || ""}${label}`).toLowerCase();
   }
 
   function isDeepSeekV4PlusReasoningModel(item) {
-    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
+    const meta = normalizeModelEntry(item);
     if (!meta) {
       return false;
     }
@@ -390,7 +401,7 @@
   }
 
   function isDeepSeekHybridReasoningModel(item) {
-    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
+    const meta = normalizeModelEntry(item);
     if (!meta) {
       return false;
     }
@@ -405,8 +416,8 @@
   }
 
   function isAnthropicReasoningControlModel(item) {
-    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
-    if (!meta || !isTextGenerationModel(meta)) {
+    const meta = normalizeModelEntry(item);
+    if (!isTextGenerationMeta(meta)) {
       return false;
     }
     const modelName = normalizeReasoningModelName(meta);
@@ -415,8 +426,8 @@
   }
 
   function isXaiGrokReasoningEffortModel(item) {
-    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
-    if (!meta || !isTextGenerationModel(meta)) {
+    const meta = normalizeModelEntry(item);
+    if (!isTextGenerationMeta(meta)) {
       return false;
     }
     const modelName = normalizeReasoningModelName(meta);
@@ -424,8 +435,8 @@
   }
 
   function isGrok4FastReasoningModel(item) {
-    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
-    if (!meta || !isTextGenerationModel(meta)) {
+    const meta = normalizeModelEntry(item);
+    if (!isTextGenerationMeta(meta)) {
       return false;
     }
     const modelName = normalizeReasoningModelName(meta);
@@ -433,8 +444,8 @@
   }
 
   function isVolcengineDoubaoReasoningModel(item) {
-    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
-    if (!meta || !isTextGenerationModel(meta)) {
+    const meta = normalizeModelEntry(item);
+    if (!isTextGenerationMeta(meta)) {
       return false;
     }
     if (modelHasFeature(meta, "reasoning")) {
@@ -444,9 +455,80 @@
     return /(?:^|[/:\s-])doubao[-_]?seed(?:[\w.-]*)?\b/.test(modelName);
   }
 
+  function isGptOssReasoningEffortModel(item) {
+    const meta = normalizeModelEntry(item);
+    if (!isTextGenerationMeta(meta)) {
+      return false;
+    }
+    return /\bgpt[-_]?oss\b/.test(normalizeReasoningModelName(meta));
+  }
+
+  function isBasetenReasoningEffortModel(item) {
+    const meta = normalizeModelEntry(item);
+    if (!isTextGenerationMeta(meta)) {
+      return false;
+    }
+    if (modelHasFeature(meta, "reasoning-effort")) {
+      return true;
+    }
+    return isGptOssReasoningEffortModel(meta) || isDeepSeekV4PlusReasoningModel(meta);
+  }
+
+  function isBasetenChatTemplateReasoningModel(item) {
+    const meta = normalizeModelEntry(item);
+    if (!isTextGenerationMeta(meta)) {
+      return false;
+    }
+    const modelName = normalizeReasoningModelName(meta);
+    return /\bkimi-k2(?:[\w.-]*)?\b/.test(modelName) || /\bglm-4[.-]7\b/.test(modelName);
+  }
+
+  function isBasetenReasoningControlModel(item) {
+    const meta = normalizeModelEntry(item);
+    if (!isTextGenerationMeta(meta)) {
+      return false;
+    }
+    return isBasetenReasoningEffortModel(meta) || isBasetenChatTemplateReasoningModel(meta);
+  }
+
+  function isTogetherReasoningEffortModel(item) {
+    const meta = normalizeModelEntry(item);
+    if (!isTextGenerationMeta(meta)) {
+      return false;
+    }
+    if (modelHasFeature(meta, "reasoning-effort")) {
+      return true;
+    }
+    return isGptOssReasoningEffortModel(meta) || isDeepSeekV4PlusReasoningModel(meta);
+  }
+
+  function isTogetherHybridReasoningModel(item) {
+    const meta = normalizeModelEntry(item);
+    if (!isTextGenerationMeta(meta)) {
+      return false;
+    }
+    if (isTogetherReasoningEffortModel(meta)) {
+      return false;
+    }
+    const modelName = normalizeReasoningModelName(meta);
+    return /\bdeepseek-v3[.-]1\b/.test(modelName)
+      || /\bqwen(?:\/|[-_])?qwen3[.-]5\b/.test(modelName)
+      || /\bkimi-k2(?:[\w.-]*)?\b/.test(modelName)
+      || /\bglm-5\b/.test(modelName)
+      || /\bgemma-4-31b-it\b/.test(modelName);
+  }
+
+  function isTogetherReasoningControlModel(item) {
+    const meta = normalizeModelEntry(item);
+    if (!isTextGenerationMeta(meta)) {
+      return false;
+    }
+    return isTogetherReasoningEffortModel(meta) || isTogetherHybridReasoningModel(meta);
+  }
+
   function isOpenAICompatibleReasoningControlModel(item) {
-    const meta = typeof item === "string" ? normalizeModelEntry(item) : normalizeModelEntry(item);
-    if (!meta || !isTextGenerationModel(meta)) {
+    const meta = normalizeModelEntry(item);
+    if (!isTextGenerationMeta(meta)) {
       return false;
     }
 
@@ -455,7 +537,7 @@
       return false;
     }
 
-    if (modelHasFeature(meta, "reasoning")) {
+    if (modelHasFeature(meta, "reasoning") || modelHasFeature(meta, "reasoning-effort")) {
       return true;
     }
 
@@ -470,6 +552,61 @@
       /\bmistral-small-2603\b/.test(modelName) ||
       /\b(?:qwen3|qwq|qvq)(?:[\w.-]*)?\b/.test(modelName)
     );
+  }
+
+  function providerSupportsReasoningControl(provider, item) {
+    const config = provider && typeof provider === "object" ? provider : { id: provider };
+    const providerId = String(config.id || "").trim();
+    const transport = String(config.transport || "").trim();
+    const meta = normalizeModelEntry(item);
+    if (!meta) {
+      return false;
+    }
+    if (transport === "anthropic") {
+      return isAnthropicReasoningControlModel(meta);
+    }
+    if (transport !== "openai-compatible") {
+      return false;
+    }
+    if (providerId === "groq") {
+      return false;
+    }
+    if (providerId === "grok") {
+      return isXaiGrokReasoningEffortModel(meta);
+    }
+    if (providerId === "volcengine") {
+      return isVolcengineDoubaoReasoningModel(meta);
+    }
+    if (providerId === "baseten") {
+      return isBasetenReasoningControlModel(meta);
+    }
+    if (providerId === "together") {
+      return isTogetherReasoningControlModel(meta);
+    }
+    return isOpenAICompatibleReasoningControlModel(meta);
+  }
+
+  function providerCannotDisableReasoning(provider, item) {
+    const config = provider && typeof provider === "object" ? provider : { id: provider };
+    const providerId = String(config.id || "").trim();
+    const transport = String(config.transport || "").trim();
+    const meta = normalizeModelEntry(item);
+    if (transport !== "openai-compatible" || !meta) {
+      return false;
+    }
+    return (providerId === "baseten" || providerId === "together")
+      && isGptOssReasoningEffortModel(meta);
+  }
+
+  function normalizeProviderReasoningEffort(provider, item, effort) {
+    if (effort === null || typeof effort === "undefined") {
+      return effort;
+    }
+    const normalized = String(effort || "").trim().toLowerCase();
+    if (normalized === "off" && providerCannotDisableReasoning(provider, item)) {
+      return "low";
+    }
+    return normalized;
   }
 
   function describeModelCapabilities(item) {
@@ -498,7 +635,14 @@
     } else if (input.includes("text") && output.includes("text")) {
       labels.push("Text");
     }
-    if (features.includes("reasoning") || isOpenAICompatibleReasoningControlModel(meta) || isAnthropicReasoningControlModel(meta) || isVolcengineDoubaoReasoningModel(meta)) {
+    const hasReasoningLabel = features.includes("reasoning")
+      || features.includes("reasoning-effort")
+      || isOpenAICompatibleReasoningControlModel(meta)
+      || isAnthropicReasoningControlModel(meta)
+      || isVolcengineDoubaoReasoningModel(meta)
+      || isBasetenReasoningControlModel(meta)
+      || isTogetherReasoningControlModel(meta);
+    if (hasReasoningLabel) {
       labels.push("Reasoning");
     }
     if (features.includes("streaming")) {
@@ -526,6 +670,15 @@
     isXaiGrokReasoningEffortModel,
     isGrok4FastReasoningModel,
     isVolcengineDoubaoReasoningModel,
+    providerSupportsReasoningControl,
+    providerCannotDisableReasoning,
+    normalizeProviderReasoningEffort,
+    isBasetenReasoningEffortModel,
+    isBasetenChatTemplateReasoningModel,
+    isBasetenReasoningControlModel,
+    isTogetherReasoningEffortModel,
+    isTogetherHybridReasoningModel,
+    isTogetherReasoningControlModel,
     describeModelCapabilities,
     formatModelOptionLabel,
     modelHasInput,
