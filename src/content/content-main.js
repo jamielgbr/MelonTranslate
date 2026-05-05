@@ -130,4 +130,6 @@
 
     return undefined;
   });
+
+  namespace.contentScriptReady = true;
 }(globalThis));

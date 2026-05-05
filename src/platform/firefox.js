@@ -35,6 +35,9 @@
       onInstalled(listener) {
         browser.runtime.onInstalled.addListener(listener);
       },
+      getManifest() {
+        return browser.runtime.getManifest();
+      },
       getURL(path) {
         return browser.runtime.getURL(path);
       }
@@ -48,6 +51,11 @@
       },
       async query(queryInfo) {
         return browser.tabs.query(queryInfo);
+      }
+    },
+    scripting: {
+      async executeScript(details) {
+        return browser.scripting.executeScript(details);
       }
     },
     action: {

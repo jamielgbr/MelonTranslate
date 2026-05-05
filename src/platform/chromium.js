@@ -53,6 +53,9 @@
       onInstalled(listener) {
         chrome.runtime.onInstalled.addListener(listener);
       },
+      getManifest() {
+        return chrome.runtime.getManifest();
+      },
       getURL(path) {
         return chrome.runtime.getURL(path);
       }
@@ -69,6 +72,11 @@
       },
       async query(queryInfo) {
         return promisify((done) => chrome.tabs.query(queryInfo, done));
+      }
+    },
+    scripting: {
+      async executeScript(details) {
+        return promisify((done) => chrome.scripting.executeScript(details, done));
       }
     },
     action: {
