@@ -4,6 +4,7 @@
   const messageTypes = namespace.messages.types;
   const pu = namespace.pageUtils;
   const mc = namespace.modelCapabilities;
+  const hostPermissions = namespace.hostPermissions;
 
   const state = {
     settings: null,
@@ -112,6 +113,46 @@
     const normalized = String(message || "").trim();
     statusEl.textContent = normalized;
     statusEl.classList.toggle("hidden", !normalized);
+  }
+
+  async function updateSiteAccessBanner() {
+    const banner = document.getElementById("site-access-banner");
+    if (!banner || !hostPermissions || !hostPermissions.canCheck()) {
+      return;
+    }
+
+    const granted = await hostPermissions.containsAllSites();
+    banner.classList.toggle("hidden", granted);
+  }
+
+  async function grantSiteAccess() {
+    if (!hostPermissions || !hostPermissions.canRequest()) {
+      setStatus("Site access cannot be requested in this browser.");
+      return;
+    }
+
+    const button = document.getElementById("grant-site-access");
+    if (button) {
+      button.disabled = true;
+    }
+
+    try {
+      const granted = await hostPermissions.requestAllSites();
+      if (!granted) {
+        setStatus("Site access was not enabled.");
+        return;
+      }
+
+      document.getElementById("site-access-banner").classList.add("hidden");
+      setStatus("Site access enabled.");
+    } catch (error) {
+      setStatus(error && error.message ? error.message : "Could not request site access.");
+    } finally {
+      if (button) {
+        button.disabled = false;
+      }
+      updateSiteAccessBanner().catch(() => {});
+    }
   }
 
   const SPEAK_SVG = namespace.readAloud.SPEAK_SVG;
@@ -649,6 +690,7 @@
   });
   document.getElementById("open-compare").addEventListener("click", openCompare);
   document.getElementById("open-options").addEventListener("click", openOptions);
+  document.getElementById("grant-site-access").addEventListener("click", grantSiteAccess);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && state.resultExpanded) {
       setResultExpanded(false);
@@ -657,5 +699,6 @@
   });
 
   applyStoredTheme();
+  updateSiteAccessBanner().catch(() => {});
   loadSafely();
 }(globalThis));

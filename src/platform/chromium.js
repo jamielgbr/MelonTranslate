@@ -79,6 +79,14 @@
         return promisify((done) => chrome.scripting.executeScript(details, done));
       }
     },
+    permissions: {
+      async contains(permissions) {
+        return promisify((done) => chrome.permissions.contains(permissions, done));
+      },
+      async request(permissions) {
+        return promisify((done) => chrome.permissions.request(permissions, done));
+      }
+    },
     action: {
       onClicked(listener) {
         chrome.action.onClicked.addListener(listener);

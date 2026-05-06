@@ -47,6 +47,13 @@
                 </button>
             </div>
         </header>
+        <section id="site-access-banner" class="site-access-banner hidden" aria-live="polite">
+            <div class="site-access-copy">
+                <strong>Site access needed</strong>
+                <span>Enable it for automatic page features on new tabs.</span>
+            </div>
+            <button id="grant-site-access" class="secondary" type="button">Enable</button>
+        </section>
         <section class="toolbar" aria-label="Translation controls">
             <div class="control">
                 <label for="popup-source-language-select">Source</label>
@@ -128,6 +135,7 @@
     <script src="../../platform/chromium.js"></script>
     <script src="../../platform/browser-api.js"></script>
     <script src="../../shared/custom-dropdown.js"></script>
+    <script src="../../shared/host-permissions.js"></script>
     <script src="../../shared/page-utils.js"></script>
     <script src="../../shared/read-aloud.js"></script>
     <script src="./action-popup.js"></script>

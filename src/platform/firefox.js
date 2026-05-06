@@ -58,6 +58,14 @@
         return browser.scripting.executeScript(details);
       }
     },
+    permissions: {
+      async contains(permissions) {
+        return browser.permissions.contains(permissions);
+      },
+      async request(permissions) {
+        return browser.permissions.request(permissions);
+      }
+    },
     action: {
       onClicked(listener) {
         browser.action.onClicked.addListener(listener);

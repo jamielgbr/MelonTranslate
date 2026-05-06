@@ -6,6 +6,7 @@
   const mp = namespace.modelParams;
   const mc = namespace.modelCapabilities;
   const sre = namespace.siteRuleEngine;
+  const hostPermissions = namespace.hostPermissions;
   const PAGE_SIZE = 25;
 
   const state = {
@@ -30,6 +31,43 @@
     el.classList.toggle("status--loading", !!message && message.includes("\u2026"));
     if (message && !message.includes("\u2026")) {
       _statusTimer = setTimeout(function() { el.textContent = ""; el.classList.remove("status--loading"); _statusTimer = null; }, 3000);
+    }
+  }
+
+  async function updateSiteAccessSection() {
+    const section = document.getElementById("site-access-section");
+    if (!section || !hostPermissions || !hostPermissions.canCheck()) {
+      return true;
+    }
+
+    const granted = await hostPermissions.containsAllSites();
+    section.classList.toggle("hidden", granted);
+    return granted;
+  }
+
+  async function grantSiteAccess() {
+    if (!hostPermissions || !hostPermissions.canRequest()) {
+      status("Site access cannot be requested in this browser.");
+      return false;
+    }
+
+    const button = document.getElementById("grant-site-access");
+    if (button) {
+      button.disabled = true;
+    }
+
+    try {
+      const granted = await hostPermissions.requestAllSites();
+      status(granted ? "Site access enabled." : "Site access was not enabled.");
+      await updateSiteAccessSection();
+      return granted;
+    } catch (error) {
+      status(error && error.message ? error.message : "Could not request site access.");
+      return false;
+    } finally {
+      if (button) {
+        button.disabled = false;
+      }
     }
   }
 
@@ -1323,6 +1361,7 @@
     renderDefaultModelSelect();
     renderHistory();
     renderSiteRules();
+    await updateSiteAccessSection();
     status("");
   }
 
@@ -1347,8 +1386,8 @@
         return;
       }
 
-      status("Settings saved.");
       await load();
+      status("Settings saved.");
     } finally {
       saveButton.disabled = false;
       saveButton.classList.remove("is-saving");
@@ -1573,6 +1612,7 @@
   });
 
   document.getElementById("save-button").addEventListener("click", save);
+  document.getElementById("grant-site-access").addEventListener("click", grantSiteAccess);
   document.getElementById("clear-history").addEventListener("click", clearHistory);
   document.getElementById("export-config").addEventListener("click", exportConfig);
   document.getElementById("import-config").addEventListener("click", () => {

@@ -120,6 +120,23 @@ textarea:focus {
   margin-top: 18px;
 }
 
+.hidden {
+  display: none !important;
+}
+
+.site-access-section {
+  border-color: rgba(15, 118, 110, 0.22);
+  background: linear-gradient(180deg, var(--surface), var(--surface-subtle));
+}
+
+.site-access-section .section-header {
+  margin-bottom: 10px;
+}
+
+.site-access-section .primary {
+  min-width: 88px;
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;
