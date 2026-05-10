@@ -31,18 +31,18 @@
         background: transparent;
         color: inherit;
         font-family: inherit;
-        font-size: 0.95em;
-        line-height: inherit;
+        font-size: 1em;
+        line-height: 1.35;
         letter-spacing: 0;
         overflow-wrap: anywhere;
-        opacity: 0.82;
+        opacity: 1;
       }
       .mt-immersive-translation[data-render-strategy="inside-inline"],
       .mt-immersive-translation[data-render-strategy="inside-block"] {
         display: inline;
         clear: none;
         margin: 0;
-        opacity: 0.82;
+        opacity: 1;
       }
       .mt-immersive-translation-content {
         box-sizing: border-box;
@@ -75,11 +75,7 @@
       }
       .mt-immersive-translation.is-loading,
       .mt-immersive-translation.is-error {
-        color: #475569;
-        opacity: 0.75;
-      }
-      .mt-immersive-translation.is-error {
-        color: #991b1b;
+        opacity: 1;
       }
       .mt-immersive-translation button {
         margin-left: 0.75em;
@@ -100,13 +96,185 @@
     (document.head || document.documentElement).appendChild(style);
   }
 
+  function clampColorChannel(value) {
+    return Math.max(0, Math.min(255, Math.round(Number(value) || 0)));
+  }
+
+  function parseColorChannel(value) {
+    const raw = String(value || "").trim();
+    if (raw.endsWith("%")) {
+      return clampColorChannel(parseFloat(raw) * 2.55);
+    }
+    return clampColorChannel(parseFloat(raw));
+  }
+
+  function parseAlphaChannel(value) {
+    const raw = String(value || "").trim();
+    if (!raw) {
+      return 1;
+    }
+    if (raw.endsWith("%")) {
+      return Math.max(0, Math.min(1, parseFloat(raw) / 100));
+    }
+    return Math.max(0, Math.min(1, parseFloat(raw)));
+  }
+
+  function parseRgbColor(value) {
+    const raw = String(value || "").trim().toLowerCase();
+    if (!raw || raw === "transparent") {
+      return raw === "transparent" ? { red: 0, green: 0, blue: 0, alpha: 0 } : null;
+    }
+    const hexMatch = raw.match(/^#([\da-f]{3}|[\da-f]{6})$/i);
+    if (hexMatch) {
+      const hex = hexMatch[1].length === 3
+        ? hexMatch[1].split("").map((digit) => digit + digit).join("")
+        : hexMatch[1];
+      return {
+        red: parseInt(hex.slice(0, 2), 16),
+        green: parseInt(hex.slice(2, 4), 16),
+        blue: parseInt(hex.slice(4, 6), 16),
+        alpha: 1
+      };
+    }
+    const rgbMatch = raw.match(/^rgba?\((.+)\)$/i);
+    if (!rgbMatch) {
+      return null;
+    }
+    const parts = rgbMatch[1].replace(/,/g, " ").replace(/\s*\/\s*/g, " / ").split(/\s+/).filter(Boolean);
+    const slashIndex = parts.indexOf("/");
+    const channels = slashIndex >= 0 ? parts.slice(0, slashIndex) : parts;
+    const alpha = slashIndex >= 0 ? parts[slashIndex + 1] : channels[3];
+    if (channels.length < 3) {
+      return null;
+    }
+    return {
+      red: parseColorChannel(channels[0]),
+      green: parseColorChannel(channels[1]),
+      blue: parseColorChannel(channels[2]),
+      alpha: parseAlphaChannel(alpha)
+    };
+  }
+
+  function blendColors(foreground, background) {
+    const alpha = Math.max(0, Math.min(1, foreground.alpha));
+    return {
+      red: clampColorChannel((foreground.red * alpha) + (background.red * (1 - alpha))),
+      green: clampColorChannel((foreground.green * alpha) + (background.green * (1 - alpha))),
+      blue: clampColorChannel((foreground.blue * alpha) + (background.blue * (1 - alpha))),
+      alpha: 1
+    };
+  }
+
+  function getLinearColorChannel(value) {
+    const normalized = value / 255;
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : Math.pow((normalized + 0.055) / 1.055, 2.4);
+  }
+
+  function getRelativeLuminance(color) {
+    return (0.2126 * getLinearColorChannel(color.red))
+      + (0.7152 * getLinearColorChannel(color.green))
+      + (0.0722 * getLinearColorChannel(color.blue));
+  }
+
+  function getContrastRatio(foreground, background) {
+    const foregroundLuminance = getRelativeLuminance(foreground);
+    const backgroundLuminance = getRelativeLuminance(background);
+    const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+    const darker = Math.min(foregroundLuminance, backgroundLuminance);
+    return (lighter + 0.05) / (darker + 0.05);
+  }
+
+  function colorToRgbString(color) {
+    return `rgb(${clampColorChannel(color.red)}, ${clampColorChannel(color.green)}, ${clampColorChannel(color.blue)})`;
+  }
+
+  function getEffectiveBackgroundColor(element) {
+    const fallback = { red: 255, green: 255, blue: 255, alpha: 1 };
+    if (!element || !window.getComputedStyle) {
+      return fallback;
+    }
+    const layers = [];
+    let current = element;
+    while (current && current.nodeType === Node.ELEMENT_NODE) {
+      try {
+        const background = parseRgbColor(window.getComputedStyle(current).backgroundColor);
+        if (background && background.alpha > 0) {
+          layers.push(background);
+          if (background.alpha >= 0.99) {
+            break;
+          }
+        }
+      } catch (_) {}
+      current = current.parentElement;
+    }
+    return layers.reverse().reduce((background, layer) => blendColors(layer, background), fallback);
+  }
+
+  function getReadableTextColor(element, sourceColorValue) {
+    const sourceColor = parseRgbColor(sourceColorValue);
+    if (!sourceColor || sourceColor.alpha <= 0.05) {
+      return sourceColorValue || "";
+    }
+    const backgroundColor = getEffectiveBackgroundColor(element);
+    const visibleSourceColor = sourceColor.alpha < 0.99 ? blendColors(sourceColor, backgroundColor) : sourceColor;
+    if (getContrastRatio(visibleSourceColor, backgroundColor) >= 4.5) {
+      return sourceColorValue || colorToRgbString(visibleSourceColor);
+    }
+    const darkFallback = { red: 15, green: 23, blue: 42, alpha: 1 };
+    const lightFallback = { red: 255, green: 255, blue: 255, alpha: 1 };
+    return getContrastRatio(lightFallback, backgroundColor) >= getContrastRatio(darkFallback, backgroundColor)
+      ? colorToRgbString(lightFallback)
+      : colorToRgbString(darkFallback);
+  }
+
+  function isYouTubeCardTitle(element) {
+    return !!element && element.matches && element.matches("h3.ytLockupMetadataViewModelHeadingReset,h3.shortsLockupViewModelHostMetadataTitle");
+  }
+
+  function getTextStyleElement(element) {
+    if (!isYouTubeCardTitle(element)) {
+      return element;
+    }
+    return element.querySelector(".ytLockupMetadataViewModelTitle [role='text'],.shortsLockupViewModelHostEndpoint [role='text'],a [role='text'],[role='text']") || element;
+  }
+
+  function getMinimumSyncedFontSize(element) {
+    if (!element || !element.matches) {
+      return 0;
+    }
+    if (element.matches("h3.shortsLockupViewModelHostMetadataTitle")) {
+      return 16;
+    }
+    if (element.matches("h3.ytLockupMetadataViewModelHeadingReset")) {
+      return 14;
+    }
+    return 0;
+  }
+
+  function getSyncedFontSize(element, fontSize) {
+    const minimum = getMinimumSyncedFontSize(element);
+    if (!minimum) {
+      return fontSize || "";
+    }
+    const parsed = parseFloat(fontSize);
+    return Number.isFinite(parsed) ? `${Math.max(parsed, minimum)}px` : fontSize || "";
+  }
+
   function syncContainerLayout(item, node) {
     if (!item || !item.element || !node || !window.getComputedStyle) {
       return;
     }
     try {
-      const style = window.getComputedStyle(item.element);
-      node.style.color = style.color || "";
+      const styleElement = getTextStyleElement(item.element);
+      const style = window.getComputedStyle(styleElement);
+      node.style.color = getReadableTextColor(styleElement, style.color) || "";
+      node.style.fontFamily = style.fontFamily || "";
+      node.style.fontSize = getSyncedFontSize(item.element, style.fontSize);
+      node.style.fontStyle = style.fontStyle || "";
+      node.style.fontWeight = style.fontWeight || "";
+      node.style.lineHeight = style.lineHeight && style.lineHeight !== "normal" ? style.lineHeight : "";
     } catch (_) {}
     if (item.element.matches && item.element.matches("li")) {
       node.style.marginLeft = "";

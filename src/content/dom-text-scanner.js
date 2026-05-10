@@ -51,6 +51,7 @@
   const SUMMARY_MIN_MEANINGFUL_LENGTH = 8;
   const STANDALONE_INLINE_SEGMENT_MIN_LENGTH = 80;
   const MEANINGFUL_CHARACTER_PATTERN = /[\p{L}\p{N}]/gu;
+  const STRUCTURED_LINE_ITEM_PATTERN = /^(?:(?:\d{1,2}:)?\d{1,2}:\d{2}\s*[-:\u2013\u2014]\s*\S|(?:[-*\u2022]\s+|\d{1,3}[.)]\s+|[A-Za-z][.)]\s+)\S)/u;
   const SHORT_SUMMARY_HINT_PATTERN = /(?:dek|deck|summary|description|subtitle|subhead|standfirst|lede)/i;
   const TEXT_SEGMENT_ATTR = "data-melontranslate-text-segment";
   const TEXT_SEGMENT_CONTAINER_ATTR = "data-melontranslate-segmented";
@@ -319,8 +320,228 @@
     return /(?:\r?\n\s*){2,}/.test(String(text || ""));
   }
 
+  function hasLineBreakWhitespace(text) {
+    return /(?:\r?\n\s*)+/.test(String(text || ""));
+  }
+
   function isParagraphWhitespaceTextNode(node) {
     return !!node && node.nodeType === Node.TEXT_NODE && hasParagraphWhitespace(node.textContent);
+  }
+
+  function isLineBreakWhitespaceTextNode(node) {
+    return !!node && node.nodeType === Node.TEXT_NODE && hasLineBreakWhitespace(node.textContent);
+  }
+
+  function isStructuredLineItemText(text) {
+    return STRUCTURED_LINE_ITEM_PATTERN.test(normalizeText(text));
+  }
+
+  function getLineTexts(element) {
+    const text = Array.from(element && element.childNodes || []).map(getNodeText).join("");
+    return text.split(/\r?\n/).map(normalizeText).filter(Boolean);
+  }
+
+  function hasShortTextLineBreaks(element) {
+    return !!element && element.matches(SHORT_TEXT_CONTAINER_SELECTOR) && getLineTexts(element).length >= 2;
+  }
+
+  function hasStructuredLineBreaks(element) {
+    if (!hasLineBreakWhitespace(Array.from(element && element.childNodes || []).map(getNodeText).join(""))) {
+      return false;
+    }
+    const lines = getLineTexts(element);
+    return lines.length >= 2 && lines.some(isStructuredLineItemText);
+  }
+
+  function isTextOnlyElement(node) {
+    return !!node
+      && node.nodeType === Node.ELEMENT_NODE
+      && !Array.from(node.childNodes || []).some((child) => child.nodeType === Node.ELEMENT_NODE);
+  }
+
+  function hasExplicitTextRootShape(element) {
+    return !!element
+      && element.matches(EXPLICIT_TEXT_ROOT_SELECTOR)
+      && countMeaningfulCharacters(getElementText(element)) >= SHORT_TEXT_MIN_MEANINGFUL_LENGTH;
+  }
+
+  function isSegmentableExplicitTextRoot(element) {
+    return hasExplicitTextRootShape(element)
+      && (hasParagraphBreaks(element) || hasShortTextLineBreaks(element) || hasStructuredLineBreaks(element));
+  }
+
+  function isCollectableExplicitTextRoot(element) {
+    return isExplicitTextRoot(element) || isSegmentableExplicitTextRoot(element);
+  }
+
+  function createInlineTextPiece(template, text) {
+    if (!template || template.nodeType === Node.TEXT_NODE) {
+      return document.createTextNode(text);
+    }
+    const clone = template.cloneNode(false);
+    clone.textContent = text;
+    return clone;
+  }
+
+  function splitNodeOnLineBreakWhitespace(node) {
+    const text = String(node && node.textContent || "");
+    if (!node || !node.parentNode || !hasLineBreakWhitespace(text)) {
+      return;
+    }
+    text.split(/((?:\r?\n\s*)+)/).forEach((part) => {
+      if (!part) {
+        return;
+      }
+      const replacement = hasLineBreakWhitespace(part)
+        ? document.createTextNode(part)
+        : createInlineTextPiece(node, part);
+      node.parentNode.insertBefore(replacement, node);
+    });
+    node.remove();
+  }
+
+  function splitInlineParagraphNodes(element) {
+    Array.from(element.childNodes || []).forEach((node) => {
+      if (node.nodeType === Node.TEXT_NODE || isTextOnlyElement(node)) {
+        splitNodeOnLineBreakWhitespace(node);
+      }
+    });
+  }
+
+  function isSegmentSeparatorNode(node) {
+    return !!node && node.nodeType === Node.TEXT_NODE && hasParagraphWhitespace(node.textContent);
+  }
+
+  function isLineSegmentSeparatorNode(node) {
+    return isLineBreakWhitespaceTextNode(node) && !isSegmentSeparatorNode(node);
+  }
+
+  function shouldSplitStructuredLineGroup(group) {
+    const text = normalizeText(group.map(getNodeText).join(" "));
+    return isStructuredLineItemText(text);
+  }
+
+  function flushInlineParagraphGroup(groups, group) {
+    const text = normalizeText(group.map(getNodeText).join(" "));
+    if (text && !isUrlOnlyText(text)) {
+      groups.push(group.slice());
+    }
+    group.splice(0, group.length);
+  }
+
+  function canRefineExistingSegment(segment, parent) {
+    return !!segment
+      && segment.parentElement === parent
+      && hasParagraphBreaks(segment)
+      && !segment.querySelector(".mt-immersive-translation")
+      && (segment.matches("span") || isStandaloneInlineChildSegment(segment, parent));
+  }
+
+  function refineExistingInlineSegments(element, existing) {
+    const segments = [];
+    let changed = false;
+    existing.forEach((segment) => {
+      if (!canRefineExistingSegment(segment, element)) {
+        segments.push(segment);
+        return;
+      }
+      segment.removeAttribute(TEXT_SEGMENT_ATTR);
+      segment.removeAttribute(TEXT_SEGMENT_CONTAINER_ATTR);
+      const refined = createInlineParagraphSegments(segment);
+      if (refined.length) {
+        segments.push.apply(segments, refined);
+        changed = true;
+        return;
+      }
+      segment.setAttribute(TEXT_SEGMENT_ATTR, "true");
+      segments.push(segment);
+    });
+    if (changed) {
+      element.setAttribute(TEXT_SEGMENT_CONTAINER_ATTR, "true");
+    }
+    return segments;
+  }
+
+  function createInlineParagraphSegments(element) {
+    const existing = getDirectTextSegments(element);
+    if (existing.length) {
+      return refineExistingInlineSegments(element, existing);
+    }
+    if (element.getAttribute(TEXT_SEGMENT_CONTAINER_ATTR) === "true") {
+      return existing;
+    }
+
+    splitInlineParagraphNodes(element);
+    const groups = [];
+    const group = [];
+    let pendingBreaks = [];
+    function flushPendingBreaks(nextNode) {
+      if (!pendingBreaks.length) {
+        return;
+      }
+      if (pendingBreaksShouldSplit(pendingBreaks, nextNode)) {
+        flushInlineParagraphGroup(groups, group);
+      } else if (pendingBreaks.length === 1) {
+        group.push(pendingBreaks[0]);
+      } else {
+        group.push.apply(group, pendingBreaks);
+      }
+      pendingBreaks = [];
+    }
+    Array.from(element.childNodes || []).forEach((node) => {
+      if (isBrNode(node)) {
+        pendingBreaks.push(node);
+        return;
+      }
+      if (isWhitespaceTextNode(node) && pendingBreaks.length) {
+        pendingBreaks.push(node);
+        return;
+      }
+      flushPendingBreaks(node);
+      if (isSegmentSeparatorNode(node)) {
+        flushInlineParagraphGroup(groups, group);
+        return;
+      }
+      if (isLineSegmentSeparatorNode(node)) {
+        if (element.matches(SHORT_TEXT_CONTAINER_SELECTOR) || shouldSplitStructuredLineGroup(group)) {
+          flushInlineParagraphGroup(groups, group);
+          return;
+        }
+        if (isWhitespaceTextNode(node) && !group.length) {
+          return;
+        }
+        group.push(node);
+        return;
+      }
+      if (isWhitespaceTextNode(node) && !group.length) {
+        return;
+      }
+      if (isChildSegmentNode(node, element)) {
+        flushInlineParagraphGroup(groups, group);
+        groups.push([node]);
+        return;
+      }
+      group.push(node);
+    });
+    if (pendingBreaks.filter(isBrNode).length <= 1) {
+      group.push.apply(group, pendingBreaks);
+    }
+    flushInlineParagraphGroup(groups, group);
+
+    const segments = [];
+    groups.forEach((nodes) => {
+      if (nodes.length === 1 && isChildSegmentNode(nodes[0], element)) {
+        if (isStandaloneInlineChildSegment(nodes[0], element) && hasParagraphBreaks(nodes[0])) {
+          segments.push.apply(segments, createInlineParagraphSegments(nodes[0]));
+          return;
+        }
+        segments.push(markTextSegment(nodes[0]));
+        return;
+      }
+      segments.push(createInlineTextSegment(element, nodes));
+    });
+    element.setAttribute(TEXT_SEGMENT_CONTAINER_ATTR, "true");
+    return segments;
   }
 
   function isUrlOnlyText(text) {
@@ -356,6 +577,9 @@
       }
       if (isWhitespaceTextNode(node)) {
         return false;
+      }
+      if (isTextOnlyElement(node) && hasParagraphWhitespace(node.textContent)) {
+        return true;
       }
       if (isBrNode(node)) {
         breakCount += 1;
@@ -482,7 +706,13 @@
   }
 
   function isTextTooShort(element, text, fallbackLength) {
-    if (element && element.matches(SHORT_TEXT_CONTAINER_SELECTOR)) {
+    if (isUrlOnlyText(text)) {
+      return true;
+    }
+    if (isStructuredLineItemText(text)) {
+      return countMeaningfulCharacters(text) < LIST_ITEM_MIN_MEANINGFUL_LENGTH;
+    }
+    if (element && (element.matches(SHORT_TEXT_CONTAINER_SELECTOR) || element.closest(SHORT_TEXT_CONTAINER_SELECTOR))) {
       const minLength = Math.min(fallbackLength, SHORT_TEXT_MIN_MEANINGFUL_LENGTH);
       return countMeaningfulCharacters(text) < minLength;
     }
@@ -497,9 +727,6 @@
     if (element && element.matches("p,div") && hasSummaryHint(element)) {
       const minLength = Math.min(fallbackLength, SUMMARY_MIN_MEANINGFUL_LENGTH);
       return countMeaningfulCharacters(text) < minLength;
-    }
-    if (isUrlOnlyText(text)) {
-      return true;
     }
     return text.length < fallbackLength;
   }
@@ -522,10 +749,8 @@
   }
 
   function isExplicitTextRoot(element) {
-    return !!element
-      && element.matches(EXPLICIT_TEXT_ROOT_SELECTOR)
+    return hasExplicitTextRootShape(element)
       && !hasNestedBlockCandidate(element)
-      && countMeaningfulCharacters(getElementText(element)) >= SHORT_TEXT_MIN_MEANINGFUL_LENGTH;
   }
 
   function getRenderStrategy(element, text) {
@@ -539,6 +764,9 @@
       return "inside-cell";
     }
     if (element.matches("[data-testid='card-headline']")) {
+      return "after-block";
+    }
+    if (element.matches("h3.ytLockupMetadataViewModelHeadingReset,h3.shortsLockupViewModelHostMetadataTitle")) {
       return "after-block";
     }
     if (element.matches("h1,h2")) {
@@ -577,7 +805,7 @@
     if (isExcludedBySelector(element, cfg.excludeSelectors)) {
       return true;
     }
-    if (!element.matches(TEXT_BLOCK_SELECTOR) && !(isExplicitRootElement && isExplicitTextRoot(element))) {
+    if (!element.matches(TEXT_BLOCK_SELECTOR) && !(isExplicitRootElement && isCollectableExplicitTextRoot(element))) {
       return true;
     }
     if (!isExplicitRootElement && !isInlineTextContainer(element) && hasNestedBlockCandidate(element)) {
@@ -587,14 +815,22 @@
   }
 
   function collectSegmentBlocks(element, cfg) {
-    if (!isSegmentableContainer(element)) {
+    const isExplicitRootElement = !!cfg.explicitRoot && element === cfg.rootNode;
+    const existing = getDirectTextSegments(element);
+    const shouldSegmentShortTextLines = hasShortTextLineBreaks(element);
+    const isSegmentedExplicitRoot = isExplicitRootElement
+      && (existing.length || element.getAttribute(TEXT_SEGMENT_CONTAINER_ATTR) === "true");
+    const shouldSegmentExplicitRoot = isExplicitRootElement
+      && element === cfg.rootNode
+      && (isSegmentableExplicitTextRoot(element) || isSegmentedExplicitRoot)
+      && (hasParagraphBreaks(element) || shouldSegmentShortTextLines || hasStructuredLineBreaks(element) || isSegmentedExplicitRoot);
+    if (!shouldSegmentExplicitRoot && !shouldSegmentShortTextLines && !isSegmentableContainer(element)) {
       return null;
     }
-    const existing = getDirectTextSegments(element);
     if (!existing.length && element.getAttribute(TEXT_SEGMENT_CONTAINER_ATTR) === "true") {
       return [];
     }
-    if (!existing.length && !hasParagraphBreaks(element)) {
+    if (!shouldSegmentExplicitRoot && !shouldSegmentShortTextLines && !existing.length && !hasParagraphBreaks(element)) {
       return null;
     }
     if (element.closest(ALWAYS_SKIP_CLOSEST_SELECTOR)
@@ -604,7 +840,9 @@
       return [];
     }
 
-    const segments = existing.length ? existing : createTextSegments(element);
+    const segments = (shouldSegmentExplicitRoot || shouldSegmentShortTextLines)
+      ? createInlineParagraphSegments(element)
+      : existing.length ? existing : createTextSegments(element);
     return segments.map((segment) => {
       if (segment.closest("[data-melontranslate-immersive='translation'],.mt-immersive-translation") || isElementHidden(segment)) {
         return null;
@@ -625,7 +863,7 @@
     const normalizedCfg = Object.assign({}, cfg, { minLength, maxLength, rootNode });
     const base = rootNode && rootNode.querySelectorAll ? rootNode : document;
     const candidates = base.nodeType === Node.ELEMENT_NODE
-      ? (base.matches(TEXT_BLOCK_SELECTOR) || (normalizedCfg.explicitRoot && isExplicitTextRoot(base))
+      ? (base.matches(TEXT_BLOCK_SELECTOR) || (normalizedCfg.explicitRoot && isCollectableExplicitTextRoot(base))
         ? [base].concat(Array.from(base.querySelectorAll(TEXT_BLOCK_SELECTOR)))
         : Array.from(base.querySelectorAll(TEXT_BLOCK_SELECTOR)))
       : Array.from(base.querySelectorAll(TEXT_BLOCK_SELECTOR));

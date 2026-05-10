@@ -180,8 +180,34 @@
       enabled: true,
       source: "preset",
       category: "video",
-      includeSelectors: [],
-      excludeSelectors: [],
+      includeSelectors: [
+        "ytd-rich-grid-renderer h3.ytLockupMetadataViewModelHeadingReset",
+        "ytd-rich-item-renderer h3.ytLockupMetadataViewModelHeadingReset",
+        "ytd-rich-shelf-renderer h3.shortsLockupViewModelHostMetadataTitle",
+        "ytd-reel-shelf-renderer h3.shortsLockupViewModelHostMetadataTitle",
+        "ytd-watch-metadata #title h1",
+        "ytd-watch-metadata #description-inline-expander #expanded yt-attributed-string > span.ytAttributedStringHost",
+        "ytd-watch-metadata #description #attributed-snippet-text > span.ytAttributedStringHost",
+        "ytd-engagement-panel-section-list-renderer[target-id='engagement-panel-structured-description'] #attributed-snippet-text > span.ytAttributedStringHost",
+        "ytd-comments-header-renderer #count",
+        "ytd-comments ytd-comment-view-model #content-text span[role='text']"
+      ],
+      excludeSelectors: [
+        "#secondary",
+        "#related",
+        "#masthead",
+        "#guide",
+        "#actions",
+        "ytd-watch-next-secondary-results-renderer",
+        "ytd-compact-video-renderer",
+        "ytd-compact-radio-renderer",
+        "ytd-compact-playlist-renderer",
+        "ytd-masthead",
+        "ytd-guide-renderer",
+        "ytd-menu-renderer",
+        "ytd-menu-popup-renderer",
+        "yt-chip-cloud-renderer"
+      ],
       contextStyle: "casual"
     },
     {
