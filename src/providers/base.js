@@ -55,6 +55,16 @@
 
   const wordSegmenter = createWordSegmenter();
   const noSpaceScriptPattern = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+  const chineseScriptPattern = /\p{Script=Han}/u;
+  const chinesePronounSource = "(?:我|你|您|他|她|它|咱|我们|你们|他们|她们|它们|咱们)";
+  const chinesePredicateSource = "(?:是|在|有|叫|爱|喜欢|需要|觉得|知道|认识|看到|看见|想|要|会|能|可以|应该)";
+  const chinesePossessivePhrasePattern = new RegExp(`^${chinesePronounSource}的[\\p{Script=Han}]`, "u");
+  const chineseSubjectPredicatePattern = new RegExp(
+    `^${chinesePronounSource}(?:也|都|就|还)?(?:不|没)?(?:${chinesePredicateSource}|很|太|真|更|最)[\\p{Script=Han}]`,
+    "u"
+  );
+  const chineseTrailingPredicatePattern = /[\p{Script=Han}](?:叫|是|在|有)$/u;
+  const chineseSentenceParticlePattern = /[\p{Script=Han}](?:吗|呢|吧|啊|呀|啦)$/u;
   const japaneseScriptPattern = /[\p{Script=Hiragana}\p{Script=Katakana}]/u;
   const koreanScriptPattern = /\p{Script=Hangul}/u;
   const japaneseParticleSource = "(?:が|を|は|へ|に|で|と|も|や|の|から|まで|より|だけ|ほど)";
@@ -86,6 +96,22 @@
     }
   }
 
+  function looksLikeChinesePhrase(text, segments) {
+    if (!chineseScriptPattern.test(text)) {
+      return false;
+    }
+
+    if (chinesePossessivePhrasePattern.test(text) || chineseSubjectPredicatePattern.test(text)) {
+      return true;
+    }
+
+    if (chineseSentenceParticlePattern.test(text)) {
+      return true;
+    }
+
+    return segments.length > 1 && chineseTrailingPredicatePattern.test(text);
+  }
+
   function looksLikeNoSpacePhrase(text) {
     if (!noSpaceScriptPattern.test(text)) {
       return false;
@@ -96,6 +122,10 @@
     }
 
     const segments = getWordLikeSegments(text);
+    if (looksLikeChinesePhrase(text, segments)) {
+      return true;
+    }
+
     if (!segments.length) {
       return japaneseScriptPattern.test(text) && inlineJapaneseParticlePattern.test(text);
     }
@@ -196,7 +226,7 @@
       }
 
       // Sentence-ending/interrogative punctuation indicates a phrase, not a word
-      if (/[…．、※×！？。!?—ー（）；【】,，]/.test(normalized)) {
+      if (/[…．、※×！？。!?:：;；—ー（）；【】,，]/.test(normalized)) {
         return false;
       }
 
