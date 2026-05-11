@@ -103,6 +103,32 @@
       contextStyle: "formal"
     },
     {
+      id: "preset-docs-qiita",
+      hostPattern: "qiita.com",
+      enabled: true,
+      source: "preset",
+      category: "docs",
+      includeSelectors: [
+        "article [data-logly-title='true']",
+        "#personal-public-article-body h1",
+        "#personal-public-article-body h2",
+        "#personal-public-article-body h3",
+        "#personal-public-article-body h4",
+        "#personal-public-article-body h5",
+        "#personal-public-article-body h6",
+        "#personal-public-article-body p",
+        "#personal-public-article-body li",
+        "#personal-public-article-body th",
+        "#personal-public-article-body td",
+        "#personal-public-article-body figcaption"
+      ],
+      excludeSelectors: [
+        "#personal-public-article-body pre",
+        "#personal-public-article-body code"
+      ],
+      contextStyle: "formal"
+    },
+    {
       id: "preset-news-slashdot",
       hostPattern: "slashdot.org",
       enabled: true,
