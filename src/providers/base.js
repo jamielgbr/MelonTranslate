@@ -177,12 +177,15 @@
         : `Translate the user content into ${request.targetLanguage}.`;
       const contextStyle = request.contextStyle || "auto";
       const styleHint = this.buildContextStyleHint(contextStyle);
+      const formattingHint = request.preserveRichTextFormatting
+        ? "The user content may contain inline formatting markers [[MTB]], [[/MTB]], [[MTI]], and [[/MTI]]. Preserve these marker tokens exactly around the corresponding translated words; do not translate, remove, duplicate, escape, or explain the markers."
+        : "Preserve names, technical terms, and formatting where possible.";
 
       return [
         "You are a precise translator.",
         sourceHint,
         styleHint,
-        "Preserve names, technical terms, and formatting where possible.",
+        formattingHint,
         "For short fragments, tags, search keywords, or noun phrases, translate as one concise phrase and preserve uncertain proper names or titles.",
         "Do not add explanations, alternatives, transliterations, labels, notes, or context not present in the source.",
         "Return only the translated text."

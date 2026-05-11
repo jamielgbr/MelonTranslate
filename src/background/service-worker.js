@@ -19,10 +19,17 @@
   const translationCache = new Map();
   const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
-  function cacheKey(text, sourceLanguage, targetLanguage, providerSignature, contextStyle, dictionaryModeForSingleWord) {
+  const richTextMarkerPattern = /\[\[\/?MT[BI]\]\]/g;
+
+  function stripRichTextMarkers(text) {
+    return String(text || "").replace(richTextMarkerPattern, "");
+  }
+
+  function cacheKey(text, sourceLanguage, targetLanguage, providerSignature, contextStyle, dictionaryModeForSingleWord, preserveRichTextFormatting) {
     const style = namespace.pageUtils.getInputContextStyle(contextStyle);
     const dictionaryMode = dictionaryModeForSingleWord ? "dict" : "plain";
-    return `${sourceLanguage || "auto"}\0${targetLanguage}\0${style}\0${dictionaryMode}\0${providerSignature}\0${text}`;
+    const formatMode = preserveRichTextFormatting ? "rich-v1" : "plain";
+    return `${sourceLanguage || "auto"}\0${targetLanguage}\0${style}\0${dictionaryMode}\0${formatMode}\0${providerSignature}\0${text}`;
   }
 
   function getCached(key) {
@@ -552,22 +559,32 @@
   }
 
   function buildStreamPayload(message, settings, siteRules) {
-    const text = (message.text || "").trim().slice(0, namespace.constants.maxSelectionLength);
+    const maxLength = namespace.constants.maxSelectionLength;
+    const rawText = String(message.text || "").trim();
+    const rawPlainText = String(message.plainText || "").trim();
+    const canPreserveRichText = !!message.preserveRichTextFormatting
+      && !!rawPlainText
+      && rawText !== rawPlainText
+      && rawText.length <= maxLength;
+    const text = (canPreserveRichText ? rawText : (rawPlainText || rawText)).slice(0, maxLength);
+    const displayText = (rawPlainText || text).slice(0, maxLength);
     const explicitSourceLanguage = String(message.sourceLanguage || "").trim();
     const hasExplicitSource = !!explicitSourceLanguage && explicitSourceLanguage.toLowerCase() !== "auto";
-    const targetDecision = maybeSwitchTargetLanguage(settings, message.targetLanguage, text);
+    const targetDecision = maybeSwitchTargetLanguage(settings, message.targetLanguage, displayText || text);
     const contextStyle = resolveRequestContextStyle(message, settings, siteRules);
     const dictionaryMode = message.dictionaryModeForSingleWord === false
       ? false
       : settings.dictionaryModeForSingleWord !== false;
     return {
       text,
+      displayText,
       sourceLanguage: hasExplicitSource ? explicitSourceLanguage : "",
       targetLanguage: hasExplicitSource
         ? (message.targetLanguage || settings.targetLanguage)
         : targetDecision.effectiveTargetLanguage,
       sourceLanguageDetected: hasExplicitSource ? explicitSourceLanguage : targetDecision.detectedSourceLanguage,
       dictionaryModeForSingleWord: dictionaryMode,
+      preserveRichTextFormatting: canPreserveRichText,
       contextStyle,
       url: message.url || ""
     };
@@ -597,7 +614,8 @@
       request.targetLanguage,
       providerSignature,
       request.contextStyle,
-      request.dictionaryModeForSingleWord
+      request.dictionaryModeForSingleWord,
+      request.preserveRichTextFormatting
     );
     const cached = bypassCache ? null : getCached(key);
     return { settings, configuredProviders, request, providerIds, modelOverrides, temperatureOverrides, key, cached };
@@ -606,12 +624,16 @@
   async function appendTranslationHistory(request, results, settings) {
     await namespace.configManager.appendHistory({
       id: crypto.randomUUID(),
-      text: request.text,
+      text: request.displayText || request.text,
       targetLanguage: request.targetLanguage,
       contextStyle: request.contextStyle,
       url: request.url,
       createdAt: new Date().toISOString(),
-      results
+      results: request.preserveRichTextFormatting
+        ? results.map((result) => result && typeof result === "object"
+          ? Object.assign({}, result, { translatedText: stripRichTextMarkers(result.translatedText) })
+          : result)
+        : results
     }, settings);
   }
 

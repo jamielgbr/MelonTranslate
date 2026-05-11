@@ -2,6 +2,8 @@
   const namespace = root.MelonTranslate = root.MelonTranslate || {};
   const styleId = "melontranslate-immersive-style";
   const sourceIdAttr = "data-melontranslate-source-id";
+  const richTextMarkerPattern = /\[\[(\/?)MT([BI])\]\]/g;
+  const richTextStripPattern = /\[\[\/?MT[BI]\]\]/g;
   let renderedByElement = new WeakMap();
   let expandedClipStates = new WeakMap();
   let expandedClipCounts = new WeakMap();
@@ -497,8 +499,71 @@
     node.classList.toggle("is-error", stateName === "error");
   }
 
-  function setContainerText(node, text) {
+  function stripRichTextMarkers(text) {
+    return String(text || "").replace(richTextStripPattern, "");
+  }
+
+  function createRichTextElement(type) {
+    return document.createElement(type === "B" ? "strong" : "em");
+  }
+
+  function createRichTextFragment(text) {
+    const value = String(text || "");
+    if (!richTextStripPattern.test(value)) {
+      richTextStripPattern.lastIndex = 0;
+      return null;
+    }
+    richTextStripPattern.lastIndex = 0;
+    const fragment = document.createDocumentFragment();
+    const stack = [{ type: "root", node: fragment }];
+    let index = 0;
+    richTextMarkerPattern.lastIndex = 0;
+
+    let match = richTextMarkerPattern.exec(value);
+    while (match) {
+      if (match.index > index) {
+        stack[stack.length - 1].node.appendChild(document.createTextNode(value.slice(index, match.index)));
+      }
+      const isClosing = match[1] === "/";
+      const markerType = match[2];
+      if (isClosing) {
+        if (stack.length <= 1 || stack[stack.length - 1].type !== markerType) {
+          richTextMarkerPattern.lastIndex = 0;
+          return null;
+        }
+        stack.pop();
+      } else {
+        const element = createRichTextElement(markerType);
+        stack[stack.length - 1].node.appendChild(element);
+        stack.push({ type: markerType, node: element });
+      }
+      index = richTextMarkerPattern.lastIndex;
+      match = richTextMarkerPattern.exec(value);
+    }
+
+    if (index < value.length) {
+      stack[stack.length - 1].node.appendChild(document.createTextNode(value.slice(index)));
+    }
+    richTextMarkerPattern.lastIndex = 0;
+    return stack.length === 1 ? fragment : null;
+  }
+
+  function appendContainerContent(target, text, richText) {
+    if (richText) {
+      const fragment = createRichTextFragment(text);
+      if (fragment) {
+        target.appendChild(fragment);
+        return;
+      }
+      target.textContent = stripRichTextMarkers(text);
+      return;
+    }
+    target.textContent = String(text || "").trim();
+  }
+
+  function setContainerText(node, text, options) {
     const value = String(text || "").trim();
+    const richText = !!(options && options.richText);
     const strategy = node.dataset.renderStrategy || "after-block";
     node.textContent = "";
     if (strategy === "inside-inline") {
@@ -509,11 +574,11 @@
     if (strategy === "inside-inline" || strategy === "inside-block") {
       const content = document.createElement("span");
       content.className = "mt-immersive-translation-content";
-      content.textContent = value;
+      appendContainerContent(content, value, richText);
       node.appendChild(content);
       return;
     }
-    node.textContent = value;
+    appendContainerContent(node, value, richText);
   }
 
   function renderLoading(item, settings) {
@@ -528,7 +593,7 @@
     ensureStyle();
     const node = createContainer(item, settings);
     setStateClass(node, "ready");
-    setContainerText(node, translatedText);
+    setContainerText(node, translatedText, { richText: !!(item && item.renderRichText) });
     return node;
   }
 

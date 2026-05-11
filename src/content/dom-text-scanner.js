@@ -55,6 +55,12 @@
   const SHORT_SUMMARY_HINT_PATTERN = /(?:dek|deck|summary|description|subtitle|subhead|standfirst|lede)/i;
   const TEXT_SEGMENT_ATTR = "data-melontranslate-text-segment";
   const TEXT_SEGMENT_CONTAINER_ATTR = "data-melontranslate-segmented";
+  const RICH_TEXT_FORMAT = "melontranslate-rich-v1";
+  const RICH_TEXT_BOLD_OPEN = "[[MTB]]";
+  const RICH_TEXT_BOLD_CLOSE = "[[/MTB]]";
+  const RICH_TEXT_ITALIC_OPEN = "[[MTI]]";
+  const RICH_TEXT_ITALIC_CLOSE = "[[/MTI]]";
+  const RICH_TEXT_MARKER_PATTERN = /\[\[\/?MT[BI]\]\]/g;
   const STANDALONE_INLINE_SEGMENT_SELECTOR = "i,em";
   const SEGMENTABLE_CONTAINER_SELECTOR = [
     INLINE_TEXT_CONTAINER_SELECTOR,
@@ -269,6 +275,140 @@
 
   function getElementText(element) {
     return normalizeText(getNodeText(element));
+  }
+
+  function stripRichTextMarkers(text) {
+    return String(text || "").replace(RICH_TEXT_MARKER_PATTERN, "");
+  }
+
+  function parseFontWeight(value) {
+    const raw = String(value || "").trim().toLowerCase();
+    if (raw === "bold" || raw === "bolder") {
+      return 700;
+    }
+    if (raw === "normal" || raw === "lighter") {
+      return 400;
+    }
+    const numeric = Number.parseInt(raw, 10);
+    return Number.isFinite(numeric) ? numeric : 400;
+  }
+
+  function readElementInlineFormat(element, rootElement) {
+    const state = { bold: false, italic: false };
+    if (!element || element === rootElement || element.nodeType !== Node.ELEMENT_NODE) {
+      return state;
+    }
+    if (element.matches("strong,b")) {
+      state.bold = true;
+    }
+    if (element.matches("em,i")) {
+      state.italic = true;
+    }
+    if (!window.getComputedStyle) {
+      return state;
+    }
+    try {
+      const style = window.getComputedStyle(element);
+      const parentStyle = element.parentElement && element.parentElement.nodeType === Node.ELEMENT_NODE
+        ? window.getComputedStyle(element.parentElement)
+        : null;
+      if (parseFontWeight(style.fontWeight) >= 600 && (!parentStyle || parseFontWeight(parentStyle.fontWeight) < 600)) {
+        state.bold = true;
+      }
+      if (/italic|oblique/i.test(style.fontStyle || "") && (!parentStyle || style.fontStyle !== parentStyle.fontStyle)) {
+        state.italic = true;
+      }
+    } catch (_) {}
+    return state;
+  }
+
+  function appendRichTextRun(runs, text, formatState) {
+    if (!text) {
+      return;
+    }
+    const run = {
+      text,
+      bold: !!(formatState && formatState.bold),
+      italic: !!(formatState && formatState.italic)
+    };
+    const previous = runs[runs.length - 1];
+    if (previous && previous.bold === run.bold && previous.italic === run.italic) {
+      previous.text += run.text;
+      return;
+    }
+    runs.push(run);
+  }
+
+  function collectRichTextRuns(node, formatState, runs, rootElement) {
+    if (!node) {
+      return;
+    }
+    if (node.nodeType === Node.TEXT_NODE) {
+      appendRichTextRun(runs, node.textContent || "", formatState);
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return;
+    }
+    if (isBrNode(node)) {
+      appendRichTextRun(runs, "\n", formatState);
+      return;
+    }
+    if (shouldSkipTextElement(node)) {
+      return;
+    }
+
+    const ownFormat = readElementInlineFormat(node, rootElement);
+    const nextState = {
+      bold: !!(formatState && formatState.bold) || ownFormat.bold,
+      italic: !!(formatState && formatState.italic) || ownFormat.italic
+    };
+    const children = Array.from(node.childNodes || []);
+    children.forEach((child, index) => {
+      collectRichTextRuns(child, nextState, runs, rootElement);
+      if (index < children.length - 1) {
+        appendRichTextRun(runs, " ", nextState);
+      }
+    });
+  }
+
+  function wrapRichTextRun(run) {
+    let text = run.text;
+    if (run.italic) {
+      text = `${RICH_TEXT_ITALIC_OPEN}${text}${RICH_TEXT_ITALIC_CLOSE}`;
+    }
+    if (run.bold) {
+      text = `${RICH_TEXT_BOLD_OPEN}${text}${RICH_TEXT_BOLD_CLOSE}`;
+    }
+    return text;
+  }
+
+  function buildRichTextRequest(element, plainText) {
+    if (!element || RICH_TEXT_MARKER_PATTERN.test(plainText)) {
+      RICH_TEXT_MARKER_PATTERN.lastIndex = 0;
+      return null;
+    }
+    RICH_TEXT_MARKER_PATTERN.lastIndex = 0;
+    const runs = [];
+    collectRichTextRuns(element, { bold: false, italic: false }, runs, element);
+    const hasFormattedText = runs.some((run) => (run.bold || run.italic) && normalizeText(run.text));
+    if (!hasFormattedText) {
+      return null;
+    }
+    const markedText = normalizeText(runs.map(wrapRichTextRun).join(""));
+    RICH_TEXT_MARKER_PATTERN.lastIndex = 0;
+    if (!markedText || !RICH_TEXT_MARKER_PATTERN.test(markedText)) {
+      RICH_TEXT_MARKER_PATTERN.lastIndex = 0;
+      return null;
+    }
+    RICH_TEXT_MARKER_PATTERN.lastIndex = 0;
+    if (normalizeText(stripRichTextMarkers(markedText)) !== plainText) {
+      return null;
+    }
+    return {
+      format: RICH_TEXT_FORMAT,
+      text: markedText
+    };
   }
 
   function hasNestedBlockCandidate(element) {
@@ -782,12 +922,17 @@
   }
 
   function buildTextBlock(element, text) {
-    return {
+    const block = {
       element,
       text,
       fingerprint: hashText(text),
       renderStrategy: getRenderStrategy(element, text)
     };
+    const richText = buildRichTextRequest(element, text);
+    if (richText) {
+      block.richText = richText;
+    }
+    return block;
   }
 
   function isSkippableElement(element, options) {
@@ -888,6 +1033,7 @@
   namespace.domTextScanner = {
     collectTextBlocks,
     hashText,
-    normalizeText
+    normalizeText,
+    stripRichTextMarkers
   };
 }(globalThis));

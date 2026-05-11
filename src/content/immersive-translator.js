@@ -183,6 +183,7 @@
     const item = {
       element: block.element,
       text: block.text,
+      richText: block.richText || null,
       fingerprint: block.fingerprint,
       status: "new",
       client: null,
@@ -297,13 +298,20 @@
     renderer.renderLoading(item, settings);
     const client = namespace.translationClient.create();
     item.client = client;
+    const richText = item.richText && item.richText.text && item.richText.text.length <= namespace.constants.maxSelectionLength
+      ? item.richText
+      : null;
+    const requestText = richText ? richText.text : item.text;
+    item.renderRichText = !!richText;
 
     try {
-      const result = await client.request(item.text, {
+      const result = await client.request(requestText, {
         targetLanguage: state.settings.targetLanguage || "en",
         sourceLanguage: "auto",
         contextStyle: item.contextStyle || settings.immersiveTranslationContextStyle || "auto",
         dictionaryModeForSingleWord: false,
+        plainText: item.text,
+        preserveRichTextFormatting: !!richText,
         url: window.location.href
       });
       if (!state.enabled || item.status === "stale" || !item.element.isConnected) {
@@ -313,7 +321,10 @@
       if (!translatedText) {
         throw new Error("Translation returned an empty result.");
       }
-      if (scanner.normalizeText(translatedText) === scanner.normalizeText(item.text)) {
+      const comparisonText = richText && scanner.stripRichTextMarkers
+        ? scanner.stripRichTextMarkers(translatedText)
+        : translatedText;
+      if (scanner.normalizeText(comparisonText) === scanner.normalizeText(item.text)) {
         item.status = "done";
         item.translatedText = "";
         renderer.removeForElement(item.element);
@@ -329,6 +340,7 @@
       item.status = "error";
       renderer.renderError(item, error && error.message ? error.message : "Translation failed.", settings, retryItem);
     } finally {
+      item.renderRichText = false;
       item.client = null;
       activeItems.delete(item);
       processQueue();

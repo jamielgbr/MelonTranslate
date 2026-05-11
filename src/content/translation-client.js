@@ -112,6 +112,8 @@
           sourceLanguage: opts.sourceLanguage,
           contextStyle: opts.contextStyle,
           dictionaryModeForSingleWord: opts.dictionaryModeForSingleWord,
+          plainText: opts.plainText,
+          preserveRichTextFormatting: !!opts.preserveRichTextFormatting,
           providerIds: Array.isArray(opts.providerIds) ? opts.providerIds : [],
           modelOverrides: opts.modelOverrides && typeof opts.modelOverrides === "object" ? opts.modelOverrides : {},
           temperatureOverrides: opts.temperatureOverrides && typeof opts.temperatureOverrides === "object" ? opts.temperatureOverrides : {},
