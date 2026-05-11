@@ -1,11 +1,14 @@
 # MelonTranslate
 
-Set up your own API key, select any text on the page → get translation.
+![MelonTranslate header](assets/publish/header.png)
+
+Bring your own API key to translate web pages inline or selected text on demand.
 
 ---
 
 ## Features
 
+- **Inline page translation** — translate page content in place while preserving the surrounding layout and reading flow
 - **Select-to-translate** — highlight text, popup appears instantly
 - **Multiple providers** — OpenAI, Anthropic, DeepSeek, Groq, or any OpenAI-compatible endpoints
 - **Read aloud** — TTS for source and translated text (via Google Translate audio)
@@ -15,12 +18,30 @@ Set up your own API key, select any text on the page → get translation.
 
 ---
 
+## Screenshots
+
+### Inline Page Translation
+
+<img src="assets/publish/inline_translation.png" alt="Inline page translation" width="820">
+
+### Select-to-Translate
+
+<img src="assets/publish/select_to_translate.png" alt="Select-to-translate" width="820">
+
+### Compare Mode
+
+<img src="assets/publish/compare.png" alt="Compare mode" width="820">
+
+---
+
 ## Browser Support
 
 | Browser | Manifest |
 |---------|----------|
 | Firefox 128+ | `manifest.json` |
 | Chromium | `manifest.chromium.json` |
+
+Firefox users need to grant site access for automatic page features such as select-to-translate and immersive translation on newly opened tabs. MelonTranslate prompts for this from the popup and settings page when needed.
 
 ---
 

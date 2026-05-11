@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 560 560" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;">
+    <g id="rect33">
+    </g>
+    <g id="circle35" transform="matrix(1.721074,0,0,1.721074,-5.344949,105.04768)">
+        <circle cx="80" cy="83" r="54" style="fill-opacity:0.08;"/>
+    </g>
+    <g id="circle71" transform="matrix(1.721074,0,0,1.721074,-5.344949,105.04768)">
+        <circle cx="80" cy="80" r="56" style="fill:none;stroke:black;stroke-opacity:0.06;stroke-width:1px;"/>
+    </g>
+    <g id="text77" transform="matrix(1.519337,0,0,1.519337,38.543674,418.460979)">
+        <g>
+            <text x="0px" y="0px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:48px;fill:rgb(10,42,20);">m</text>
+            <g transform="matrix(1,0,0,1,39.264,0)">
+                <text x="0px" y="0px" style="font-family:'ArialMT', 'Arial', sans-serif;font-size:48px;fill:rgb(10,42,20);">e<tspan x="25.976px 35.92px 61.895px " y="0px 0px 0px ">lon</tspan></text>
+            </g>
+        </g>
+        <g>
+            <g transform="matrix(1,0,0,1,127.134,0)">
+                <text x="0px" y="0px" style="font-family:'Arial-BoldMT', 'Arial', sans-serif;font-weight:700;font-size:48px;fill:rgb(30,128,72);">t</text>
+            </g>
+            <g transform="matrix(1,0,0,1,142.399,0)">
+                <text x="0px" y="0px" style="font-family:'Arial-BoldMT', 'Arial', sans-serif;font-weight:700;font-size:48px;fill:rgb(30,128,72);">r<tspan x="17.959px 43.935px 72.535px 98.51px 111.126px 137.102px 152.366px " y="0px 0px 0px 0px 0px 0px 0px ">anslate</tspan></text>
+            </g>
+        </g>
+    </g>
+    <g id="circle461" transform="matrix(1.721074,0,0,1.721074,-5.344949,105.04768)">
+        <circle cx="82.294" cy="77.706" r="57" style="fill:rgb(111,217,138);"/>
+    </g>
+    <g id="circle463" transform="matrix(1.721074,0,0,1.721074,-5.344949,105.04768)">
+        <circle cx="82.294" cy="77.706" r="54" style="fill:rgb(76,175,114);"/>
+    </g>
+    <g id="circle465" transform="matrix(1.721074,0,0,1.721074,-5.344949,105.04768)">
+        <circle cx="82.294" cy="77.706" r="50" style="fill:white;"/>
+    </g>
+    <g id="circle467" transform="matrix(1.721074,0,0,1.721074,-5.344949,105.04768)">
+        <circle cx="82.294" cy="77.706" r="48" style="fill:url(#_Radial1);"/>
+    </g>
+    <g id="g487" transform="matrix(1,0,0,1,22.293907,217.706093)">
+        <g id="circle477" transform="matrix(1.721074,0,0,1.721074,10.730602,-82.184921)">
+            <circle cx="60" cy="60" r="26" style="fill:none;stroke:rgb(76,175,114);stroke-opacity:0.9;stroke-width:2.2px;"/>
+        </g>
+        <g id="ellipse479" transform="matrix(1.721074,0,0,1.721074,10.730602,-82.184921)">
+            <ellipse cx="60" cy="60" rx="26" ry="10" style="fill:none;stroke:rgb(76,175,114);stroke-opacity:0.7;stroke-width:1.8px;"/>
+        </g>
+        <g id="line481" transform="matrix(1.721074,0,0,1.721074,10.730602,-82.184921)">
+            <path d="M60,34L60,86" style="fill:none;fill-rule:nonzero;stroke:rgb(76,175,114);stroke-opacity:0.7;stroke-width:1.8px;"/>
+        </g>
+        <g id="path483" transform="matrix(1.721074,0,0,1.721074,10.730602,-82.184921)">
+            <path d="M34,60C42.667,50.667 51.333,44.667 60,42C68.667,44.667 77.333,50.667 86,60" style="fill:none;fill-rule:nonzero;stroke:rgb(76,175,114);stroke-opacity:0.5;stroke-width:1.5px;"/>
+        </g>
+        <g id="path485" transform="matrix(1.721074,0,0,1.721074,10.730602,-82.184921)">
+            <path d="M34,60C42.667,69.333 51.333,75.333 60,78C68.667,75.333 77.333,69.333 86,60" style="fill:none;fill-rule:nonzero;stroke:rgb(76,175,114);stroke-opacity:0.5;stroke-width:1.5px;"/>
+        </g>
+    </g>
+    <g id="line489" transform="matrix(1.721074,0,0,1.721074,-5.344949,105.04768)">
+        <path d="M42.294,77.706L52.294,77.706" style="fill:none;fill-rule:nonzero;stroke:rgb(76,175,114);stroke-width:2px;stroke-linecap:round;"/>
+    </g>
+    <g id="polyline491" transform="matrix(1.721074,0,0,1.721074,5.487329,135.521172)">
+        <path d="M43,57L46,60L43,63" style="fill:none;fill-rule:nonzero;stroke:rgb(76,175,114);stroke-width:2px;stroke-linecap:round;stroke-linejoin:round;"/>
+    </g>
+    <g id="line493" transform="matrix(1.721074,0,0,1.721074,-5.344949,105.04768)">
+        <path d="M112.294,77.706L122.294,77.706" style="fill:none;fill-rule:nonzero;stroke:rgb(76,175,114);stroke-width:2px;stroke-linecap:round;"/>
+    </g>
+    <g id="polyline495" transform="matrix(1.721074,0,0,1.721074,60.561689,135.521172)">
+        <path d="M81,57L84,60L81,63" style="fill:none;fill-rule:nonzero;stroke:rgb(76,175,114);stroke-width:2px;stroke-linecap:round;stroke-linejoin:round;"/>
+    </g>
+    <g id="circle497" transform="matrix(1.721074,0,0,1.721074,-5.344949,105.04768)">
+        <circle cx="82.294" cy="77.706" r="57" style="fill:none;stroke:white;stroke-opacity:0.08;stroke-width:1px;"/>
+    </g>
+    <defs>
+        <radialGradient id="_Radial1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(62.399998,0,0,62.399998,72.693908,63.306092)"><stop offset="0" style="stop-color:rgb(240,255,244);stop-opacity:1"/><stop offset="0.6" style="stop-color:rgb(212,245,221);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(111,217,138);stop-opacity:0.3"/></radialGradient>
+    </defs>
+</svg>
