@@ -2,6 +2,8 @@
   const namespace = root.MelonTranslate;
   const api = namespace.browserApi;
   const messageTypes = namespace.messages.types;
+  const i18n = namespace.i18n || { t: (value) => String(value || "") };
+  const t = i18n.t;
   const getErrorCategory = namespace.providerBase.getErrorCategory;
   const mp = namespace.modelParams;
   const mc = namespace.modelCapabilities;
@@ -498,27 +500,27 @@
     await api.contextMenus.removeAll();
     await api.contextMenus.create({
       id: selectionContextMenuId,
-      title: "Translate selected text",
+      title: t("Translate selected text"),
       contexts: ["selection"]
     });
     await api.contextMenus.create({
       id: editableContextMenuId,
-      title: "Translate input text",
+      title: t("Translate input text"),
       contexts: ["editable"]
     });
     await api.contextMenus.create({
       id: immersiveContextMenuId,
-      title: "Translate page inline",
+      title: t("Translate page inline"),
       contexts: ["page", "frame"]
     });
     await api.contextMenus.create({
       id: videoSubtitleContextMenuId,
-      title: "Toggle bilingual subtitles",
+      title: t("Toggle bilingual subtitles"),
       contexts: ["page", "frame", "video"]
     });
     await api.contextMenus.create({
       id: elementPickerContextMenuId,
-      title: "Select inline translation area",
+      title: t("Select inline translation area"),
       contexts: ["page", "frame"]
     });
   }
@@ -1516,6 +1518,10 @@
 
     initializePromise = (async () => {
       await namespace.configManager.seedDefaults();
+      const settings = await namespace.configManager.getSettings();
+      if (i18n.applySettings) {
+        i18n.applySettings(settings);
+      }
       await ensureContextMenu();
     })();
 
@@ -1550,6 +1556,10 @@
           namespace.configManager.saveSettings(message.settings),
           namespace.configManager.saveProviderConfigs(message.providerConfigs)
         ]);
+        if (i18n.applySettings) {
+          i18n.applySettings(settings);
+        }
+        await ensureContextMenu();
         translationCache.clear();
         return namespace.messages.ok({ settings, providerConfigs: persistedProviders });
       }

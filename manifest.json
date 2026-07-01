@@ -24,6 +24,7 @@
     "scripts": [
       "src/shared/constants.js",
       "src/shared/messages.js",
+      "src/shared/i18n.js",
       "src/shared/model-params.js",
       "src/shared/model-capabilities.js",
       "src/platform/firefox.js",
@@ -85,6 +86,7 @@
         "src/platform/firefox.js",
         "src/platform/chromium.js",
         "src/platform/browser-api.js",
+        "src/shared/i18n.js",
         "src/rules/presets.js",
         "src/rules/site-rule-engine.js",
         "src/shared/custom-dropdown.js",

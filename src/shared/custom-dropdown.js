@@ -1,5 +1,6 @@
 (function initCustomDropdown(root) {
   const namespace = root.MelonTranslate = root.MelonTranslate || {};
+  const i18n = namespace.i18n || { t: function(value) { return String(value || ""); } };
 
   const _CHEVRON = '<svg class="cdd-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>';
   const _SEARCH_ICON = '<svg class="cdd-search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="4"/><path d="M14 14l-3.5-3.5"/></svg>';
@@ -77,7 +78,7 @@
         const l = _esc(item.label);
         return `<li class="cdd-item" data-value="${v}" title="${l}">${l}</li>`;
       }).join("");
-      return rows + (showCustom ? '<li class="cdd-item cdd-item-custom" data-value="custom">Custom\u2026</li>' : "");
+      return rows + (showCustom ? '<li class="cdd-item cdd-item-custom" data-value="custom">' + _esc(i18n.t("Custom\u2026")) + '</li>' : "");
     }
 
     container.classList.add("cdd-wrapper");
@@ -88,7 +89,7 @@
         ${_CHEVRON}
       </button>
       <div class="cdd-panel" role="listbox">
-        ${showSearch ? `<div class="cdd-search-wrap">${_SEARCH_ICON}<input type="text" class="cdd-search" placeholder="Search\u2026" autocomplete="off"></div>` : ""}
+        ${showSearch ? `<div class="cdd-search-wrap">${_SEARCH_ICON}<input type="text" class="cdd-search" placeholder="${_esc(i18n.t("Search\u2026"))}" autocomplete="off"></div>` : ""}
         <ul class="cdd-list">${buildListHtml(currentItems)}</ul>
       </div>`);
 
@@ -100,7 +101,7 @@
     const listEl = container.querySelector(".cdd-list");
 
     function getLabelFor(value) {
-      if (value === "custom") return "Custom\u2026";
+      if (value === "custom") return i18n.t("Custom\u2026");
       const found = currentItems.find((item) => item.value === value);
       return found ? found.label : (value || "");
     }

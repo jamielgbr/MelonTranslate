@@ -65,11 +65,24 @@
                     <div class="settings-group">
                         <div class="settings-row">
                             <div class="settings-copy">
-                                <label for="default-translation-model">Default model</label>
+                                <div class="setting-title">
+                                    <label for="default-translation-model">Default model</label>
+                                    <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                        data-help="Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.">?</button>
+                                </div>
                                 <p class="setting-desc">Used by the select to translate.</p>
                             </div>
                             <div class="settings-control">
                                 <div id="default-translation-model-wrap"></div>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="ui-language">UI language</label>
+                                <p class="setting-desc">Choose the language used by MelonTranslate UI.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="ui-language-wrap"></div>
                             </div>
                         </div>
                         <div class="settings-row">
@@ -109,8 +122,12 @@
                         </div>
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
-                                <label for="dictionary-mode-for-single-word">Use dictionary mode for single
-                                    words</label>
+                                <div class="setting-title">
+                                    <label for="dictionary-mode-for-single-word">Use dictionary mode for single
+                                        words</label>
+                                    <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                        data-help="Very small models may behave inconsistently with this feature.">?</button>
+                                </div>
                                 <p class="setting-desc">Return a short dictionary entry with meaning, pronunciation, and
                                     an example.</p>
                             </div>
@@ -207,7 +224,11 @@
                         </div>
                         <div class="settings-row">
                             <div class="settings-copy">
-                                <label for="immersive-min-text-length">Minimum text length</label>
+                                <div class="setting-title">
+                                    <label for="immersive-min-text-length">Minimum text length</label>
+                                    <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                        data-help="Adjust this only if you know what you are doing.">?</button>
+                                </div>
                                 <p class="setting-desc">Ignore short labels and navigation text below this character
                                     count.</p>
                             </div>
@@ -217,7 +238,11 @@
                         </div>
                         <div class="settings-row">
                             <div class="settings-copy">
-                                <label for="immersive-max-concurrent">Parallel translations</label>
+                                <div class="setting-title">
+                                    <label for="immersive-max-concurrent">Parallel translations</label>
+                                    <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                        data-help="Lower this value if your provider rejects requests during heavy translation.">?</button>
+                                </div>
                                 <p class="setting-desc">Limit simultaneous requests to avoid overwhelming the selected
                                     provider.</p>
                             </div>
@@ -257,12 +282,12 @@
                         </div>
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
-                                <label for="video-subtitles-topic-context">Topic context</label>
+                                <label for="video-subtitles-topic-context">Topic Sensing</label>
                                 <p class="setting-desc">Analyze a subtitle sample first for better terminology and tone.
                                     Uses one extra AI request per video.</p>
                             </div>
                             <label class="provider-switch" for="video-subtitles-topic-context"
-                                aria-label="Topic context">
+                                aria-label="Topic Sensing">
                                 <input id="video-subtitles-topic-context" type="checkbox">
                                 <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
                             </label>
@@ -444,7 +469,11 @@
                     <div class="section-header">
                         <div>
                             <p class="eyebrow">Tuning</p>
-                            <h2>Model parameters</h2>
+                            <div class="setting-title setting-title-heading">
+                                <h2>Model parameters</h2>
+                                <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                    data-help="Not every model or provider supports Reasoning Effort and temperature settings.">?</button>
+                            </div>
                         </div>
                     </div>
                     <p class="hint">Adjust parameters for models from enabled providers.</p>
@@ -521,6 +550,7 @@
     <script src="../../platform/firefox.js"></script>
     <script src="../../platform/chromium.js"></script>
     <script src="../../platform/browser-api.js"></script>
+    <script src="../../shared/i18n.js"></script>
     <script src="../../rules/presets.js"></script>
     <script src="../../rules/site-rule-engine.js"></script>
     <script src="../../shared/custom-dropdown.js"></script>

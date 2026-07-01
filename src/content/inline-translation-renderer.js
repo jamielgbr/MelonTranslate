@@ -1,5 +1,7 @@
 (function initInlineTranslationRenderer(root) {
   const namespace = root.MelonTranslate = root.MelonTranslate || {};
+  const i18n = namespace.i18n || { t: (value) => String(value || "") };
+  const t = i18n.t;
   const styleId = "melontranslate-immersive-style";
   const sourceIdAttr = "data-melontranslate-source-id";
   const richTextMarkerPattern = /\[\[(\/?)MT([BI])\]\]/g;
@@ -585,7 +587,7 @@
     ensureStyle();
     const node = createContainer(item, settings);
     setStateClass(node, "loading");
-    setContainerText(node, "Translating...");
+    setContainerText(node, t("Translating..."));
     return node;
   }
 
@@ -601,11 +603,11 @@
     ensureStyle();
     const node = createContainer(item, settings);
     setStateClass(node, "error");
-    setContainerText(node, message || "Translation failed.");
+    setContainerText(node, message || t("Translation failed."));
     if (typeof onRetry === "function" && !String(node.dataset.renderStrategy || "").startsWith("inside-")) {
       const button = document.createElement("button");
       button.type = "button";
-      button.textContent = "Retry";
+      button.textContent = t("Retry");
       button.addEventListener("click", () => onRetry(item));
       node.appendChild(button);
     }

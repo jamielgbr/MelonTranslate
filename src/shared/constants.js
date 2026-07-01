@@ -23,6 +23,18 @@
       { code: "ru", label: "Russian" },
       { code: "ar", label: "Arabic" }
     ],
+    uiLanguageOptions: [
+      { id: "auto", label: "Auto (browser language)" },
+      { id: "en", label: "English" },
+      { id: "ja", label: "日本語" },
+      { id: "zh-CN", label: "简体中文" },
+      { id: "zh-TW", label: "繁體中文" },
+      { id: "fr", label: "Français" },
+      { id: "de", label: "Deutsch" },
+      { id: "es", label: "Español" },
+      { id: "ru", label: "Русский" },
+      { id: "pt", label: "Português" }
+    ],
     selectionTriggers: {
       auto: "auto",
       modifier: "modifier",

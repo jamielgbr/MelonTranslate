@@ -1,5 +1,7 @@
 (function initReadAloud(root) {
   const namespace = root.MelonTranslate = root.MelonTranslate || {};
+  const i18n = namespace.i18n || { t: function(value) { return String(value || ""); } };
+  const t = i18n.t;
 
   const SPEAK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/></svg>';
   const STOP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor"/></svg>';
@@ -109,8 +111,8 @@
     if (raState.loading) {
       button.disabled = true;
       setSvg(button, SPEAK_SVG);
-      button.title = "Loading\u2026";
-      button.setAttribute("aria-label", "Loading\u2026");
+      button.title = t("Loading\u2026");
+      button.setAttribute("aria-label", t("Loading\u2026"));
       return;
     }
     button.disabled = !hasText;

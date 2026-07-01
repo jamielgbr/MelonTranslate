@@ -7,6 +7,8 @@
   const mc = namespace.modelCapabilities;
   const sre = namespace.siteRuleEngine;
   const hostPermissions = namespace.hostPermissions;
+  const i18n = namespace.i18n || { t: (value) => String(value || ""), localize: () => {} };
+  const t = i18n.t;
   const PAGE_SIZE = 25;
 
   const state = {
@@ -24,13 +26,91 @@
   };
 
   let _statusTimer = null;
+  let activeHelpButton = null;
+  let helpPopover = null;
+
   function status(message) {
     const el = document.getElementById("status");
     if (_statusTimer) { clearTimeout(_statusTimer); _statusTimer = null; }
-    el.textContent = message;
+    const localized = t(String(message || ""));
+    el.textContent = localized;
     el.classList.toggle("status--loading", !!message && message.includes("\u2026"));
     if (message && !message.includes("\u2026")) {
       _statusTimer = setTimeout(function() { el.textContent = ""; el.classList.remove("status--loading"); _statusTimer = null; }, 3000);
+    }
+  }
+
+  function closeSettingHelp() {
+    if (activeHelpButton) {
+      activeHelpButton.classList.remove("is-active");
+      activeHelpButton.setAttribute("aria-expanded", "false");
+      activeHelpButton.removeAttribute("aria-describedby");
+      activeHelpButton = null;
+    }
+    if (helpPopover) {
+      helpPopover.remove();
+      helpPopover = null;
+    }
+  }
+
+  function positionSettingHelp(button, popover) {
+    const margin = 12;
+    const rect = button.getBoundingClientRect();
+    const width = Math.min(320, window.innerWidth - 32);
+    popover.style.width = `${width}px`;
+    popover.classList.remove("is-above");
+
+    const popoverHeight = popover.offsetHeight;
+    let left = rect.left + rect.width / 2 - width / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
+
+    let top = rect.bottom + 10;
+    if (top + popoverHeight > window.innerHeight - margin && rect.top - popoverHeight - 10 >= margin) {
+      top = rect.top - popoverHeight - 10;
+      popover.classList.add("is-above");
+    }
+
+    const tipX = Math.max(12, Math.min(rect.left + rect.width / 2 - left - 5, width - 22));
+    popover.style.left = `${left}px`;
+    popover.style.top = `${Math.max(margin, top)}px`;
+    popover.style.setProperty("--tip-x", `${tipX}px`);
+  }
+
+  function openSettingHelp(button) {
+    if (activeHelpButton === button) {
+      closeSettingHelp();
+      return;
+    }
+    closeSettingHelp();
+    const message = t(button.getAttribute("data-help") || "");
+    if (!message) {
+      return;
+    }
+
+    helpPopover = document.createElement("div");
+    helpPopover.id = "setting-help-popover";
+    helpPopover.className = "setting-help-popover";
+    helpPopover.setAttribute("role", "tooltip");
+    helpPopover.textContent = message;
+    document.body.appendChild(helpPopover);
+
+    activeHelpButton = button;
+    activeHelpButton.classList.add("is-active");
+    activeHelpButton.setAttribute("aria-expanded", "true");
+    activeHelpButton.setAttribute("aria-describedby", helpPopover.id);
+    positionSettingHelp(button, helpPopover);
+  }
+
+  function handleSettingHelpClick(event) {
+    const button = event.target.closest(".setting-help");
+    if (button) {
+      event.preventDefault();
+      event.stopPropagation();
+      openSettingHelp(button);
+      return;
+    }
+    if (helpPopover && !event.target.closest(".setting-help-popover")) {
+      closeSettingHelp();
     }
   }
 
@@ -176,7 +256,7 @@
         }
       });
       const text = document.createElement("span");
-      text.textContent = item.label;
+      text.textContent = t(item.label);
       label.append(input, text);
       wrap.appendChild(label);
     });
@@ -386,7 +466,7 @@
     return `
       <div class="model-parameter-row">
         <div class="model-parameter-model">
-          <span class="model-parameter-name">${escapedModelId}</span>
+          <span class="model-parameter-name" data-i18n-skip="true">${escapedModelId}</span>
           ${capabilityBadges}
         </div>
         <div class="model-parameter-controls">
@@ -399,7 +479,7 @@
   function renderModelParameterProvider(group) {
     const { provider, config, models } = group;
     const providerName = provider.displayName || provider.id;
-    const countLabel = `${models.length} ${models.length === 1 ? "model" : "models"}`;
+    const countLabel = `${models.length} ${models.length === 1 ? t("model") : t("models")}`;
     const rows = models.map((modelId) => renderModelParameterRow(provider, config, modelId)).join("");
 
     return `
@@ -419,7 +499,7 @@
     }
     const groups = collectModelParameterGroups();
     if (!groups.length) {
-      container.innerHTML = '<p class="hint">No models from enabled providers yet.</p>';
+      pu.setHtml(container, '<p class="hint">No models from enabled providers yet.</p>');
       return;
     }
 
@@ -469,6 +549,7 @@
       modifierKey: document.getElementById("modifier-key").value,
       defaultTranslationProviderId: defaultModelParsed.providerId,
       defaultTranslationModelKey: defaultModelSelectValue,
+      uiLanguage: document.getElementById("ui-language").value,
       targetLanguage: getLanguageValue("target-language", "target-language-custom"),
       secondTargetLanguage: getLanguageValue("second-target-language", "second-target-language-custom"),
       autoSwitchToSecondTarget: document.getElementById("auto-switch-second-target").checked,
@@ -524,6 +605,7 @@
       modifierKey,
       defaultTranslationProviderId: String(incoming.defaultTranslationProviderId || current.defaultTranslationProviderId || ""),
       defaultTranslationModelKey: String(incoming.defaultTranslationModelKey || current.defaultTranslationModelKey || ""),
+      uiLanguage: String(incoming.uiLanguage || current.uiLanguage || "auto"),
       targetLanguage: String(incoming.targetLanguage || current.targetLanguage || "en"),
       secondTargetLanguage: String(incoming.secondTargetLanguage || current.secondTargetLanguage || "en"),
       autoSwitchToSecondTarget: incoming.autoSwitchToSecondTarget !== undefined
@@ -783,16 +865,31 @@
     });
   }
 
+  function getUiLanguageItems() {
+    return (namespace.constants.uiLanguageOptions || []).map((item) => ({
+      value: item.id,
+      label: item.id === "auto" ? t(item.label) : item.label
+    }));
+  }
+
   function renderStaticDropdowns() {
     renderVideoSubtitleAnnotationTypeOptions();
+    state.dropdowns["ui-language"] = namespace.customDropdown.create(
+      document.getElementById("ui-language-wrap"),
+      {
+        id: "ui-language",
+        items: getUiLanguageItems(),
+        selected: "auto"
+      }
+    );
     state.dropdowns["selection-trigger"] = namespace.customDropdown.create(
       document.getElementById("selection-trigger-wrap"),
       {
         id: "selection-trigger",
         items: [
-          { value: "auto", label: "Auto" },
-          { value: "modifier", label: "Translate while holding modifier key" },
-          { value: "manual", label: "Context menu only" }
+          { value: "auto", label: t("Auto") },
+          { value: "modifier", label: t("Translate while holding modifier key") },
+          { value: "manual", label: t("Context menu only") }
         ],
         selected: "auto"
       }
@@ -815,8 +912,8 @@
       {
         id: "input-site-mode",
         items: [
-          { value: namespace.constants.inputSiteModes.blacklist, label: "Hide on blocked domains" },
-          { value: namespace.constants.inputSiteModes.whitelist, label: "Show only on allowed domains" }
+          { value: namespace.constants.inputSiteModes.blacklist, label: t("Hide on blocked domains") },
+          { value: namespace.constants.inputSiteModes.whitelist, label: t("Show only on allowed domains") }
         ],
         selected: namespace.constants.inputSiteModes.blacklist,
         onChange: updateInputSiteRuleVisibility
@@ -828,7 +925,7 @@
         id: "input-context-style",
         items: (namespace.constants.inputContextStyles || []).map((item) => ({
           value: item.id,
-          label: item.label
+          label: t(item.label)
         })),
         selected: "auto"
       }
@@ -839,7 +936,7 @@
         id: "immersive-display-mode",
         items: (namespace.constants.immersiveDisplayModes || []).map((item) => ({
           value: item.id,
-          label: item.label
+          label: t(item.label)
         })),
         selected: "below-original"
       }
@@ -850,7 +947,7 @@
         id: "video-subtitles-mode",
         items: (namespace.constants.videoSubtitleDisplayModes || []).map((item) => ({
           value: item.id,
-          label: item.label
+          label: t(item.label)
         })),
         selected: "translation",
         onChange: updateVideoSubtitleLearningVisibility
@@ -887,7 +984,7 @@
     const options = collectFavoritedModelOptions();
     const items = options.length
       ? options.map((item) => ({ value: item.key, label: item.label }))
-      : [{ value: "", label: "No favorite models available" }];
+      : [{ value: "", label: t("No favorite models available") }];
     const disabled = !options.length;
 
     let selectedValue = "";
@@ -926,7 +1023,7 @@
       .map((modelId) => getModelMeta(config, config.id, modelId));
     const allModels = availableModels.concat(fallbackModels);
     if (!allModels.length) {
-      return '<p class="hint">No available models.</p>';
+      return `<p class="hint">${t("No available models.")}</p>`;
     }
 
     return allModels.map((meta) => {
@@ -941,14 +1038,14 @@
       ].filter(Boolean).join(" ");
       const checkedAttribute = isFavorite ? " checked" : "";
       const disabledAttribute = isTextModel ? "" : " disabled";
-      const titleAttribute = isTextModel ? "" : ' title="This model is not available for text translation."';
+      const titleAttribute = isTextModel ? "" : ` title="${pu.escapeHtml(t("This model is not available for text translation."))}"`;
       const favoriteBadges = renderCapabilityBadgeGroup(meta);
       return `
         <label class="${rowClasses}" data-model="${escapedModelId}"${titleAttribute}>
           <input class="model-favorite-input" data-model-favorite="${escapedModelId}" type="checkbox"${checkedAttribute}${disabledAttribute}>
           <span class="model-favorite-check" aria-hidden="true"></span>
           <span class="model-favorite-content">
-            <span class="model-favorite-name">${escapedModelId}</span>
+            <span class="model-favorite-name" data-i18n-skip="true">${escapedModelId}</span>
             ${favoriteBadges}
           </span>
         </label>`;
@@ -987,7 +1084,7 @@
     if (!existingEmpty) {
       const empty = document.createElement("p");
       empty.className = "hint model-search-empty";
-      empty.textContent = "No models match your search.";
+      empty.textContent = t("No models match your search.");
       modelList.appendChild(empty);
     }
   }
@@ -1073,9 +1170,9 @@
       const requiresApiKey = providerRequiresApiKey(provider);
       const canListModels = providerCanListModels(provider);
       const modelListAccountIdValue = typeof draft.modelListAccountId === "string" ? draft.modelListAccountId : (config.modelListAccountId || "");
-      const fetchedAt = config.modelsFetchedAt ? new Date(config.modelsFetchedAt).toLocaleString() : "Never";
+      const fetchedAt = config.modelsFetchedAt ? new Date(config.modelsFetchedAt).toLocaleString() : t("Never");
       const isSimpleProvider = !providerRequiresApiKey(provider) && providerUsesDefaultModelOnly(provider);
-      const providerMeta = currentModel ? `Model: ${currentModel}` : "No model selected";
+      const providerMeta = currentModel ? `${t("Model")}: ${currentModel}` : t("No model selected");
       pu.setHtml(card, isSimpleProvider ? `
         <div class="provider-header-wrap">
           <div class="provider-header provider-header-static">
@@ -1136,7 +1233,7 @@
                 <button class="secondary" type="button" data-action="refresh-models" data-provider-id="${provider.id}">Refresh</button>` : ""}
               </div>
             </div>
-            <p class="hint">${canListModels ? `Last updated: ${pu.escapeHtml(fetchedAt)}` : "Use the default model or enter a custom model ID."}</p>
+            <p class="hint">${canListModels ? `${t("Last updated")}: ${pu.escapeHtml(fetchedAt)}` : t("Use the default model or enter a custom model ID.")}</p>
             <input class="model-search-input" data-provider-id="${provider.id}" type="text" value="${pu.escapeHtml(searchTerm)}" placeholder="Filter models">
             <div class="model-list" data-provider-id="${provider.id}">
               ${renderModelFavoriteRows(config)}
@@ -1217,13 +1314,13 @@
     const tempApiKey = apiKeyInput ? apiKeyInput.value.trim() : "";
     const tempModelListAccountId = accountIdInput ? accountIdInput.value.trim() : "";
     if (!providerCanListModels(provider)) {
-      status(`${provider.displayName || providerId} does not expose a model list endpoint.`);
+      status(t("{provider} does not expose a model list endpoint.", { provider: provider.displayName || providerId }));
       return;
     }
     const requiresAccountId = String(provider.modelListPath || "").includes("{account_id}");
     const savedModelListAccountId = String(config.modelListAccountId || "").trim();
     if (requiresAccountId && !savedModelListAccountId && !tempModelListAccountId) {
-      status(`Add an account ID for ${provider.displayName || providerId} before loading models.`);
+      status(t("Add an account ID for {provider} before loading models.", { provider: provider.displayName || providerId }));
       return;
     }
 
@@ -1248,7 +1345,9 @@
     });
     renderProviders();
     renderModelParametersPanel();
-    status(response.data.fromCache ? `Loaded saved model list for ${provider.displayName || providerId}.` : `Loaded models for ${provider.displayName || providerId}.`);
+    status(response.data.fromCache
+      ? t("Loaded saved model list for {provider}.", { provider: provider.displayName || providerId })
+      : t("Loaded models for {provider}.", { provider: provider.displayName || providerId }));
   }
 
   async function maybeAutoFetchModels() {
@@ -1270,7 +1369,7 @@
   function renderHistory() {
     const container = document.getElementById("history");
     if (!state.history.length) {
-      container.innerHTML = '<p class="hint">No saved translations yet.</p>';
+      pu.setHtml(container, '<p class="hint">No saved translations yet.</p>');
       return;
     }
 
@@ -1282,18 +1381,18 @@
       const results = (entry.results || []).map((r) => {
         const label = r.ok
           ? `${pu.escapeHtml(r.providerName)} ${pu.escapeHtml(r.model)}`
-          : `${pu.escapeHtml(r.providerName || r.providerId)} - Error`;
+          : `${pu.escapeHtml(r.providerName || r.providerId)} - ${t("Error")}`;
         const text = r.ok ? pu.escapeHtml(r.translatedText || "") : pu.escapeHtml(r.error || "");
-        return `<div class="history-result"><span class="history-result-label">${label}</span><p class="history-result-text">${text}</p></div>`;
+        return `<div class="history-result"><span class="history-result-label" data-i18n-skip="true">${label}</span><p class="history-result-text" data-i18n-skip="true">${text}</p></div>`;
       }).join("");
 
       return `
         <article class="history-card">
           <div class="history-title">
-            <strong>${pu.escapeHtml(entry.text.slice(0, 100))}</strong>
+            <strong data-i18n-skip="true">${pu.escapeHtml(entry.text.slice(0, 100))}</strong>
             <div class="history-title-meta">
-              <span class="history-meta">${pu.escapeHtml(entry.targetLanguage)} • ${new Date(entry.createdAt).toLocaleString()}</span>
-              <button class="secondary history-copy" data-copy-index="${page * PAGE_SIZE + slice.indexOf(entry)}" type="button">Copy first result</button>
+              <span class="history-meta" data-i18n-skip="true">${pu.escapeHtml(entry.targetLanguage)} • ${new Date(entry.createdAt).toLocaleString()}</span>
+              <button class="secondary history-copy" data-copy-index="${page * PAGE_SIZE + slice.indexOf(entry)}" type="button">${t("Copy first result")}</button>
             </div>
           </div>
           ${results}
@@ -1303,9 +1402,9 @@
 
     const pagination = totalPages > 1 ? `
       <nav class="pagination">
-        <button class="secondary" id="prev-page" type="button" ${page === 0 ? "disabled" : ""}>← Previous</button>
-        <span>Page ${page + 1} / ${totalPages}</span>
-        <button class="secondary" id="next-page" type="button" ${page >= totalPages - 1 ? "disabled" : ""}>Next →</button>
+        <button class="secondary" id="prev-page" type="button" ${page === 0 ? "disabled" : ""}>← ${t("Previous")}</button>
+        <span>${t("Page")} ${page + 1} / ${totalPages}</span>
+        <button class="secondary" id="next-page" type="button" ${page >= totalPages - 1 ? "disabled" : ""}>${t("Next")} →</button>
       </nav>
     ` : "";
 
@@ -1328,7 +1427,10 @@
         const entry = state.history[idx];
         const firstOk = entry && entry.results && entry.results.find((r) => r.ok);
         if (firstOk && navigator.clipboard) {
-          navigator.clipboard.writeText(firstOk.translatedText).then(() => { btn.textContent = "Copied!"; setTimeout(() => { btn.textContent = "Copy first result"; }, 1500); });
+          navigator.clipboard.writeText(firstOk.translatedText).then(() => {
+            btn.textContent = t("Copied!");
+            setTimeout(() => { btn.textContent = t("Copy first result"); }, 1500);
+          });
         }
       });
     });
@@ -1341,13 +1443,13 @@
     }
     const rules = sre.normalizeRules(state.siteRules || []);
     if (!rules.length) {
-      container.innerHTML = '<p class="hint">No site rules yet. Use the page context menu to select an inline translation area.</p>';
+      pu.setHtml(container, '<p class="hint">No site rules yet. Use the page context menu to select an inline translation area.</p>');
       return;
     }
 
     function renderSelectorGroup(rule, kind, title) {
       const selectors = kind === "exclude" ? (rule.excludeSelectors || []) : (rule.includeSelectors || []);
-      const emptyText = kind === "exclude" ? "No excluded areas" : "Whole matching site";
+      const emptyText = kind === "exclude" ? t("No excluded areas") : t("Whole matching site");
       const content = selectors.length
         ? selectors.map((selector) => `
           <span class="site-rule-selector-chip">
@@ -1355,7 +1457,7 @@
             <button class="secondary" type="button"
               data-remove-selector-rule="${pu.escapeHtml(rule.id)}"
               data-remove-selector-kind="${kind}"
-              data-remove-selector-value="${pu.escapeHtml(selector)}">Remove</button>
+              data-remove-selector-value="${pu.escapeHtml(selector)}">${t("Remove")}</button>
           </span>
         `).join("")
         : `<span class="hint">${emptyText}</span>`;
@@ -1369,9 +1471,9 @@
 
     pu.setHtml(container, rules.map((rule) => {
       const styleOptions = (namespace.constants.inputContextStyles || []).map((item) => (
-        `<option value="${pu.escapeHtml(item.id)}" ${item.id === rule.contextStyle ? "selected" : ""}>${pu.escapeHtml(item.label)}</option>`
+        `<option value="${pu.escapeHtml(item.id)}" ${item.id === rule.contextStyle ? "selected" : ""}>${pu.escapeHtml(t(item.label))}</option>`
       )).join("");
-      const badge = rule.category === "picker" ? '<span class="site-rule-badge">Picker</span>' : "";
+      const badge = rule.category === "picker" ? `<span class="site-rule-badge">${t("Picker")}</span>` : "";
       return `
         <article class="site-rule-card" data-rule-id="${pu.escapeHtml(rule.id)}">
           <div class="site-rule-main">
@@ -1380,13 +1482,13 @@
               <span>${pu.escapeHtml(rule.hostPattern)}</span>
               ${badge}
             </label>
-            <label class="site-rule-style">Style
+            <label class="site-rule-style">${t("Style")}
               <select data-rule-style="${pu.escapeHtml(rule.id)}">${styleOptions}</select>
             </label>
-            ${renderSelectorGroup(rule, "include", "Translate areas")}
-            ${renderSelectorGroup(rule, "exclude", "Excluded areas")}
+            ${renderSelectorGroup(rule, "include", t("Translate areas"))}
+            ${renderSelectorGroup(rule, "exclude", t("Excluded areas"))}
           </div>
-          <button class="secondary" type="button" data-delete-rule="${pu.escapeHtml(rule.id)}">Delete</button>
+          <button class="secondary" type="button" data-delete-rule="${pu.escapeHtml(rule.id)}">${t("Delete")}</button>
         </article>
       `;
     }).join(""));
@@ -1408,6 +1510,7 @@
   }
 
   function fillGeneralSettings() {
+    state.dropdowns["ui-language"].setValue(state.settings.uiLanguage || "auto");
     state.dropdowns["selection-trigger"].setValue(state.settings.selectionTrigger);
     state.dropdowns["modifier-key"].setValue(state.settings.modifierKey);
     state.dropdowns["input-site-mode"].setValue(pu.normalizeInputSiteMode(state.settings.inputInlineButtonSiteMode));
@@ -1546,6 +1649,8 @@
     state.providerDrafts = {};
     state.history = response.data.history;
     state.historyPage = 0;
+    i18n.applySettings(state.settings);
+    i18n.localize(document);
     if (!state.dropdowns["selection-trigger"]) {
       renderStaticDropdowns();
     }
@@ -1563,15 +1668,17 @@
     const saveButton = document.getElementById("save-button");
     const labelSpan = saveButton.querySelector(".visually-hidden");
     const originalLabel = saveButton.getAttribute("aria-label");
+    const previousUiLanguage = state.settings ? state.settings.uiLanguage || "auto" : "auto";
+    const nextSettings = collectSettingsFromForm();
     saveButton.disabled = true;
     saveButton.classList.add("is-saving");
-    if (labelSpan) labelSpan.textContent = "Saving...";
-    saveButton.setAttribute("aria-label", "Saving settings");
+    if (labelSpan) labelSpan.textContent = t("Saving...");
+    saveButton.setAttribute("aria-label", t("Saving settings"));
     status("Saving…");
     try {
       const response = await api.runtime.sendMessage({
         type: messageTypes.saveOptions,
-        settings: collectSettingsFromForm(),
+        settings: nextSettings,
         providerConfigs: collectProviderConfigs()
       });
 
@@ -1580,12 +1687,20 @@
         return;
       }
 
+      const savedUiLanguage = response.data && response.data.settings
+        ? response.data.settings.uiLanguage || "auto"
+        : nextSettings.uiLanguage || "auto";
+      if (savedUiLanguage !== previousUiLanguage) {
+        window.location.reload();
+        return;
+      }
+
       await load();
       status("Settings saved.");
     } finally {
       saveButton.disabled = false;
       saveButton.classList.remove("is-saving");
-      if (labelSpan) labelSpan.textContent = "Save";
+      if (labelSpan) labelSpan.textContent = t("Save");
       saveButton.setAttribute("aria-label", originalLabel);
     }
   }
@@ -1636,7 +1751,7 @@
       const originalText = btn.textContent;
       btn.disabled = true;
       btn.classList.add("is-fetching");
-      btn.textContent = "Loading...";
+      btn.textContent = t("Loading...");
       try {
         await fetchProviderModels(providerId, bypassCache);
       } finally {
@@ -1821,5 +1936,13 @@
     }
     await importConfig(file);
   });
+  document.addEventListener("click", handleSettingHelpClick);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeSettingHelp();
+    }
+  });
+  window.addEventListener("scroll", closeSettingHelp, { passive: true });
+  window.addEventListener("resize", closeSettingHelp);
   load();
 }(globalThis));

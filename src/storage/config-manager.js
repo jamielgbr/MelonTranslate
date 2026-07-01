@@ -28,6 +28,11 @@
     return Array.isArray(allowed) && allowed.includes(normalized) ? normalized : fallback;
   }
 
+  function normalizeUiLanguage(value) {
+    const options = (namespace.constants.uiLanguageOptions || []).map((item) => item.id);
+    return normalizeChoice(value, options, "auto");
+  }
+
   function normalizeVideoSubtitleDisplayMode(value) {
     const modes = (namespace.constants.videoSubtitleDisplayModes || []).map((item) => item.id);
     return normalizeChoice(value, modes, "translation");
@@ -63,6 +68,7 @@
     return Object.assign({}, merged, {
       defaultTranslationProviderId: normalizeProviderId(merged.defaultTranslationProviderId),
       defaultTranslationModelKey: normalizeDefaultModelKey(merged.defaultTranslationModelKey),
+      uiLanguage: normalizeUiLanguage(merged.uiLanguage),
       videoBilingualSubtitlesMode: normalizeVideoSubtitleDisplayMode(merged.videoBilingualSubtitlesMode),
       videoBilingualSubtitlesLearningEnglishLevel: normalizeVideoSubtitleLearningLevel("english", merged.videoBilingualSubtitlesLearningEnglishLevel, "B1"),
       videoBilingualSubtitlesLearningJapaneseLevel: normalizeVideoSubtitleLearningLevel("japanese", merged.videoBilingualSubtitlesLearningJapaneseLevel, "N3"),
@@ -93,6 +99,7 @@
       modifierKey: modifierKeys[0],
       defaultTranslationProviderId: "",
       defaultTranslationModelKey: "",
+      uiLanguage: "auto",
       targetLanguage: (globalThis.navigator && globalThis.navigator.language) || "en",
       secondTargetLanguage: "en",
       autoSwitchToSecondTarget: true,

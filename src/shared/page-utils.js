@@ -1,6 +1,7 @@
 (function initPageUtils(root) {
   const namespace = root.MelonTranslate = root.MelonTranslate || {};
   const api = namespace.browserApi;
+  const i18n = namespace.i18n || { t: function(value) { return String(value || ""); } };
 
   const PROVIDER_ICON_SVG = new Set([
     "google-translate",
@@ -67,9 +68,9 @@
   }
 
   function formatMetricsLine(firstTokenMs, outputTokens, tokPerSec, fromCache) {
-    if (fromCache) return "Cached";
-    return "First token: " + formatMillis(firstTokenMs) +
-      " \u00B7 Output: " + outputTokens + " tok" +
+    if (fromCache) return i18n.t("Cached");
+    return i18n.t("First token") + ": " + formatMillis(firstTokenMs) +
+      " \u00B7 " + i18n.t("Output") + ": " + outputTokens + " tok" +
       " \u00B7 " + formatRate(tokPerSec) + " tok/s";
   }
 
@@ -222,9 +223,9 @@
 
   function renderLanguageDropdown(wrapEl, customEl, opts) {
     var items = availableLanguageOptions().map(function(item) {
-      return { value: item.code, label: item.label + " (" + item.code + ")" };
+      return { value: item.code, label: i18n.t(item.label) + " (" + item.code + ")" };
     });
-    if (opts.includeAuto) items.unshift({ value: "auto", label: "Auto-detect" });
+    if (opts.includeAuto) items.unshift({ value: "auto", label: i18n.t("Auto-detect") });
     var codes = languageCodes();
     var selected = String(opts.value || "").trim();
     var initValue;
@@ -262,6 +263,9 @@
 
   function setHtml(el, html) {
     const doc = new DOMParser().parseFromString(html, "text/html");
+    if (i18n && typeof i18n.localize === "function") {
+      i18n.localize(doc.body);
+    }
     el.replaceChildren(...doc.body.childNodes);
   }
 
@@ -290,6 +294,7 @@
     isHostAllowedForInputButton: isHostAllowedForInputButton,
     getProviderIconHtml: getProviderIconHtml,
     getAppLogoHtml: getAppLogoHtml,
+    t: i18n.t,
     renderLanguageDropdown: renderLanguageDropdown,
     getLanguageValue: getLanguageValue,
     setHtml: setHtml

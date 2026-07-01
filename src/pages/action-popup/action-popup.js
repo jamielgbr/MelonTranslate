@@ -5,6 +5,8 @@
   const pu = namespace.pageUtils;
   const mc = namespace.modelCapabilities;
   const hostPermissions = namespace.hostPermissions;
+  const i18n = namespace.i18n || { t: (value) => String(value || ""), localize: () => {} };
+  const t = i18n.t;
 
   const state = {
     settings: null,
@@ -33,9 +35,17 @@
     dropdowns: {}
   };
 
-  const RESULT_PLACEHOLDER = "No translation yet.";
-  const EXPAND_RESULT_LABEL = "Expand translation";
-  const COLLAPSE_RESULT_LABEL = "Exit expanded translation";
+  function resultPlaceholder() {
+    return t("No translation yet.");
+  }
+
+  function expandResultLabel() {
+    return t("Expand translation");
+  }
+
+  function collapseResultLabel() {
+    return t("Exit expanded translation");
+  }
 
   const EXPAND_RESULT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10a1 1 0 0 0 1-1V6h3a1 1 0 0 0 0-2H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1zm10-6a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0V5a1 1 0 0 0-1-1h-4zM5 14a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4a1 1 0 1 0 0-2H6v-3a1 1 0 0 0-1-1zm14 0a1 1 0 0 0-1 1v3h-3a1 1 0 1 0 0 2h4a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1z" fill="currentColor" /></svg>';
   const COLLAPSE_RESULT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4a1 1 0 0 0-1 1v3H5a1 1 0 0 0 0 2h4a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1zm6 0a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h4a1 1 0 1 0 0-2h-3V5a1 1 0 0 0-1-1zM5 14a1 1 0 1 0 0 2h3v3a1 1 0 1 0 2 0v-4a1 1 0 0 0-1-1H5zm10 0a1 1 0 0 0-1 1v4a1 1 0 1 0 2 0v-3h3a1 1 0 1 0 0-2h-4z" fill="currentColor" /></svg>';
@@ -76,7 +86,7 @@
   function setMetricsLine(firstTokenMs, outputTokens, tokPerSec, fromCache) {
     const metricsEl = document.getElementById("popup-metrics");
     if (fromCache) {
-      metricsEl.textContent = "Cached";
+      metricsEl.textContent = t("Cached");
       metricsEl.classList.remove("hidden");
       return;
     }
@@ -110,7 +120,7 @@
 
   function setStatus(message) {
     const statusEl = document.getElementById("popup-status");
-    const normalized = String(message || "").trim();
+    const normalized = t(String(message || "").trim());
     statusEl.textContent = normalized;
     statusEl.classList.toggle("hidden", !normalized);
   }
@@ -168,15 +178,15 @@
     if (state.readAloudLoading) {
       speakButton.disabled = true;
       pu.setHtml(speakButton, SPEAK_SVG);
-      speakButton.title = "Loading\u2026";
-      speakButton.setAttribute("aria-label", "Loading\u2026");
+      speakButton.title = t("Loading\u2026");
+      speakButton.setAttribute("aria-label", t("Loading\u2026"));
       return;
     }
 
     speakButton.disabled = !state.currentResult;
     pu.setHtml(speakButton, state.readAloudPlaying ? STOP_SVG : SPEAK_SVG);
-    speakButton.title = state.readAloudPlaying ? "Stop reading" : "Read translation aloud";
-    speakButton.setAttribute("aria-label", state.readAloudPlaying ? "Stop reading" : "Read translation aloud");
+    speakButton.title = state.readAloudPlaying ? t("Stop reading") : t("Read translation aloud");
+    speakButton.setAttribute("aria-label", state.readAloudPlaying ? t("Stop reading") : t("Read translation aloud"));
   }
 
   function updateSpeakSourceButton() {
@@ -188,14 +198,14 @@
     if (state.sourceReadAloudLoading) {
       btn.disabled = true;
       pu.setHtml(btn, SPEAK_SVG);
-      btn.title = "Loading\u2026";
-      btn.setAttribute("aria-label", "Loading\u2026");
+      btn.title = t("Loading\u2026");
+      btn.setAttribute("aria-label", t("Loading\u2026"));
       return;
     }
     btn.disabled = !hasText;
     pu.setHtml(btn, state.sourceReadAloudPlaying ? STOP_SVG : SPEAK_SVG);
-    btn.title = state.sourceReadAloudPlaying ? "Stop reading" : "Read source text aloud";
-    btn.setAttribute("aria-label", state.sourceReadAloudPlaying ? "Stop reading" : "Read source text aloud");
+    btn.title = state.sourceReadAloudPlaying ? t("Stop reading") : t("Read source text aloud");
+    btn.setAttribute("aria-label", state.sourceReadAloudPlaying ? t("Stop reading") : t("Read source text aloud"));
   }
 
   function updateResultExpandButton() {
@@ -208,7 +218,7 @@
       state.resultExpanded = false;
       syncResultExpandedClass(false);
     }
-    const label = state.resultExpanded ? COLLAPSE_RESULT_LABEL : EXPAND_RESULT_LABEL;
+    const label = state.resultExpanded ? collapseResultLabel() : expandResultLabel();
     button.disabled = !canExpand;
     button.setAttribute("aria-pressed", state.resultExpanded ? "true" : "false");
     pu.setHtml(button, state.resultExpanded ? COLLAPSE_RESULT_SVG : EXPAND_RESULT_SVG);
@@ -282,7 +292,7 @@
       updateResultExpandButton();
       return;
     }
-    resultEl.textContent = RESULT_PLACEHOLDER;
+    resultEl.textContent = resultPlaceholder();
     resultEl.classList.add("placeholder");
     setResultExpanded(false);
   }
@@ -318,7 +328,7 @@
     if (!providerInfo) {
       return;
     }
-    providerInfo.textContent = `Provider: ${providerName || "-"}`;
+    providerInfo.textContent = `${t("Provider")}: ${providerName || "-"}`;
   }
 
   function renderModelSelector() {
@@ -361,7 +371,7 @@
     if (!items.length) {
       state.dropdowns["model"] = namespace.customDropdown.create(wrap, {
         id: "popup-model",
-        items: [{ value: "", label: "No favorite models available" }],
+        items: [{ value: "", label: t("No favorite models available") }],
         selected: "",
         showSearch: true,
         onChange: () => updateModelProviderInfo()
@@ -409,6 +419,9 @@
     state.settings = response.data.settings;
     state.providers = response.data.providers;
     state.providerConfigs = response.data.providerConfigs;
+    i18n.applySettings(state.settings);
+    i18n.localize(document);
+    document.getElementById("popup-result").textContent = resultPlaceholder();
 
     renderLanguageSelector(state.settings);
     renderSourceLanguageSelector("auto");
@@ -675,7 +688,7 @@
     const expanded = button.getAttribute("aria-expanded") !== "false";
     const nextExpanded = !expanded;
     button.setAttribute("aria-expanded", nextExpanded ? "true" : "false");
-    button.textContent = nextExpanded ? "Hide" : "Show";
+    button.textContent = nextExpanded ? t("Hide") : t("Show");
     content.classList.toggle("is-collapsed", !nextExpanded);
   }
 

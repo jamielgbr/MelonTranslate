@@ -4,6 +4,8 @@
   const messageTypes = namespace.messages.types;
   const utils = namespace.videoSubtitleUtils;
   const pageUtils = namespace.pageUtils || {};
+  const i18n = namespace.i18n || { t: (value) => String(value || "") };
+  const t = i18n.t;
 
   const STYLE_ID = "melontranslate-video-subtitle-style";
   const BUTTON_CLASS = "mt-video-subtitle-button";
@@ -380,12 +382,12 @@
     button.classList.toggle("is-error", state.status === "error");
     button.classList.toggle("is-working", state.status === "loading" || state.activeBatches > 0);
     const title = state.status === "on"
-      ? "Hide bilingual subtitles"
+      ? t("Hide bilingual subtitles")
       : state.status === "loading"
-        ? "Loading subtitles"
+        ? t("Loading subtitles")
         : state.status === "error"
-          ? (state.error || "Bilingual subtitles unavailable")
-          : "Show bilingual subtitles";
+          ? (state.error || t("Bilingual subtitles unavailable"))
+          : t("Show bilingual subtitles");
     button.title = title;
     button.setAttribute("aria-label", title);
   }
@@ -425,7 +427,7 @@
       event.preventDefault();
       event.stopPropagation();
       toggleFromManual().catch((error) => {
-        setStatus("error", error && error.message ? error.message : "Could not toggle subtitles.");
+        setStatus("error", error && error.message ? error.message : t("Could not toggle subtitles."));
       });
     });
     controls.insertBefore(button, controls.firstChild || null);
@@ -827,7 +829,7 @@
       })));
     }
     console.warn("[MelonTranslate] Copyable subtitle diagnostics:", JSON.stringify(diagnostics, null, 2));
-    return new Error("Subtitle track is empty. See console diagnostics.");
+    return new Error(t("Subtitle track is empty. See console diagnostics."));
   }
 
   async function fetchAndParseYouTubeCues(url) {
@@ -1120,10 +1122,10 @@
     const track = context.track;
     const videoId = context.videoId || getCurrentYouTubeVideoId(context.response);
     if (!video) {
-      throw new Error("YouTube player not found.");
+      throw new Error(t("YouTube player not found."));
     }
     if (!track) {
-      throw new Error("No YouTube subtitle track found.");
+      throw new Error(t("No YouTube subtitle track found."));
     }
     const trackMatchesCurrentVideo = isYouTubeTrackForVideo(track, videoId);
     const capturedCues = context.capturedCues || await waitForCapturedYouTubeCues(track, videoId, 240);
@@ -1251,11 +1253,11 @@
   async function loadHtml5SubtitleSource() {
     const video = findVideo();
     if (!video) {
-      throw new Error("Video element not found.");
+      throw new Error(t("Video element not found."));
     }
     const track = chooseHtml5TextTrack(video);
     if (!track) {
-      throw new Error("No readable subtitle track found.");
+      throw new Error(t("No readable subtitle track found."));
     }
     const cues = await waitForTextTrackCues(track);
     if (!cues.length) {
@@ -2499,7 +2501,7 @@
         return;
       }
       activate({ manual: true }).catch((error) => {
-        setStatus("error", error && error.message ? error.message : "Could not restart bilingual subtitles.");
+        setStatus("error", error && error.message ? t(error.message) : t("Could not restart bilingual subtitles."));
       });
     }, Number(delay || 500));
   }
@@ -2576,6 +2578,9 @@
         ? state.settings.videoBilingualSubtitlesWordLookupEnabled !== false
         : true;
       state.settings = normalizeSettings(changes[namespace.constants.storageKeys.settings].newValue || {});
+      if (i18n.applySettings) {
+        i18n.applySettings(state.settings);
+      }
       ensureYouTubeButton();
       if (state.active && !state.manualActive && !state.settings.videoBilingualSubtitlesAutoTranslate) {
         deactivate();

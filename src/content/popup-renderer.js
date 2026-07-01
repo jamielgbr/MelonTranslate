@@ -46,14 +46,22 @@
   const COLLAPSE_RESULT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + COLLAPSE_RESULT_PATH + '" fill="currentColor"/></svg>';
   const pu = namespace.pageUtils;
   const ra = namespace.readAloud;
+  const i18n = namespace.i18n || { t: (value) => String(value || "") };
+  const t = i18n.t;
   const LONG_SOURCE_THRESHOLD = 520;
   const LONG_TRANSLATION_THRESHOLD = 780;
   const LONG_LINE_THRESHOLD = 7;
-  const EXPAND_RESULT_LABEL = "Expand translation";
-  const COLLAPSE_RESULT_LABEL = "Exit expanded translation";
+
+  function expandResultLabel() {
+    return t("Expand translation");
+  }
+
+  function collapseResultLabel() {
+    return t("Exit expanded translation");
+  }
 
   function buildTokenTooltip(firstTokenMs, outputTokens, tokPerSec) {
-    return `First token: ${pu.formatMillis(firstTokenMs)}\nOutput: ${outputTokens} tok\n${pu.formatRate(tokPerSec)} tok/s`;
+    return `${t("First token")}: ${pu.formatMillis(firstTokenMs)}\n${t("Output")}: ${outputTokens} tok\n${pu.formatRate(tokPerSec)} tok/s`;
   }
 
   function createPathIcon(dom, pathData) {
@@ -67,21 +75,21 @@
     return [
       el("div", { class: "controls" }, [
         el("div", { class: "control" }, [
-          el("label", { for: "melontranslate-source-language" }, "Source"),
+          el("label", { for: "melontranslate-source-language" }, t("Source")),
           el("div", { class: "cdd-lang-wrap", "data-role": "source-language-container" }),
           el("input", {
             type: "text",
-            placeholder: "Enter a language code",
+            placeholder: t("Enter a language code"),
             class: "hidden",
             "data-role": "source-language-custom"
           })
         ]),
         el("div", { class: "control" }, [
-          el("label", { for: "melontranslate-target-language" }, "Target"),
+          el("label", { for: "melontranslate-target-language" }, t("Target")),
           el("div", { class: "cdd-lang-wrap", "data-role": "target-language-container" }),
           el("input", {
             type: "text",
-            placeholder: "Enter a language code",
+            placeholder: t("Enter a language code"),
             class: "hidden",
             "data-role": "target-language-custom"
           })
@@ -90,14 +98,14 @@
       el("details", { class: "source-panel", "data-role": "source-wrap", open: true }, [
         el("summary", {}, [
           el("span", { class: "source-summary-copy" }, [
-            el("span", { class: "section-label", id: "melontranslate-src-label" }, "Source text"),
+            el("span", { class: "section-label", id: "melontranslate-src-label" }, t("Source text")),
             el("span", { class: "source-size", "data-role": "source-size" })
           ]),
           el("span", { class: "source-summary-actions" }, [
             el("button", {
               class: "speak speak-source hidden",
               type: "button",
-              "aria-label": "Read source text aloud"
+              "aria-label": t("Read source text aloud")
             }, createPathIcon(dom, SPEAK_ICON_PATH)),
             el("span", { class: "source-toggle-label", "aria-hidden": "true" })
           ])
@@ -112,28 +120,28 @@
       ]),
       el("section", { class: "translation-panel", "aria-labelledby": "melontranslate-trl-label" }, [
         el("div", { class: "translation-header" }, [
-          el("span", { class: "section-label", id: "melontranslate-trl-label" }, "Translation"),
+          el("span", { class: "section-label", id: "melontranslate-trl-label" }, t("Translation")),
           el("div", { class: "translation-actions" }, [
             el("button", {
               class: "speak hidden",
               type: "button",
-              "aria-label": "Read translation aloud"
+              "aria-label": t("Read translation aloud")
             }, createPathIcon(dom, SPEAK_ICON_PATH)),
             el("button", {
               class: "expand",
               type: "button",
               disabled: true,
-              title: EXPAND_RESULT_LABEL,
-              "aria-label": EXPAND_RESULT_LABEL,
+              title: expandResultLabel(),
+              "aria-label": expandResultLabel(),
               "aria-pressed": "false"
             }, createPathIcon(dom, EXPAND_RESULT_PATH))
           ])
         ]),
         el("div", { class: "translation-scroll", "data-role": "translation-scroll", tabindex: "-1" }, [
           el("div", { "data-role": "error-badge" }),
-          el("p", { class: "text translation-text muted", "data-role": "translation" }, "Translation will appear here..."),
+          el("p", { class: "text translation-text muted", "data-role": "translation" }, t("Translation will appear here...")),
           el("details", { class: "reasoning hidden", "data-role": "reasoning-wrap" }, [
-            el("summary", { class: "reasoning-summary" }, "Model reasoning"),
+            el("summary", { class: "reasoning-summary" }, t("Model reasoning")),
             el("p", { class: "reasoning-text", "data-role": "reasoning-text" })
           ])
         ])
@@ -146,8 +154,8 @@
     return [
       el("span", { class: "meta", "data-role": "meta" }),
       el("div", { class: "actions" }, [
-        el("button", { class: "refresh", type: "button", "aria-label": "Refresh" }, "Refresh"),
-        el("button", { class: "copy hidden", type: "button", "aria-label": "Copy translation" }, "Copy")
+        el("button", { class: "refresh", type: "button", "aria-label": t("Refresh") }, t("Refresh")),
+        el("button", { class: "copy hidden", type: "button", "aria-label": t("Copy translation") }, t("Copy"))
       ])
     ];
   }
@@ -305,11 +313,11 @@
   }
 
   function updateSpeakButton(elements, hasText) {
-    ra.updateButton(elements.speak, readAloudState, hasText, "Read translation aloud", "Stop reading");
+    ra.updateButton(elements.speak, readAloudState, hasText, t("Read translation aloud"), t("Stop reading"));
   }
 
   function updateSpeakSourceButton(elements, hasText) {
-    ra.updateButton(elements.speakSource, sourceReadAloudState, hasText, "Read source text aloud", "Stop reading");
+    ra.updateButton(elements.speakSource, sourceReadAloudState, hasText, t("Read source text aloud"), t("Stop reading"));
   }
 
   function updateTranslationExpandButton(elements) {
@@ -321,7 +329,7 @@
       popupState.translationExpanded = false;
       syncTranslationExpandedClass(elements, false);
     }
-    const label = popupState.translationExpanded ? COLLAPSE_RESULT_LABEL : EXPAND_RESULT_LABEL;
+    const label = popupState.translationExpanded ? collapseResultLabel() : expandResultLabel();
     elements.expand.disabled = !canExpand;
     elements.expand.setAttribute("aria-pressed", popupState.translationExpanded ? "true" : "false");
     pu.setHtml(elements.expand, popupState.translationExpanded ? COLLAPSE_RESULT_SVG : EXPAND_RESULT_SVG);
@@ -371,7 +379,7 @@
     elements.speak.classList.add("hidden");
     elements.speakSource.classList.add("hidden");
     elements.copy.classList.add("hidden");
-    elements.copy.textContent = "Copy";
+    elements.copy.textContent = t("Copy");
     updateTranslationExpandButton(elements);
   }
 
@@ -422,7 +430,7 @@
     } catch (error) {
       if (token === readAloudState.token) {
         stopReadAloud(elements);
-        elements.meta.textContent = error.message || "Could not play read aloud.";
+        elements.meta.textContent = t(error.message || "Could not play read aloud.");
         elements.meta.title = "";
       }
     }
@@ -475,7 +483,7 @@
     } catch (error) {
       if (token === sourceReadAloudState.token) {
         stopSourceReadAloud(elements);
-        elements.meta.textContent = error.message || "Could not play read aloud.";
+        elements.meta.textContent = t(error.message || "Could not play read aloud.");
         elements.meta.title = "";
       }
     }
@@ -734,17 +742,17 @@
       elements.source.textContent = normalizedSourceText;
       elements.sourceSize.textContent = formatSourceSize(normalizedSourceText);
       elements.sourceWrap.open = !sourceIsLong;
-      elements.translation.textContent = "Translating...";
+      elements.translation.textContent = t("Translating...");
       elements.translation.classList.add("muted");
       elements.translationScroll.scrollTop = 0;
       elements.errorBadge.replaceChildren();
-      elements.meta.textContent = "Waiting for a provider...";
+      elements.meta.textContent = t("Waiting for a provider...");
       elements.meta.title = "";
       elements.reasoningText.textContent = "";
       elements.reasoningWrap.classList.add("hidden");
       elements.reasoningWrap.open = false;
       elements.refresh.disabled = false;
-      elements.refresh.textContent = "Refresh";
+      elements.refresh.textContent = t("Refresh");
       resetAudioAndActions(elements);
       updateSpeakSourceButton(elements, !!getCurrentSourceText(elements));
       updateTranslationExpandButton(elements);
@@ -771,16 +779,16 @@
         elements.reasoningWrap.classList.add("hidden");
         elements.reasoningWrap.open = false;
       }
-      const cached = result.fromCache ? " • Cached" : "";
+      const cached = result.fromCache ? " • " + t("Cached") : "";
       popupState.fromCache = !!result.fromCache;
       popupState.detectedSourceLanguage = String(result.detectedSourceLanguage || "").trim();
       popupState.targetLanguage = String(result.targetLanguage || popupState.targetLanguage || "").trim();
       pu.updateStreamMetrics(popupState, `${result.translatedText || ""}${result.thinkingText || ""}`, result.outputTokens);
       const firstTokenMs = popupState.firstTokenAtMs ? popupState.firstTokenAtMs - popupState.streamStartedAtMs : -1;
       elements.meta.textContent = `${result.providerName} • ${result.model} • ${result.latencyMs} ms${cached}`;
-      elements.meta.title = popupState.fromCache ? "Cached" : buildTokenTooltip(firstTokenMs, popupState.outputTokens, popupState.tokPerSec);
+      elements.meta.title = popupState.fromCache ? t("Cached") : buildTokenTooltip(firstTokenMs, popupState.outputTokens, popupState.tokPerSec);
       elements.refresh.disabled = false;
-      elements.refresh.textContent = "Refresh";
+      elements.refresh.textContent = t("Refresh");
       updateAdaptiveLayout(elements);
       updateSpeakButton(elements, !!result.translatedText);
       updateSpeakSourceButton(elements, !!getCurrentSourceText(elements));
@@ -789,10 +797,10 @@
       elements.copy.onclick = async () => {
         try {
           await navigator.clipboard.writeText(result.translatedText);
-          elements.copy.textContent = "Copied!";
-          setTimeout(() => { elements.copy.textContent = "Copy"; }, 1500);
+          elements.copy.textContent = t("Copied!");
+          setTimeout(() => { elements.copy.textContent = t("Copy"); }, 1500);
         } catch (_) {
-          elements.copy.textContent = "Could not copy";
+          elements.copy.textContent = t("Could not copy");
         }
       };
     },
@@ -819,7 +827,7 @@
         elements.reasoningText.scrollTop = elements.reasoningText.scrollHeight;
       }
 
-      if (elements.translation.classList.contains("muted") || elements.translation.textContent === "Translating...") {
+      if (elements.translation.classList.contains("muted") || elements.translation.textContent === t("Translating...")) {
         elements.translation.textContent = "";
       }
       elements.translation.classList.remove("muted");
@@ -835,11 +843,11 @@
       pu.updateStreamMetrics(popupState, `${elements.translation.textContent}${elements.reasoningText.textContent}`, meta && meta.outputTokens);
       if (meta) {
         const firstTokenMs = popupState.firstTokenAtMs ? popupState.firstTokenAtMs - popupState.streamStartedAtMs : -1;
-        elements.meta.textContent = `${meta.providerName} • ${meta.model} • ${popupState.fromCache ? "Cached" : "Streaming"}`;
-        elements.meta.title = popupState.fromCache ? "Cached" : buildTokenTooltip(firstTokenMs, popupState.outputTokens, popupState.tokPerSec);
+        elements.meta.textContent = `${meta.providerName} • ${meta.model} • ${popupState.fromCache ? t("Cached") : t("Streaming")}`;
+        elements.meta.title = popupState.fromCache ? t("Cached") : buildTokenTooltip(firstTokenMs, popupState.outputTokens, popupState.tokPerSec);
       }
       elements.refresh.disabled = true;
-      elements.refresh.textContent = "Translating...";
+      elements.refresh.textContent = t("Translating...");
       updateTranslationExpandButton(elements);
     },
     setError(message, category) {
@@ -847,12 +855,12 @@
       popupState.currentTranslatedText = "";
       popupState.translationInProgress = false;
       setTranslationExpanded(elements, false);
-      const labels = { auth: "Authentication error", rate_limit: "Rate limit", server: "Server error", network: "Network error" };
+      const labels = { auth: t("Authentication error"), rate_limit: t("Rate limit"), server: t("Server error"), network: t("Network error") };
       const cssMap = { auth: "error-auth", rate_limit: "error-rate", server: "error-server", network: "error-net" };
       const cat = category || "network";
       const badge = document.createElement("span");
       badge.className = `error-badge ${cssMap[cat] || "error-net"}`;
-      badge.textContent = labels[cat] || "Error";
+      badge.textContent = labels[cat] || t("Error");
       elements.errorBadge.replaceChildren(badge);
       elements.translation.textContent = message;
       elements.translation.classList.remove("muted");
@@ -860,7 +868,7 @@
       elements.meta.textContent = "";
       elements.meta.title = "";
       elements.refresh.disabled = false;
-      elements.refresh.textContent = "Try again";
+      elements.refresh.textContent = t("Try again");
       resetAudioAndActions(elements);
       updateAdaptiveLayout(elements);
       updateTranslationExpandButton(elements);

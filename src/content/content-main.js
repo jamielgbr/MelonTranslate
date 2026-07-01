@@ -2,6 +2,8 @@
   const namespace = root.MelonTranslate = root.MelonTranslate || {};
   const api = namespace.browserApi;
   const messageTypes = namespace.messages.types;
+  const i18n = namespace.i18n || { t: (value) => String(value || "") };
+  const t = i18n.t;
   const requestState = {
     lastSelectionData: null,
     activeToken: 0
@@ -16,6 +18,9 @@
     const response = await api.runtime.sendMessage({ type: messageTypes.getSettings });
     if (!response || !response.ok) {
       throw new Error(response?.error?.message || "Could not load settings.");
+    }
+    if (i18n.applySettings) {
+      i18n.applySettings(response.data.settings);
     }
     return response.data.settings;
   }
@@ -131,11 +136,12 @@
         const result = await namespace.videoSubtitleTranslator.toggleFromManual();
         return namespace.messages.ok(result);
       } catch (error) {
-        return namespace.messages.error(error && error.message || "Could not toggle bilingual subtitles.");
+        return namespace.messages.error(error && error.message || t("Could not toggle bilingual subtitles."));
       }
     }
 
     if (message.type === messageTypes.startElementPicker && namespace.elementPicker) {
+      await getSettings().catch(() => {});
       namespace.elementPicker.start();
       return namespace.messages.ok();
     }

@@ -4,6 +4,8 @@
   const messageTypes = namespace.messages.types;
   const pu = namespace.pageUtils;
   const mc = namespace.modelCapabilities;
+  const i18n = namespace.i18n || { t: (value) => String(value || ""), localize: () => {} };
+  const t = i18n.t;
   const SESSION_KEY = "melontranslate-compare-state";
 
   const state = {
@@ -16,7 +18,7 @@
   };
 
   function setStatus(message) {
-    document.getElementById("status").textContent = message;
+    document.getElementById("status").textContent = t(String(message || ""));
   }
 
   function saveSession() {
@@ -125,7 +127,7 @@
         label: mc.formatModelOptionLabel(provider.displayName || provider.id, model, meta)
       };
     }).filter(Boolean);
-    const defaultLabel = `Default${current ? `: ${current}` : ""}`;
+    const defaultLabel = `${t("Default")}${current ? `: ${current}` : ""}`;
     return { defaultLabel, models };
   }
 
@@ -141,7 +143,7 @@
     const availableProviderIds = availableProviders.map((provider) => provider.id);
     const selector = document.getElementById("provider-selector");
     if (!availableProviders.length) {
-      selector.innerHTML = '<p class="hint">No provider is ready yet. Configure one in Options first.</p>';
+      pu.setHtml(selector, '<p class="hint">No provider is ready yet. Configure one in Options first.</p>');
       return;
     }
 
@@ -189,7 +191,7 @@
   function renderResults(results) {
     const container = document.getElementById("results");
     if (!results.length) {
-      container.innerHTML = '<p class="hint">Results will appear here.</p>';
+      pu.setHtml(container, '<p class="hint">Results will appear here.</p>');
       return;
     }
 
@@ -205,25 +207,25 @@
       const firstTokenMs = Number(result.firstTokenLatencyMs);
       const reasoningOpenAttr = result.reasoningExpanded ? " open" : "";
       const thinkingSection = thinkingText
-        ? `<details class="result-thinking"${reasoningOpenAttr}><summary class="result-thinking-summary">Model reasoning</summary><p class="result-thinking-text">${pu.escapeHtml(thinkingText)}</p></details>`
+        ? `<details class="result-thinking"${reasoningOpenAttr}><summary class="result-thinking-summary">${t("Model reasoning")}</summary><p class="result-thinking-text" data-i18n-skip="true">${pu.escapeHtml(thinkingText)}</p></details>`
         : "";
       const promptSection = promptText
-        ? `<details class="result-prompt"><summary class="result-prompt-summary">Prompt preview</summary><pre class="result-prompt-text">${pu.escapeHtml(promptText)}</pre></details>`
+        ? `<details class="result-prompt"><summary class="result-prompt-summary">${t("Prompt preview")}</summary><pre class="result-prompt-text" data-i18n-skip="true">${pu.escapeHtml(promptText)}</pre></details>`
         : "";
       const body = result.ok
-        ? `<p class="result-text">${pu.escapeHtml(result.translatedText)}</p>
+        ? `<p class="result-text" data-i18n-skip="true">${pu.escapeHtml(result.translatedText)}</p>
           <p class="result-stream-stats">${pu.formatMetricsLine(firstTokenMs, outputTokens, tokPerSec, result.fromCache)}</p>
            ${thinkingSection}
             ${promptSection}
-           <button class="secondary result-copy" type="button" data-text="${pu.escapeHtml(result.translatedText)}">Copy</button>`
-        : `<p class="result-text result-error">${pu.escapeHtml(result.error || "Unknown error")}</p>${promptSection}`;
-      const fromCache = result.fromCache ? ' <span class="cached-badge">Cached</span>' : "";
+           <button class="secondary result-copy" type="button" data-text="${pu.escapeHtml(result.translatedText)}">${t("Copy")}</button>`
+        : `<p class="result-text result-error">${pu.escapeHtml(result.error || t("Unknown error"))}</p>${promptSection}`;
+      const fromCache = result.fromCache ? ` <span class="cached-badge">${t("Cached")}</span>` : "";
       return `
         <article class="result-card">
           <div class="result-header">
             <span class="result-provider-icon" aria-hidden="true">${providerIconHtml}</span>
-            <strong>${pu.escapeHtml(result.providerName || result.providerId)}</strong>
-            <span class="result-meta">${result.providerId === "google-translate" ? "" : pu.escapeHtml(result.model || "")}${result.ok ? ` • ${result.latencyMs}\u202fms${fromCache}` : ""}</span>
+            <strong data-i18n-skip="true">${pu.escapeHtml(result.providerName || result.providerId)}</strong>
+            <span class="result-meta"><span data-i18n-skip="true">${result.providerId === "google-translate" ? "" : pu.escapeHtml(result.model || "")}</span>${result.ok ? ` • ${result.latencyMs}\u202fms${fromCache}` : ""}</span>
           </div>
           ${body}
         </article>
@@ -234,8 +236,8 @@
       btn.addEventListener("click", () => {
         if (navigator.clipboard) {
           navigator.clipboard.writeText(btn.dataset.text).then(() => {
-            btn.textContent = "Copied!";
-            setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+            btn.textContent = t("Copied!");
+            setTimeout(() => { btn.textContent = t("Copy"); }, 1500);
           });
         }
       });
@@ -268,6 +270,8 @@
     state.settings = response.data.settings;
     state.providers = response.data.providers;
     state.providerConfigs = response.data.providerConfigs;
+    i18n.applySettings(state.settings);
+    i18n.localize(document);
     const providerIdFromUrl = new URLSearchParams(window.location.search).get("providerId");
     if (providerIdFromUrl && pu.providerIsConfigured(
       state.providers.find((provider) => provider.id === providerIdFromUrl),
@@ -439,7 +443,7 @@
 
       if (message.event === "stream-complete") {
         const count = Object.keys(state.liveResults).length;
-        setStatus(`Received ${count} result${count === 1 ? "" : "s"}.`);
+        setStatus(count === 1 ? "Received 1 result." : "Received results.");
         port.disconnect();
         return;
       }

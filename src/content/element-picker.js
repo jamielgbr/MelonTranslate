@@ -2,6 +2,8 @@
   const namespace = root.MelonTranslate = root.MelonTranslate || {};
   const api = namespace.browserApi;
   const messageTypes = namespace.messages.types;
+  const i18n = namespace.i18n || { t: function(value) { return String(value || ""); } };
+  const t = i18n.t;
 
   const state = {
     active: false,
@@ -95,25 +97,25 @@
 
   function renderSelectionPrompt() {
     setPanelContent(
-      "Select translation area",
-      "Click a page region to choose how immersive translation should handle it. Press Esc to cancel.",
+      t("Select translation area"),
+      t("Click a page region to choose how immersive translation should handle it. Press Esc to cancel."),
       ""
     );
   }
 
   function renderConfirmation(selectorText) {
     setPanelContent(
-      "Save site rule",
-      "Choose how this region should affect immersive translation for this site.",
+      t("Save site rule"),
+      t("Choose how this region should affect immersive translation for this site."),
       selectorText
     );
     var actions = document.createElement("div");
     actions.className = "mt-picker-actions";
 
     [
-      { mode: "include", label: "Translate this area" },
-      { mode: "exclude", label: "Exclude this area" },
-      { mode: "cancel", label: "Cancel" }
+      { mode: "include", label: t("Translate this area") },
+      { mode: "exclude", label: t("Exclude this area") },
+      { mode: "cancel", label: t("Cancel") }
     ].forEach(function(action) {
       var button = document.createElement("button");
       button.type = "button";
@@ -122,15 +124,15 @@
         event.preventDefault();
         event.stopPropagation();
         if (action.mode === "cancel") {
-          stop("Selection cancelled.");
+          stop(t("Selection cancelled."));
           return;
         }
         saveSelectedSelector(selectorText, action.mode)
           .then(function() {
-            stop(action.mode === "exclude" ? "Excluded area saved." : "Translation area saved.");
+            stop(action.mode === "exclude" ? t("Excluded area saved.") : t("Translation area saved."));
           })
           .catch(function(error) {
-            stop(error && error.message ? error.message : "Could not save area.");
+            stop(error && error.message ? error.message : t("Could not save area."));
           });
       });
       actions.appendChild(button);
@@ -209,7 +211,7 @@
     panel.textContent = "";
     var title = document.createElement("p");
     title.className = "mt-picker-title";
-    title.textContent = String(message || "Saved.");
+    title.textContent = String(message || t("Saved."));
     panel.appendChild(title);
     setTimeout(function() {
       if (panel.isConnected) {
@@ -220,7 +222,7 @@
 
   async function saveSelectedSelector(selector, mode) {
     if (!selector) {
-      throw new Error("Could not create a selector for this element.");
+      throw new Error(t("Could not create a selector for this element."));
     }
     var host = window.location.hostname;
     var response = await api.runtime.sendMessage({
@@ -230,7 +232,7 @@
       mode: mode === "exclude" ? "exclude" : "include"
     });
     if (!response || !response.ok) {
-      throw new Error(response?.error?.message || "Could not save site rule.");
+      throw new Error(response?.error?.message || t("Could not save site rule."));
     }
     return response.data && response.data.rule;
   }
@@ -250,7 +252,7 @@
     var selected = state.hovered || event.target;
     var selector = namespace.selectorGenerator.generateSelector(selected);
     if (!selector) {
-      stop("Could not create a selector for this element.");
+      stop(t("Could not create a selector for this element."));
       return;
     }
     state.confirming = true;
@@ -262,7 +264,7 @@
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
-      stop("Selection cancelled.");
+      stop(t("Selection cancelled."));
     }
   }
 

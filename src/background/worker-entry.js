@@ -1,6 +1,7 @@
 importScripts(
   '../shared/constants.js',
   '../shared/messages.js',
+  '../shared/i18n.js',
   '../shared/model-params.js',
   '../shared/model-capabilities.js',
   '../platform/firefox.js',
