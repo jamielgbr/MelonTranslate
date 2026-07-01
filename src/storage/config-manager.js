@@ -109,7 +109,7 @@
       immersiveTranslationMinTextLength: 32,
       immersiveTranslationMaxConcurrent: 2,
       immersiveTranslationContextStyle: "auto",
-      videoBilingualSubtitlesAutoTranslate: false,
+      videoBilingualSubtitlesAutoTranslate: true,
       videoBilingualSubtitlesMode: "translation",
       videoBilingualSubtitlesLearningEnglishLevel: "B1",
       videoBilingualSubtitlesLearningJapaneseLevel: "N3",

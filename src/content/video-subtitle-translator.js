@@ -380,12 +380,12 @@
     button.classList.toggle("is-error", state.status === "error");
     button.classList.toggle("is-working", state.status === "loading" || state.activeBatches > 0);
     const title = state.status === "on"
-      ? "Turn off bilingual subtitles"
+      ? "Hide bilingual subtitles"
       : state.status === "loading"
-        ? "Loading bilingual subtitles"
+        ? "Loading subtitles"
         : state.status === "error"
-          ? (state.error || "Could not load bilingual subtitles")
-          : "Turn on bilingual subtitles";
+          ? (state.error || "Bilingual subtitles unavailable")
+          : "Show bilingual subtitles";
     button.title = title;
     button.setAttribute("aria-label", title);
   }
@@ -425,7 +425,7 @@
       event.preventDefault();
       event.stopPropagation();
       toggleFromManual().catch((error) => {
-        setStatus("error", error && error.message ? error.message : "Could not toggle bilingual subtitles.");
+        setStatus("error", error && error.message ? error.message : "Could not toggle subtitles.");
       });
     });
     controls.insertBefore(button, controls.firstChild || null);
@@ -827,7 +827,7 @@
       })));
     }
     console.warn("[MelonTranslate] Copyable subtitle diagnostics:", JSON.stringify(diagnostics, null, 2));
-    return new Error("This subtitle track is empty. Check the page console for MelonTranslate subtitle diagnostics.");
+    return new Error("Subtitle track is empty. See console diagnostics.");
   }
 
   async function fetchAndParseYouTubeCues(url) {
@@ -1120,10 +1120,10 @@
     const track = context.track;
     const videoId = context.videoId || getCurrentYouTubeVideoId(context.response);
     if (!video) {
-      throw new Error("Could not find the YouTube video player.");
+      throw new Error("YouTube player not found.");
     }
     if (!track) {
-      throw new Error("Could not find a YouTube subtitle track.");
+      throw new Error("No YouTube subtitle track found.");
     }
     const trackMatchesCurrentVideo = isYouTubeTrackForVideo(track, videoId);
     const capturedCues = context.capturedCues || await waitForCapturedYouTubeCues(track, videoId, 240);
@@ -1251,11 +1251,11 @@
   async function loadHtml5SubtitleSource() {
     const video = findVideo();
     if (!video) {
-      throw new Error("Could not find a video element.");
+      throw new Error("Video element not found.");
     }
     const track = chooseHtml5TextTrack(video);
     if (!track) {
-      throw new Error("Could not find a readable subtitle track.");
+      throw new Error("No readable subtitle track found.");
     }
     const cues = await waitForTextTrackCues(track);
     if (!cues.length) {

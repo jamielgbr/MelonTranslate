@@ -513,7 +513,7 @@
     });
     await api.contextMenus.create({
       id: videoSubtitleContextMenuId,
-      title: "Toggle bilingual video subtitles",
+      title: "Toggle bilingual subtitles",
       contexts: ["page", "frame", "video"]
     });
     await api.contextMenus.create({
@@ -1295,7 +1295,7 @@
     const route = resolveEffectiveRoute(message.providerIds || [], message.modelOverrides || {}, settings, configuredProviders);
     const routeProviders = getRouteProviderConfigs(route, configuredProviders);
     if (routeProviders.length && !routeProviders.some(providerSupportsSubtitleAnnotations)) {
-      return namespace.messages.error("Learning subtitle annotations require an AI text-generation provider. Select an LLM provider in Options.");
+      return namespace.messages.error("Learning annotations require an LLM provider. Select one in Options.");
     }
     const temperatureOverrides = resolveTemperatureOverrides(
       route.providerIds,

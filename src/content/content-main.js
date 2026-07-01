@@ -131,7 +131,7 @@
         const result = await namespace.videoSubtitleTranslator.toggleFromManual();
         return namespace.messages.ok(result);
       } catch (error) {
-        return namespace.messages.error(error && error.message || "Could not toggle bilingual video subtitles.");
+        return namespace.messages.error(error && error.message || "Could not toggle bilingual subtitles.");
       }
     }
 

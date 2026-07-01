@@ -45,7 +45,7 @@
     videoSubtitleDisplayModes: [
       { id: "translation", label: "Full translation" },
       { id: "learning", label: "Learning annotations" },
-      { id: "manual", label: "Manual word lookup" }
+      { id: "manual", label: "Manual" }
     ],
     videoSubtitleLearningLevels: {
       english: ["A1", "A2", "B1", "B2", "C1", "C2"],

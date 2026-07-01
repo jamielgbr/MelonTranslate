@@ -237,21 +237,19 @@
                     <div class="settings-group">
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
-                                <label for="video-subtitles-auto">Automatically translate video subtitles</label>
-                                <p class="setting-desc">Start bilingual subtitles on supported video pages. This is off
-                                    by default.</p>
+                                <label for="video-subtitles-auto">Auto-start bilingual subtitles</label>
+                                <p class="setting-desc">Start automatically on supported video pages. On by default.</p>
                             </div>
                             <label class="provider-switch" for="video-subtitles-auto"
-                                aria-label="Automatically translate video subtitles">
+                                aria-label="Auto-start bilingual subtitles">
                                 <input id="video-subtitles-auto" type="checkbox">
                                 <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
                             </label>
                         </div>
                         <div class="settings-row">
                             <div class="settings-copy">
-                                <label for="video-subtitles-mode">Subtitle content</label>
-                                <p class="setting-desc">Choose full sentence translation or learner-focused vocabulary
-                                    annotations.</p>
+                                <label for="video-subtitles-mode">Subtitle mode</label>
+                                <p class="setting-desc">Choose Full translation, Learning annotations, or Manual.</p>
                             </div>
                             <div class="settings-control">
                                 <div id="video-subtitles-mode-wrap"></div>
@@ -259,24 +257,24 @@
                         </div>
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
-                                <label for="video-subtitles-topic-context">Use topic context</label>
-                                <p class="setting-desc">Analyze a subtitle sample before translating to improve domain
-                                    terms and tone. Uses one extra AI request per video.</p>
+                                <label for="video-subtitles-topic-context">Topic context</label>
+                                <p class="setting-desc">Analyze a subtitle sample first for better terminology and tone.
+                                    Uses one extra AI request per video.</p>
                             </div>
                             <label class="provider-switch" for="video-subtitles-topic-context"
-                                aria-label="Use topic context">
+                                aria-label="Topic context">
                                 <input id="video-subtitles-topic-context" type="checkbox">
                                 <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
                             </label>
                         </div>
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
-                                <label for="video-subtitles-word-lookup">Enable hover word lookup</label>
-                                <p class="setting-desc">Translate a subtitle word after hovering over it briefly. Works
-                                    in all subtitle content modes.</p>
+                                <label for="video-subtitles-word-lookup">Hover word lookup</label>
+                                <p class="setting-desc">Hover a subtitle word for a contextual explanation. Works in all
+                                    modes.</p>
                             </div>
                             <label class="provider-switch" for="video-subtitles-word-lookup"
-                                aria-label="Enable hover word lookup">
+                                aria-label="Hover word lookup">
                                 <input id="video-subtitles-word-lookup" type="checkbox">
                                 <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
                             </label>
@@ -284,7 +282,7 @@
                         <div class="settings-row video-subtitles-learning-row">
                             <div class="settings-copy">
                                 <label for="video-subtitles-learning-english-level">English level</label>
-                                <p class="setting-desc">Annotate English words and phrases above this CEFR level.</p>
+                                <p class="setting-desc">Annotate English terms above this CEFR level.</p>
                             </div>
                             <div class="settings-control">
                                 <div id="video-subtitles-learning-english-level-wrap"></div>
@@ -293,7 +291,7 @@
                         <div class="settings-row video-subtitles-learning-row">
                             <div class="settings-copy">
                                 <label for="video-subtitles-learning-japanese-level">Japanese level</label>
-                                <p class="setting-desc">Annotate Japanese words and phrases above this JLPT level.</p>
+                                <p class="setting-desc">Annotate Japanese terms above this JLPT level.</p>
                             </div>
                             <div class="settings-control">
                                 <div id="video-subtitles-learning-japanese-level-wrap"></div>
@@ -302,7 +300,7 @@
                         <div class="settings-row video-subtitles-learning-row">
                             <div class="settings-copy">
                                 <label for="video-subtitles-learning-chinese-level">Chinese level</label>
-                                <p class="setting-desc">Annotate Chinese words and phrases above this HSK level.</p>
+                                <p class="setting-desc">Annotate Chinese terms above this HSK level.</p>
                             </div>
                             <div class="settings-control">
                                 <div id="video-subtitles-learning-chinese-level-wrap"></div>
@@ -311,8 +309,7 @@
                         <div class="settings-row video-subtitles-learning-row">
                             <div class="settings-copy">
                                 <label for="video-subtitles-learning-max-items">Annotations per subtitle</label>
-                                <p class="setting-desc">Limit how many words or phrases are shown for each subtitle
-                                    line.</p>
+                                <p class="setting-desc">Maximum terms to show for each subtitle.</p>
                             </div>
                             <div class="settings-control">
                                 <input id="video-subtitles-learning-max-items" type="number" min="1" max="8" step="1">
@@ -321,8 +318,7 @@
                         <div class="settings-row video-subtitles-learning-row">
                             <div class="settings-copy">
                                 <label>Annotation types</label>
-                                <p class="setting-desc">Limit annotations to specific parts of speech or phrases. Any
-                                    keeps the current behavior.</p>
+                                <p class="setting-desc">Choose parts of speech to annotate. Any includes all types.</p>
                             </div>
                             <div class="settings-control">
                                 <div id="video-subtitles-learning-annotation-types" class="choice-list"></div>
@@ -330,34 +326,31 @@
                         </div>
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
-                                <label for="video-subtitles-skip-default-target-source">Skip automatic mode when source
-                                    matches the default target</label>
-                                <p class="setting-desc">Manual mode can still translate those subtitles into your second
-                                    target language.</p>
+                                <label for="video-subtitles-skip-default-target-source">Skip auto-start when source is
+                                    Default target</label>
+                                <p class="setting-desc">Manual can still use your Second target language.</p>
                             </div>
                             <label class="provider-switch" for="video-subtitles-skip-default-target-source"
-                                aria-label="Skip automatic mode when source matches the default target">
+                                aria-label="Skip auto-start when source is Default target">
                                 <input id="video-subtitles-skip-default-target-source" type="checkbox">
                                 <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
                             </label>
                         </div>
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
-                                <label for="video-subtitles-show-player-button">Show the YouTube player button</label>
-                                <p class="setting-desc">Display a compact toggle in the YouTube controls when available.
-                                </p>
+                                <label for="video-subtitles-show-player-button">YouTube player button</label>
+                                <p class="setting-desc">Show the subtitle toggle in YouTube controls.</p>
                             </div>
                             <label class="provider-switch" for="video-subtitles-show-player-button"
-                                aria-label="Show the YouTube player button">
+                                aria-label="YouTube player button">
                                 <input id="video-subtitles-show-player-button" type="checkbox">
                                 <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
                             </label>
                         </div>
                         <div class="settings-row">
                             <div class="settings-copy">
-                                <label for="video-subtitles-max-concurrent-batches">Parallel subtitle batches</label>
-                                <p class="setting-desc">Limit simultaneous subtitle translation batches for long videos.
-                                </p>
+                                <label for="video-subtitles-max-concurrent-batches">Parallel subtitle requests</label>
+                                <p class="setting-desc">Limit simultaneous subtitle translation requests.</p>
                             </div>
                             <div class="settings-control">
                                 <input id="video-subtitles-max-concurrent-batches" type="number" min="1" max="4"
