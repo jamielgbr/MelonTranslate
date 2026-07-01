@@ -171,6 +171,10 @@
         return this.buildSubtitleTopicContextPrompt(request);
       }
 
+      if (request && request.task === "subtitle-word-lookup") {
+        return this.buildSubtitleWordLookupPrompt(request);
+      }
+
       if (request && request.task === "subtitle-annotations") {
         return this.buildSubtitleAnnotationPrompt(request);
       }
@@ -224,6 +228,30 @@
         "Return plain text only, no headings, no bullets, no JSON.",
         "Keep it under 90 words."
       ].join(" ");
+    }
+
+    buildSubtitleWordLookupPrompt(request) {
+      const sourceLanguage = String(request.sourceLanguage || "auto").trim() || "auto";
+      const targetLanguage = String(request.targetLanguage || "en").trim() || "en";
+      const selectedWord = String(request.text || "").replace(/\s+/g, " ").trim();
+      const sentence = String(request.subtitleSentence || "").replace(/\s+/g, " ").trim();
+      const nextSentence = String(request.nextSubtitleSentence || "").replace(/\s+/g, " ").trim();
+      return [
+        "You are a language-learning subtitle vocabulary assistant.",
+        `Explain the selected source word or short phrase in ${targetLanguage}.`,
+        `Source language: ${sourceLanguage}.`,
+        selectedWord ? `Selected text: ${selectedWord}.` : "",
+        sentence ? `Subtitle sentence: ${sentence}` : "",
+        nextSentence ? `Next subtitle sentence: ${nextSentence}` : "",
+        this.buildSubtitleContextHint(request.subtitleContext),
+        "Use the subtitle sentence, next subtitle sentence, and video topic context only to choose the correct sense.",
+        "Keep the meaning concise but useful for a language learner.",
+        "If helpful, use the note field for a short usage hint, part of speech, nuance, or why this meaning fits the subtitle.",
+        "Return strict JSON only, with this exact shape:",
+        "{\"items\":[{\"term\":\"selected source text\",\"meaning\":\"short meaning\",\"note\":\"optional short note\"}]}",
+        "Do not translate the whole subtitle sentence.",
+        "If the selected text is a name or title that should not be translated, put the original text in meaning and explain briefly in note."
+      ].filter(Boolean).join(" ");
     }
 
     buildSubtitleAnnotationPrompt(request) {

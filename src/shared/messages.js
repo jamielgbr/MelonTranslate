@@ -18,6 +18,7 @@
       translateSubtitleBatch: "TRANSLATE_SUBTITLE_BATCH",
       annotateSubtitleBatch: "ANNOTATE_SUBTITLE_BATCH",
       senseSubtitleTopicContext: "SENSE_SUBTITLE_TOPIC_CONTEXT",
+      translateSubtitleWord: "TRANSLATE_SUBTITLE_WORD",
       startElementPicker: "START_ELEMENT_PICKER",
       getSiteRules: "GET_SITE_RULES",
       saveSiteRules: "SAVE_SITE_RULES",

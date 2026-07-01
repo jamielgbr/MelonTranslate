@@ -73,9 +73,15 @@
     renderedOverlayMode: "",
     renderedOverlaySourceText: "",
     renderedOverlayTargetText: "",
+    renderedOverlayNextText: "",
     renderedOverlayPlainText: "",
     renderedOverlayHidden: null,
     button: null,
+    wordLookupTimer: 0,
+    wordLookupRequestId: 0,
+    wordLookupActiveElement: null,
+    wordLookupPopup: null,
+    wordLookupCache: new Map(),
     currentCueKey: "",
     currentDomSubtitleId: "",
     lastQueueRefreshMediaTime: null,
@@ -109,7 +115,10 @@
     const maxConcurrent = Number.isFinite(rawMaxConcurrent)
       ? Math.max(1, Math.min(4, Math.round(rawMaxConcurrent)))
       : 2;
-    const displayMode = cfg.videoBilingualSubtitlesMode === "learning" ? "learning" : "translation";
+    const rawDisplayMode = String(cfg.videoBilingualSubtitlesMode || "").trim();
+    const displayMode = rawDisplayMode === "learning" || rawDisplayMode === "manual"
+      ? rawDisplayMode
+      : "translation";
     const rawMaxLearningItems = Number(cfg.videoBilingualSubtitlesLearningMaxItems);
     const maxLearningItems = Number.isFinite(rawMaxLearningItems)
       ? Math.max(1, Math.min(8, Math.round(rawMaxLearningItems)))
@@ -125,6 +134,7 @@
       videoBilingualSubtitlesLearningChineseLevel: String(cfg.videoBilingualSubtitlesLearningChineseLevel || "HSK3"),
       videoBilingualSubtitlesLearningAnnotationTypes: annotationTypes,
       videoBilingualSubtitlesLearningMaxItems: maxLearningItems,
+      videoBilingualSubtitlesWordLookupEnabled: cfg.videoBilingualSubtitlesWordLookupEnabled !== false,
       videoBilingualSubtitlesTopicContextEnabled: !!cfg.videoBilingualSubtitlesTopicContextEnabled,
       videoBilingualSubtitlesSkipDefaultTargetSource: cfg.videoBilingualSubtitlesSkipDefaultTargetSource !== false,
       videoBilingualSubtitlesShowPlayerButton: cfg.videoBilingualSubtitlesShowPlayerButton !== false,
@@ -134,6 +144,14 @@
 
   function isLearningSubtitleMode() {
     return !!(state.settings && state.settings.videoBilingualSubtitlesMode === "learning");
+  }
+
+  function isManualWordLookupMode() {
+    return !!(state.settings && state.settings.videoBilingualSubtitlesMode === "manual");
+  }
+
+  function isWordLookupEnabled() {
+    return !!(state.settings && state.settings.videoBilingualSubtitlesWordLookupEnabled !== false);
   }
 
   function getSubtitleResultSettingsKey(settings) {
@@ -236,6 +254,62 @@
         color: #fff;
         box-decoration-break: clone;
         -webkit-box-decoration-break: clone;
+        overflow-wrap: anywhere;
+      }
+      .${OVERLAY_CLASS} .mt-video-subtitle-cue.source-cue.is-word-lookup {
+        pointer-events: auto;
+      }
+      .${OVERLAY_CLASS} .mt-video-subtitle-word {
+        display: inline;
+        border: 1px solid transparent;
+        border-radius: 3px;
+        padding: 0 1px;
+        margin: 0 1px;
+        cursor: default;
+        pointer-events: auto;
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
+      }
+      .${OVERLAY_CLASS} .mt-video-subtitle-word.is-selected {
+        border-color: rgba(255, 255, 255, 0.86);
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .${OVERLAY_CLASS} .mt-video-subtitle-word.is-loading {
+        animation: mt-video-subtitle-word-rainbow 0.72s linear infinite;
+      }
+      @keyframes mt-video-subtitle-word-rainbow {
+        0% { border-color: #ef4444; box-shadow: 0 0 5px rgba(239, 68, 68, 0.9); }
+        16% { border-color: #f97316; box-shadow: 0 0 5px rgba(249, 115, 22, 0.9); }
+        33% { border-color: #eab308; box-shadow: 0 0 5px rgba(234, 179, 8, 0.9); }
+        50% { border-color: #22c55e; box-shadow: 0 0 5px rgba(34, 197, 94, 0.9); }
+        66% { border-color: #06b6d4; box-shadow: 0 0 5px rgba(6, 182, 212, 0.9); }
+        83% { border-color: #6366f1; box-shadow: 0 0 5px rgba(99, 102, 241, 0.9); }
+        100% { border-color: #ec4899; box-shadow: 0 0 5px rgba(236, 72, 153, 0.9); }
+      }
+      .mt-video-subtitle-word-popup {
+        position: fixed;
+        z-index: 2147483647;
+        max-width: min(320px, calc(100vw - 24px));
+        padding: 8px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        background: rgba(12, 12, 12, 0.94);
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.38);
+        color: #fff;
+        font: 500 13px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0;
+        pointer-events: none;
+      }
+      .mt-video-subtitle-word-popup.is-hidden {
+        display: none;
+      }
+      .mt-video-subtitle-word-popup .mt-word-source {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 11px;
+        margin-bottom: 3px;
+      }
+      .mt-video-subtitle-word-popup .mt-word-target {
+        color: #fff;
         overflow-wrap: anywhere;
       }
       .${OVERLAY_CLASS}.is-hidden {
@@ -1209,8 +1283,36 @@
     state.renderedOverlayMode = "";
     state.renderedOverlaySourceText = "";
     state.renderedOverlayTargetText = "";
+    state.renderedOverlayNextText = "";
     state.renderedOverlayPlainText = "";
     state.renderedOverlayHidden = null;
+  }
+
+  function hideWordLookupPopup() {
+    if (state.wordLookupPopup) {
+      state.wordLookupPopup.classList.add("is-hidden");
+    }
+  }
+
+  function clearWordLookupState() {
+    if (state.wordLookupTimer) {
+      clearTimeout(state.wordLookupTimer);
+      state.wordLookupTimer = 0;
+    }
+    state.wordLookupRequestId += 1;
+    if (state.wordLookupActiveElement) {
+      state.wordLookupActiveElement.classList.remove("is-selected", "is-loading");
+    }
+    state.wordLookupActiveElement = null;
+    hideWordLookupPopup();
+  }
+
+  function removeWordLookupPopup() {
+    clearWordLookupState();
+    if (state.wordLookupPopup && state.wordLookupPopup.isConnected) {
+      state.wordLookupPopup.remove();
+    }
+    state.wordLookupPopup = null;
   }
 
   function clearRuntimeState() {
@@ -1241,6 +1343,7 @@
     state.domCommittedId = "";
     state.domCommittedAtMs = 0;
     state.domSourceById = new Map();
+    clearWordLookupState();
     resetOverlayRenderCache();
   }
 
@@ -1251,6 +1354,7 @@
   }
 
   function removeOverlay() {
+    removeWordLookupPopup();
     if (state.overlay && state.overlay.isConnected) {
       state.overlay.remove();
     }
@@ -1505,6 +1609,9 @@
     if (!state.active || !state.settings) {
       return;
     }
+    if (isManualWordLookupMode()) {
+      return;
+    }
     const limit = state.settings.videoBilingualSubtitlesMaxConcurrentBatches || 2;
     while (state.activeBatches < limit && state.queuedIds.length) {
       const items = [];
@@ -1614,6 +1721,28 @@
     }
     const latestStart = Math.max(...cues.map((cue) => Number(cue.start || 0)));
     return cues.filter((cue) => Math.abs(Number(cue.start || 0) - latestStart) < 0.001);
+  }
+
+  function getNextSubtitleContextText(displayCues) {
+    const currentCues = Array.isArray(displayCues) ? displayCues.filter(Boolean) : [];
+    const cues = Array.isArray(state.cues) ? state.cues : [];
+    if (!currentCues.length || !cues.length || state.subtitleMode === "youtube-dom") {
+      return "";
+    }
+    const currentIds = new Set(currentCues.map((cue) => String(cue.id || "")));
+    const currentTexts = new Set(currentCues.map((cue) => normalizeRenderedCaptionText(cue.text || "")).filter(Boolean));
+    const currentEnd = Math.max(...currentCues.map((cue) => Number(cue.end || 0)));
+    const nextCue = cues.find((cue) => {
+      if (!cue || currentIds.has(String(cue.id || ""))) {
+        return false;
+      }
+      const text = normalizeRenderedCaptionText(cue.text || "");
+      if (!text || currentTexts.has(text)) {
+        return false;
+      }
+      return Number(cue.start || 0) >= currentEnd - 0.05;
+    });
+    return normalizeRenderedCaptionText(nextCue && nextCue.text || "").slice(0, 1000);
   }
 
   function normalizeRenderedCaptionText(text) {
@@ -1802,18 +1931,207 @@
     return best ? best.translation : "";
   }
 
-  function renderTakeoverSubtitle(sourceText, targetText) {
+  function tokenLooksLookupWord(text) {
+    const value = String(text || "").trim();
+    return value.length > 0 && value.length <= 80 && /\p{L}/u.test(value);
+  }
+
+  function getWordLookupSegments(text) {
+    const source = String(text || "");
+    if (!source) {
+      return [];
+    }
+    if (typeof Intl !== "undefined" && typeof Intl.Segmenter === "function") {
+      try {
+        const segmenter = new Intl.Segmenter(undefined, { granularity: "word" });
+        return Array.from(segmenter.segment(source)).map((segment) => ({
+          text: segment.segment,
+          word: !!segment.isWordLike && tokenLooksLookupWord(segment.segment)
+        }));
+      } catch (_) {}
+    }
+    const pattern = /[\p{L}\p{N}]+(?:[’'][\p{L}\p{N}]+)*(?:-[\p{L}\p{N}]+)*/gu;
+    const segments = [];
+    let lastIndex = 0;
+    let match;
+    while ((match = pattern.exec(source))) {
+      if (match.index > lastIndex) {
+        segments.push({ text: source.slice(lastIndex, match.index), word: false });
+      }
+      segments.push({ text: match[0], word: tokenLooksLookupWord(match[0]) });
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < source.length) {
+      segments.push({ text: source.slice(lastIndex), word: false });
+    }
+    return segments;
+  }
+
+  function getWordLookupCacheKey(word, sentence, nextSentence) {
+    return [
+      state.sourceLanguage || "auto",
+      state.targetLanguage || "",
+      state.subtitleContext || "",
+      String(sentence || "").replace(/\s+/g, " ").trim().slice(0, 500),
+      String(nextSentence || "").replace(/\s+/g, " ").trim().slice(0, 500),
+      String(word || "").replace(/\s+/g, " ").trim().toLowerCase()
+    ].join("\0");
+  }
+
+  function ensureWordLookupPopup() {
+    if (state.wordLookupPopup && state.wordLookupPopup.isConnected) {
+      return state.wordLookupPopup;
+    }
+    const popup = document.createElement("div");
+    popup.className = "mt-video-subtitle-word-popup is-hidden";
+    popup.setAttribute("role", "tooltip");
+    document.documentElement.appendChild(popup);
+    state.wordLookupPopup = popup;
+    return popup;
+  }
+
+  function positionWordLookupPopup(popup, anchor) {
+    const rect = anchor.getBoundingClientRect();
+    popup.style.left = "0px";
+    popup.style.top = "0px";
+    popup.classList.remove("is-hidden");
+    const popupRect = popup.getBoundingClientRect();
+    const margin = 8;
+    const left = Math.max(margin, Math.min(
+      window.innerWidth - popupRect.width - margin,
+      rect.left + rect.width / 2 - popupRect.width / 2
+    ));
+    let top = rect.top - popupRect.height - 8;
+    if (top < margin) {
+      top = rect.bottom + 8;
+    }
+    top = Math.max(margin, Math.min(window.innerHeight - popupRect.height - margin, top));
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+  }
+
+  function showWordLookupPopup(anchor, word, translatedText) {
+    if (!anchor || !anchor.isConnected || !translatedText) {
+      return;
+    }
+    const popup = ensureWordLookupPopup();
+    popup.replaceChildren();
+    const source = document.createElement("div");
+    source.className = "mt-word-source";
+    source.textContent = word;
+    const target = document.createElement("div");
+    target.className = "mt-word-target";
+    target.textContent = translatedText;
+    popup.append(source, target);
+    positionWordLookupPopup(popup, anchor);
+  }
+
+  async function startWordLookupTranslation(anchor, requestId) {
+    if (!anchor || !anchor.isConnected || state.wordLookupActiveElement !== anchor) {
+      return;
+    }
+    const word = String(anchor.dataset.word || "").trim();
+    const sentence = String(anchor.dataset.sentence || "").trim();
+    const nextSentence = String(anchor.dataset.nextSentence || "").trim();
+    if (!word) {
+      return;
+    }
+    anchor.classList.add("is-loading");
+    const cacheKey = getWordLookupCacheKey(word, sentence, nextSentence);
+    const cached = state.wordLookupCache.get(cacheKey);
+    if (cached) {
+      anchor.classList.remove("is-loading");
+      if (requestId === state.wordLookupRequestId && state.wordLookupActiveElement === anchor) {
+        showWordLookupPopup(anchor, word, cached);
+      }
+      return;
+    }
+    try {
+      const response = await api.runtime.sendMessage({
+        type: messageTypes.translateSubtitleWord,
+        word,
+        subtitleSentence: sentence,
+        nextSubtitleSentence: nextSentence,
+        sourceLanguage: state.sourceLanguage || "auto",
+        targetLanguage: state.targetLanguage,
+        subtitleContext: state.subtitleContext || "",
+        url: window.location.href
+      });
+      if (requestId !== state.wordLookupRequestId || state.wordLookupActiveElement !== anchor || !anchor.isConnected) {
+        return;
+      }
+      anchor.classList.remove("is-loading");
+      const translatedText = response && response.ok && response.data
+        ? String(response.data.translatedText || "").trim()
+        : "";
+      if (translatedText) {
+        state.wordLookupCache.set(cacheKey, translatedText);
+        showWordLookupPopup(anchor, word, translatedText);
+      }
+    } catch (_) {
+      if (requestId === state.wordLookupRequestId && state.wordLookupActiveElement === anchor) {
+        anchor.classList.remove("is-loading");
+      }
+    }
+  }
+
+  function handleWordLookupEnter(event) {
+    const anchor = event.currentTarget;
+    clearWordLookupState();
+    state.wordLookupActiveElement = anchor;
+    const requestId = state.wordLookupRequestId;
+    anchor.classList.add("is-selected");
+    state.wordLookupTimer = setTimeout(() => {
+      state.wordLookupTimer = 0;
+      startWordLookupTranslation(anchor, requestId);
+    }, 300);
+  }
+
+  function handleWordLookupLeave(event) {
+    if (state.wordLookupActiveElement === event.currentTarget) {
+      clearWordLookupState();
+    }
+  }
+
+  function appendSubtitleTextWithWordLookup(parent, text, nextText) {
+    const source = String(text || "");
+    const nextSentence = String(nextText || "").trim().slice(0, 1000);
+    if (!isWordLookupEnabled()) {
+      parent.textContent = source;
+      return;
+    }
+    parent.classList.add("is-word-lookup");
+    getWordLookupSegments(source).forEach((segment) => {
+      if (!segment.word) {
+        parent.appendChild(document.createTextNode(segment.text));
+        return;
+      }
+      const word = document.createElement("span");
+      word.className = "mt-video-subtitle-word";
+      word.textContent = segment.text;
+      word.dataset.word = segment.text;
+      word.dataset.sentence = source.slice(0, 1000);
+      word.dataset.nextSentence = nextSentence;
+      word.addEventListener("mouseenter", handleWordLookupEnter);
+      word.addEventListener("mouseleave", handleWordLookupLeave);
+      parent.appendChild(word);
+    });
+  }
+
+  function renderTakeoverSubtitle(sourceText, targetText, nextText) {
     const overlay = state.overlay;
     if (!overlay) {
       return;
     }
     const sourceValue = String(sourceText || "");
     const targetValue = String(targetText || "");
+    const nextValue = String(nextText || "");
     const hidden = !sourceValue && !targetValue;
     if (
       state.renderedOverlayMode === "takeover"
       && state.renderedOverlaySourceText === sourceValue
       && state.renderedOverlayTargetText === targetValue
+      && state.renderedOverlayNextText === nextValue
       && state.renderedOverlayHidden === hidden
       && overlay.classList.contains("is-takeover")
       && overlay.classList.contains("is-hidden") === hidden
@@ -1823,17 +2141,20 @@
     overlay.classList.add("is-takeover");
     if (hidden) {
       if (state.renderedOverlayMode !== "takeover" || state.renderedOverlayHidden !== true) {
+        clearWordLookupState();
         overlay.replaceChildren();
       }
       overlay.classList.add("is-hidden");
       state.renderedOverlayMode = "takeover";
       state.renderedOverlaySourceText = sourceValue;
       state.renderedOverlayTargetText = targetValue;
+      state.renderedOverlayNextText = nextValue;
       state.renderedOverlayPlainText = "";
       state.renderedOverlayHidden = true;
       return;
     }
 
+    clearWordLookupState();
     overlay.replaceChildren();
     const lines = document.createElement("div");
     lines.className = "mt-video-subtitle-lines";
@@ -1841,7 +2162,7 @@
       const source = document.createElement("span");
       source.className = "mt-video-subtitle-cue source-cue";
       source.dir = "auto";
-      source.textContent = sourceValue;
+      appendSubtitleTextWithWordLookup(source, sourceValue, nextValue);
       lines.appendChild(source);
     }
     if (targetValue) {
@@ -1856,6 +2177,7 @@
     state.renderedOverlayMode = "takeover";
     state.renderedOverlaySourceText = sourceValue;
     state.renderedOverlayTargetText = targetValue;
+    state.renderedOverlayNextText = nextValue;
     state.renderedOverlayPlainText = "";
     state.renderedOverlayHidden = false;
   }
@@ -1882,6 +2204,7 @@
     state.renderedOverlayMode = "plain";
     state.renderedOverlaySourceText = "";
     state.renderedOverlayTargetText = "";
+    state.renderedOverlayNextText = "";
     state.renderedOverlayPlainText = value;
     state.renderedOverlayHidden = hidden;
   }
@@ -1954,6 +2277,7 @@
       enqueuePriorityAroundCurrent();
     }
     const displayCues = getDisplayCues(activeCues);
+    const nextSubtitleText = getNextSubtitleContextText(displayCues);
     const sourceText = displayCues
       .map((cue) => cue.text || "")
       .filter(Boolean)
@@ -1962,8 +2286,8 @@
       .map((cue) => state.translations.get(cue.id) || "")
       .filter(Boolean)
       .join("\n");
-    if (state.subtitleMode === "youtube") {
-      renderTakeoverSubtitle(sourceText, targetText);
+    if (state.subtitleMode === "youtube" || isManualWordLookupMode()) {
+      renderTakeoverSubtitle(sourceText, targetText, nextSubtitleText);
       return;
     }
     renderPlainSubtitle(targetText);
@@ -2171,6 +2495,9 @@
         return;
       }
       const previousResultSettingsKey = getSubtitleResultSettingsKey(state.settings);
+      const previousWordLookupEnabled = state.settings
+        ? state.settings.videoBilingualSubtitlesWordLookupEnabled !== false
+        : true;
       state.settings = normalizeSettings(changes[namespace.constants.storageKeys.settings].newValue || {});
       ensureYouTubeButton();
       if (state.active && !state.manualActive && !state.settings.videoBilingualSubtitlesAutoTranslate) {
@@ -2190,6 +2517,11 @@
           renderCurrentSubtitle();
         });
         return;
+      }
+      if (state.active && previousWordLookupEnabled !== (state.settings.videoBilingualSubtitlesWordLookupEnabled !== false)) {
+        clearWordLookupState();
+        resetOverlayRenderCache();
+        renderCurrentSubtitle();
       }
       if (!state.active && state.settings.videoBilingualSubtitlesAutoTranslate) {
         scheduleRefresh(250);

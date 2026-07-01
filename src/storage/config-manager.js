@@ -69,6 +69,7 @@
       videoBilingualSubtitlesLearningChineseLevel: normalizeVideoSubtitleLearningLevel("chinese", merged.videoBilingualSubtitlesLearningChineseLevel, "HSK3"),
       videoBilingualSubtitlesLearningAnnotationTypes: normalizeVideoSubtitleAnnotationTypes(merged.videoBilingualSubtitlesLearningAnnotationTypes),
       videoBilingualSubtitlesLearningMaxItems: clampInteger(merged.videoBilingualSubtitlesLearningMaxItems, 4, 1, 8),
+      videoBilingualSubtitlesWordLookupEnabled: merged.videoBilingualSubtitlesWordLookupEnabled !== false,
       videoBilingualSubtitlesTopicContextEnabled: !!merged.videoBilingualSubtitlesTopicContextEnabled
     });
   }
@@ -115,6 +116,7 @@
       videoBilingualSubtitlesLearningChineseLevel: "HSK3",
       videoBilingualSubtitlesLearningAnnotationTypes: ["any"],
       videoBilingualSubtitlesLearningMaxItems: 4,
+      videoBilingualSubtitlesWordLookupEnabled: true,
       videoBilingualSubtitlesTopicContextEnabled: false,
       videoBilingualSubtitlesSkipDefaultTargetSource: true,
       videoBilingualSubtitlesShowPlayerButton: true,

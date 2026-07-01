@@ -60,6 +60,19 @@
     ].join("\0");
   }
 
+  function subtitleWordLookupCacheKey(word, sentence, nextSentence, sourceLanguage, targetLanguage, providerSignature, subtitleContext) {
+    return [
+      "subtitle-word-lookup-v1",
+      sourceLanguage || "auto",
+      targetLanguage || "en",
+      String(subtitleContext || "").replace(/\s+/g, " ").trim().slice(0, 600),
+      providerSignature || "",
+      String(sentence || "").replace(/\s+/g, " ").trim().slice(0, 500),
+      String(nextSentence || "").replace(/\s+/g, " ").trim().slice(0, 500),
+      String(word || "").replace(/\s+/g, " ").trim().slice(0, 120)
+    ].join("\0");
+  }
+
   function getCached(key) {
     const entry = translationCache.get(key);
     if (!entry) return null;
@@ -818,6 +831,15 @@
       .trim();
   }
 
+  function normalizeSubtitleWordLookupText(text) {
+    return String(text || "")
+      .replace(/\s+/g, " ")
+      .replace(/^["'“”‘’([{]+|["'“”‘’)\]}.,!?;:，。！？；：]+$/g, "")
+      .trim()
+      .slice(0, 120)
+      .trim();
+  }
+
   function splitSubtitleTextForProvider(text) {
     const splitter = namespace.videoSubtitleUtils && namespace.videoSubtitleUtils.splitTextBySentenceBoundaries;
     if (typeof splitter !== "function") {
@@ -944,6 +966,84 @@
         reason: error && error.message ? error.message : "topic_context_failed"
       });
     }
+  }
+
+  async function handleTranslateSubtitleWord(message) {
+    const word = normalizeSubtitleWordLookupText(message.word || message.text);
+    if (!word) {
+      return namespace.messages.error("No subtitle word was provided.");
+    }
+
+    const [settings, configuredProviders] = await Promise.all([
+      namespace.configManager.getSettings(),
+      namespace.providerRegistry.buildConfiguredProviders()
+    ]);
+    const targetLanguage = String(message.targetLanguage || settings.targetLanguage || "en").trim();
+    const sourceLanguage = String(message.sourceLanguage || "").trim();
+    const subtitleSentence = normalizeSubtitleProviderText(message.subtitleSentence || message.sentence || "").slice(0, 1000);
+    const nextSubtitleSentence = normalizeSubtitleProviderText(message.nextSubtitleSentence || "").slice(0, 1000);
+    const subtitleContext = normalizeSubtitleTopicContext(message.subtitleContext);
+    const route = resolveEffectiveRoute(message.providerIds || [], message.modelOverrides || {}, settings, configuredProviders);
+    const temperatureOverrides = resolveTemperatureOverrides(
+      route.providerIds,
+      route.modelOverrides,
+      message.temperatureOverrides || {},
+      configuredProviders
+    );
+    const providerSignature = buildProviderSignature(route.providerIds, route.modelOverrides, temperatureOverrides, configuredProviders);
+    const key = subtitleWordLookupCacheKey(word, subtitleSentence, nextSubtitleSentence, sourceLanguage, targetLanguage, providerSignature, subtitleContext);
+    const cached = message.bypassCache ? null : getCached(key);
+    if (cached) {
+      return namespace.messages.ok(Object.assign({ fromCache: true }, cached));
+    }
+
+    const request = {
+      task: "subtitle-word-lookup",
+      text: word,
+      displayText: word,
+      sourceLanguage: sourceLanguage && sourceLanguage.toLowerCase() !== "auto" ? sourceLanguage : "",
+      targetLanguage,
+      sourceLanguageDetected: sourceLanguage && sourceLanguage.toLowerCase() !== "auto" ? sourceLanguage : "",
+      dictionaryModeForSingleWord: false,
+      preserveRichTextFormatting: false,
+      contextStyle: "neutral",
+      subtitleSentence,
+      nextSubtitleSentence,
+      subtitleContext,
+      url: String(message.url || "")
+    };
+    const results = await namespace.providerRegistry.translate(
+      request,
+      route.providerIds,
+      route.modelOverrides,
+      temperatureOverrides,
+      configuredProviders
+    );
+    const picked = pickFirstSubtitleTranslation(attachRequestLanguagesToResults(results, request));
+    if (!picked || !picked.ok || !String(picked.translatedText || "").trim()) {
+      return namespace.messages.error(picked && picked.error || "Word translation failed.");
+    }
+
+    const rawTranslatedText = String(picked.translatedText || "").trim();
+    const annotations = namespace.videoSubtitleUtils && typeof namespace.videoSubtitleUtils.parseSubtitleAnnotationResponse === "function"
+      ? namespace.videoSubtitleUtils.parseSubtitleAnnotationResponse(rawTranslatedText, { maxItems: 1 })
+      : [];
+    const formattedAnnotationText = annotations.length && namespace.videoSubtitleUtils && typeof namespace.videoSubtitleUtils.formatSubtitleAnnotations === "function"
+      ? namespace.videoSubtitleUtils.formatSubtitleAnnotations(annotations, { maxItems: 1 })
+      : "";
+    const data = {
+      word,
+      translatedText: String(formattedAnnotationText || rawTranslatedText).replace(/\s+/g, " ").trim().slice(0, 300),
+      annotations,
+      providerId: picked.providerId || "",
+      providerName: picked.providerName || "",
+      model: picked.model || "",
+      sourceLanguage: sourceLanguage || "auto",
+      targetLanguage: picked.targetLanguage || targetLanguage,
+      detectedSourceLanguage: picked.detectedSourceLanguage || ""
+    };
+    setCache(key, data);
+    return namespace.messages.ok(data);
   }
 
   async function translateSubtitleTextPart(partText, details) {
@@ -1453,6 +1553,8 @@
         return handleAnnotateSubtitleBatch(message);
       case messageTypes.senseSubtitleTopicContext:
         return handleSenseSubtitleTopicContext(message);
+      case messageTypes.translateSubtitleWord:
+        return handleTranslateSubtitleWord(message);
       case messageTypes.openComparePage:
         await openComparePage(message.providerId || "");
         return namespace.messages.ok();

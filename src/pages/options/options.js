@@ -492,6 +492,7 @@
       videoBilingualSubtitlesLearningChineseLevel: normalizeVideoSubtitleLearningLevel("chinese", document.getElementById("video-subtitles-learning-chinese-level").value, "HSK3"),
       videoBilingualSubtitlesLearningAnnotationTypes: collectVideoSubtitleAnnotationTypes(),
       videoBilingualSubtitlesLearningMaxItems: clampNumber(document.getElementById("video-subtitles-learning-max-items").value, 4, 1, 8),
+      videoBilingualSubtitlesWordLookupEnabled: document.getElementById("video-subtitles-word-lookup").checked,
       videoBilingualSubtitlesTopicContextEnabled: document.getElementById("video-subtitles-topic-context").checked,
       videoBilingualSubtitlesSkipDefaultTargetSource: document.getElementById("video-subtitles-skip-default-target-source").checked,
       videoBilingualSubtitlesShowPlayerButton: document.getElementById("video-subtitles-show-player-button").checked,
@@ -605,6 +606,9 @@
         1,
         8
       ),
+      videoBilingualSubtitlesWordLookupEnabled: incoming.videoBilingualSubtitlesWordLookupEnabled !== undefined
+        ? !!incoming.videoBilingualSubtitlesWordLookupEnabled
+        : current.videoBilingualSubtitlesWordLookupEnabled !== false,
       videoBilingualSubtitlesTopicContextEnabled: incoming.videoBilingualSubtitlesTopicContextEnabled !== undefined
         ? !!incoming.videoBilingualSubtitlesTopicContextEnabled
         : !!current.videoBilingualSubtitlesTopicContextEnabled,
@@ -1431,6 +1435,7 @@
     document.getElementById("immersive-max-concurrent").value = clampNumber(state.settings.immersiveTranslationMaxConcurrent, 2, 1, 4);
     document.getElementById("video-subtitles-auto").checked = !!state.settings.videoBilingualSubtitlesAutoTranslate;
     document.getElementById("video-subtitles-topic-context").checked = !!state.settings.videoBilingualSubtitlesTopicContextEnabled;
+    document.getElementById("video-subtitles-word-lookup").checked = state.settings.videoBilingualSubtitlesWordLookupEnabled !== false;
     document.getElementById("video-subtitles-skip-default-target-source").checked = state.settings.videoBilingualSubtitlesSkipDefaultTargetSource !== false;
     document.getElementById("video-subtitles-show-player-button").checked = state.settings.videoBilingualSubtitlesShowPlayerButton !== false;
     document.getElementById("video-subtitles-learning-max-items").value = clampNumber(state.settings.videoBilingualSubtitlesLearningMaxItems, 4, 1, 8);
