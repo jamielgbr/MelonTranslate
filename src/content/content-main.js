@@ -84,6 +84,9 @@
   if (namespace.immersiveTranslator) {
     namespace.immersiveTranslator.start(getSettings);
   }
+  if (namespace.videoSubtitleTranslator) {
+    namespace.videoSubtitleTranslator.start(getSettings);
+  }
 
   namespace.popupRenderer.onHide(() => {
     requestState.activeToken += 1;
@@ -121,6 +124,15 @@
       return result && result.started
         ? namespace.messages.ok(result)
         : namespace.messages.error(result && result.reason || "Could not start immersive translation.");
+    }
+
+    if (message.type === messageTypes.manualToggleVideoSubtitles && namespace.videoSubtitleTranslator) {
+      try {
+        const result = await namespace.videoSubtitleTranslator.toggleFromManual();
+        return namespace.messages.ok(result);
+      } catch (error) {
+        return namespace.messages.error(error && error.message || "Could not toggle bilingual video subtitles.");
+      }
     }
 
     if (message.type === messageTypes.startElementPicker && namespace.elementPicker) {

@@ -18,5 +18,6 @@ importScripts(
   '../providers/google-translate.js',
   '../providers/provider-registry.js',
   '../shared/page-utils.js',
+  '../shared/video-subtitle-utils.js',
   './service-worker.js'
 );

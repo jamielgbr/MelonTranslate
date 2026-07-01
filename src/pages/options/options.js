@@ -395,6 +395,10 @@
       immersiveTranslationMinTextLength: clampNumber(document.getElementById("immersive-min-text-length").value, 32, 8, 500),
       immersiveTranslationMaxConcurrent: clampNumber(document.getElementById("immersive-max-concurrent").value, 2, 1, 4),
       immersiveTranslationContextStyle: "auto",
+      videoBilingualSubtitlesAutoTranslate: document.getElementById("video-subtitles-auto").checked,
+      videoBilingualSubtitlesSkipDefaultTargetSource: document.getElementById("video-subtitles-skip-default-target-source").checked,
+      videoBilingualSubtitlesShowPlayerButton: document.getElementById("video-subtitles-show-player-button").checked,
+      videoBilingualSubtitlesMaxConcurrentBatches: clampNumber(document.getElementById("video-subtitles-max-concurrent-batches").value, 2, 1, 4),
       persistHistory: document.getElementById("persist-history").checked
     };
   }
@@ -472,6 +476,23 @@
         4
       ),
       immersiveTranslationContextStyle: "auto",
+      videoBilingualSubtitlesAutoTranslate: incoming.videoBilingualSubtitlesAutoTranslate !== undefined
+        ? !!incoming.videoBilingualSubtitlesAutoTranslate
+        : !!current.videoBilingualSubtitlesAutoTranslate,
+      videoBilingualSubtitlesSkipDefaultTargetSource: incoming.videoBilingualSubtitlesSkipDefaultTargetSource !== undefined
+        ? !!incoming.videoBilingualSubtitlesSkipDefaultTargetSource
+        : current.videoBilingualSubtitlesSkipDefaultTargetSource !== false,
+      videoBilingualSubtitlesShowPlayerButton: incoming.videoBilingualSubtitlesShowPlayerButton !== undefined
+        ? !!incoming.videoBilingualSubtitlesShowPlayerButton
+        : current.videoBilingualSubtitlesShowPlayerButton !== false,
+      videoBilingualSubtitlesMaxConcurrentBatches: clampNumber(
+        incoming.videoBilingualSubtitlesMaxConcurrentBatches !== undefined
+          ? incoming.videoBilingualSubtitlesMaxConcurrentBatches
+          : current.videoBilingualSubtitlesMaxConcurrentBatches,
+        2,
+        1,
+        4
+      ),
       persistHistory: incoming.persistHistory !== undefined
         ? !!incoming.persistHistory
         : !!current.persistHistory
@@ -724,16 +745,6 @@
       });
       state.dropdowns["default-translation-model"].setDisabled(disabled);
     }
-  }
-
-  function buildCurrentModelOptions(config) {
-    const favorites = pu.normalizeModels(config.favoriteModels || []);
-    const current = getPreferredModel(config);
-    const merged = Array.from(new Set([...favorites, current].filter(Boolean)));
-    const modelOptions = merged.map((model) => (
-      `<option value="${pu.escapeHtml(model)}">${pu.escapeHtml(model)}</option>`
-    )).join("");
-    return modelOptions + '<option value="custom">Custom...</option>';
   }
 
   function renderModelFavoriteRows(config) {
@@ -1247,6 +1258,10 @@
     document.getElementById("immersive-translation-visible-only").checked = state.settings.immersiveTranslationVisibleOnly !== false;
     document.getElementById("immersive-min-text-length").value = clampNumber(state.settings.immersiveTranslationMinTextLength, 32, 8, 500);
     document.getElementById("immersive-max-concurrent").value = clampNumber(state.settings.immersiveTranslationMaxConcurrent, 2, 1, 4);
+    document.getElementById("video-subtitles-auto").checked = !!state.settings.videoBilingualSubtitlesAutoTranslate;
+    document.getElementById("video-subtitles-skip-default-target-source").checked = state.settings.videoBilingualSubtitlesSkipDefaultTargetSource !== false;
+    document.getElementById("video-subtitles-show-player-button").checked = state.settings.videoBilingualSubtitlesShowPlayerButton !== false;
+    document.getElementById("video-subtitles-max-concurrent-batches").value = clampNumber(state.settings.videoBilingualSubtitlesMaxConcurrentBatches, 2, 1, 4);
     document.getElementById("persist-history").checked = !!state.settings.persistHistory;
   }
 

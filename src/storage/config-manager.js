@@ -66,6 +66,10 @@
       immersiveTranslationMinTextLength: 32,
       immersiveTranslationMaxConcurrent: 2,
       immersiveTranslationContextStyle: "auto",
+      videoBilingualSubtitlesAutoTranslate: false,
+      videoBilingualSubtitlesSkipDefaultTargetSource: true,
+      videoBilingualSubtitlesShowPlayerButton: true,
+      videoBilingualSubtitlesMaxConcurrentBatches: 2,
       persistHistory: false,
       maxHistoryItems: namespace.constants.historyLimit
     };

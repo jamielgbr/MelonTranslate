@@ -193,25 +193,25 @@
   }
 
   async function detectLanguage(text, baseUrl) {
-    var sample = String(text || "").substring(0, 200).trim();
+    const sample = String(text || "").substring(0, 200).trim();
     if (!sample) {
       return "en";
     }
     try {
-      var url = buildTranslateUrl(baseUrl || DEFAULT_BASE_URL, {
+      const url = buildTranslateUrl(baseUrl || DEFAULT_BASE_URL, {
         sourceLanguage: "auto",
         targetLanguage: "en",
         text: sample
       });
-      var response = await fetch(url, {
+      const response = await fetch(url, {
         method: "GET",
         headers: { Accept: "application/json" }
       });
       if (!response.ok) {
         return "en";
       }
-      var json = await response.json();
-      var parsed = parseTranslationPayload(json);
+      const json = await response.json();
+      const parsed = parseTranslationPayload(json);
       return parsed.detectedSourceLanguage || "en";
     } catch (_err) {
       return "en";

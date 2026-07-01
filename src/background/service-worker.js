@@ -8,6 +8,7 @@
   const selectionContextMenuId = "melontranslate-selection";
   const editableContextMenuId = "melontranslate-editable";
   const immersiveContextMenuId = "melontranslate-immersive-page";
+  const videoSubtitleContextMenuId = "melontranslate-video-subtitles";
   const elementPickerContextMenuId = "melontranslate-pick-immersive-area";
   const MODEL_CACHE_TTL_MS = namespace.constants.modelCacheTtlMs;
   const MODEL_TEMPERATURE_DEFAULT = namespace.constants.modelTemperatureDefault;
@@ -456,6 +457,11 @@
       contexts: ["page", "frame"]
     });
     await api.contextMenus.create({
+      id: videoSubtitleContextMenuId,
+      title: "Toggle bilingual video subtitles",
+      contexts: ["page", "frame", "video"]
+    });
+    await api.contextMenus.create({
       id: elementPickerContextMenuId,
       title: "Select inline translation area",
       contexts: ["page", "frame"]
@@ -489,6 +495,23 @@
       tabId,
       frameIds: [isFiniteFrameId(frameId) ? frameId : 0]
     };
+  }
+
+  function getContextMenuMessage(info) {
+    switch (info && info.menuItemId) {
+      case selectionContextMenuId:
+        return { type: messageTypes.manualTranslateSelection, text: info.selectionText || "" };
+      case editableContextMenuId:
+        return { type: messageTypes.manualTranslateEditable };
+      case immersiveContextMenuId:
+        return { type: messageTypes.manualTranslateImmersivePage };
+      case videoSubtitleContextMenuId:
+        return { type: messageTypes.manualToggleVideoSubtitles };
+      case elementPickerContextMenuId:
+        return { type: messageTypes.startElementPicker };
+      default:
+        return null;
+    }
   }
 
   function isMissingReceiverError(error) {
@@ -653,25 +676,6 @@
       : [];
   }
 
-  async function handleTranslation(message) {
-    const ctx = await prepareTranslationContext(message);
-    if (ctx.cached) {
-      return namespace.messages.ok({ results: ctx.cached, fromCache: true });
-    }
-
-    const results = await namespace.providerRegistry.translate(
-      ctx.request,
-      ctx.providerIds,
-      ctx.modelOverrides,
-      ctx.temperatureOverrides,
-      ctx.configuredProviders
-    );
-    const resultsWithLanguages = attachRequestLanguagesToResults(results, ctx.request);
-    setCache(ctx.key, resultsWithLanguages);
-    await appendTranslationHistory(ctx.request, resultsWithLanguages, ctx.settings);
-    return namespace.messages.ok({ results: resultsWithLanguages });
-  }
-
   async function handleReadAloud(message) {
     const text = String(message.text || "").trim();
     let language = String(message.language || "").trim();
@@ -695,6 +699,225 @@
         category: getErrorCategory(error)
       });
     }
+  }
+
+  function isAllowedYouTubeSubtitleUrl(rawUrl) {
+    let url;
+    try {
+      url = new URL(String(rawUrl || ""));
+    } catch (_) {
+      return false;
+    }
+
+    if (url.protocol !== "https:") {
+      return false;
+    }
+
+    const host = url.hostname || "";
+    return namespace.pageUtils.hostMatchesRule(host, "youtube.com")
+      || namespace.pageUtils.hostMatchesRule(host, "youtube-nocookie.com");
+  }
+
+  async function handleFetchYouTubeSubtitleTrack(message) {
+    const url = String(message.url || "").trim();
+    if (!isAllowedYouTubeSubtitleUrl(url)) {
+      return namespace.messages.error("Unsupported YouTube subtitle URL.");
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "application/json,text/xml,application/xml,text/vtt,text/plain,*/*"
+        },
+        signal: controller.signal
+      });
+      const body = await response.text();
+      if (!response.ok) {
+        return namespace.messages.error(`Could not load subtitles (${response.status}).`);
+      }
+      return namespace.messages.ok({
+        body,
+        contentType: response.headers.get("content-type") || "",
+        finalUrl: response.url || url
+      });
+    } catch (error) {
+      return namespace.messages.error(error && error.message ? error.message : "Could not load subtitles.");
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function normalizeSubtitleBatchItems(items) {
+    return (Array.isArray(items) ? items : []).slice(0, 50).map((item, index) => {
+      const value = item && typeof item === "object" ? item : {};
+      return {
+        id: String(value.id || index),
+        text: String(value.text || "").trim().slice(0, 1000)
+      };
+    }).filter((item) => item.text);
+  }
+
+  function normalizeSubtitleProviderText(text) {
+    return String(text || "")
+      .replace(/\u00a0/g, " ")
+      .replace(/\s+([,，.。!?！？;；:：])/g, "$1")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  }
+
+  function splitSubtitleTextForProvider(text) {
+    const splitter = namespace.videoSubtitleUtils && namespace.videoSubtitleUtils.splitTextBySentenceBoundaries;
+    if (typeof splitter !== "function") {
+      const source = normalizeSubtitleProviderText(text);
+      return source ? [source] : [];
+    }
+    return splitter(text, {
+      normalizeText: normalizeSubtitleProviderText,
+      minTextLength: 80,
+      minPartLength: 24
+    });
+  }
+
+  function pickFirstSubtitleTranslation(results) {
+    const list = Array.isArray(results) ? results : [];
+    return list.find((result) => result && result.ok && String(result.translatedText || "").trim())
+      || list.find((result) => result && !result.ok)
+      || null;
+  }
+
+  async function translateSubtitleTextPart(partText, details) {
+    const request = {
+      text: partText,
+      displayText: partText,
+      sourceLanguage: details.sourceLanguage && details.sourceLanguage.toLowerCase() !== "auto" ? details.sourceLanguage : "",
+      targetLanguage: details.targetLanguage,
+      sourceLanguageDetected: details.sourceLanguage && details.sourceLanguage.toLowerCase() !== "auto" ? details.sourceLanguage : "",
+      dictionaryModeForSingleWord: false,
+      preserveRichTextFormatting: false,
+      contextStyle: details.contextStyle,
+      url: details.url
+    };
+    const key = cacheKey(
+      request.text,
+      request.sourceLanguage || request.sourceLanguageDetected || "auto",
+      request.targetLanguage,
+      details.providerSignature,
+      request.contextStyle,
+      false,
+      false
+    );
+    const cached = details.bypassCache ? null : getCached(key);
+    const results = cached || await namespace.providerRegistry.translate(
+      request,
+      details.route.providerIds,
+      details.route.modelOverrides,
+      details.temperatureOverrides,
+      details.configuredProviders
+    );
+    const resultsWithLanguages = attachRequestLanguagesToResults(results, request);
+    if (!cached) {
+      setCache(key, resultsWithLanguages);
+    }
+    return {
+      picked: pickFirstSubtitleTranslation(resultsWithLanguages),
+      request,
+      cached: !!cached
+    };
+  }
+
+  async function handleTranslateSubtitleBatch(message) {
+    const items = normalizeSubtitleBatchItems(message.items || message.cues || []);
+    if (!items.length) {
+      return namespace.messages.ok({ items: [] });
+    }
+
+    const [settings, configuredProviders] = await Promise.all([
+      namespace.configManager.getSettings(),
+      namespace.providerRegistry.buildConfiguredProviders()
+    ]);
+    const targetLanguage = String(message.targetLanguage || settings.targetLanguage || "en").trim();
+    const sourceLanguage = String(message.sourceLanguage || "").trim();
+    const route = resolveEffectiveRoute(message.providerIds || [], message.modelOverrides || {}, settings, configuredProviders);
+    const temperatureOverrides = resolveTemperatureOverrides(
+      route.providerIds,
+      route.modelOverrides,
+      message.temperatureOverrides || {},
+      configuredProviders
+    );
+    const providerSignature = buildProviderSignature(route.providerIds, route.modelOverrides, temperatureOverrides, configuredProviders);
+    const contextStyle = namespace.pageUtils.getInputContextStyle(message.contextStyle || "neutral");
+    const bypassCache = !!message.bypassCache;
+    const url = String(message.url || "");
+    const subtitleTranslationDetails = {
+      sourceLanguage,
+      targetLanguage,
+      route,
+      temperatureOverrides,
+      providerSignature,
+      contextStyle,
+      bypassCache,
+      url,
+      configuredProviders
+    };
+
+    const translatedItems = [];
+    for (const item of items) {
+      try {
+        const parts = splitSubtitleTextForProvider(item.text);
+        const translatedParts = [];
+        let firstPicked = null;
+        let allFromCache = true;
+        let failed = null;
+        for (const part of parts) {
+          const translated = await translateSubtitleTextPart(part, subtitleTranslationDetails);
+          const picked = translated.picked;
+          if (!picked || !picked.ok || !String(picked.translatedText || "").trim()) {
+            failed = picked || { error: "Translation failed." };
+            break;
+          }
+          if (!firstPicked) {
+            firstPicked = picked;
+          }
+          allFromCache = allFromCache && translated.cached;
+          translatedParts.push(String(picked.translatedText || "").trim());
+        }
+        if (!failed && firstPicked && translatedParts.length) {
+          translatedItems.push({
+            id: item.id,
+            ok: true,
+            translatedText: translatedParts.join(" "),
+            providerId: firstPicked.providerId,
+            providerName: firstPicked.providerName,
+            model: firstPicked.model,
+            fromCache: allFromCache,
+            targetLanguage: firstPicked.targetLanguage || targetLanguage,
+            detectedSourceLanguage: firstPicked.detectedSourceLanguage || (sourceLanguage && sourceLanguage.toLowerCase() !== "auto" ? sourceLanguage : "")
+          });
+        } else {
+          translatedItems.push({
+            id: item.id,
+            ok: false,
+            error: failed && failed.error || "Translation failed."
+          });
+        }
+      } catch (error) {
+        translatedItems.push({
+          id: item.id,
+          ok: false,
+          error: error && error.message ? error.message : "Translation failed."
+        });
+      }
+    }
+
+    return namespace.messages.ok({
+      items: translatedItems,
+      targetLanguage,
+      sourceLanguage: sourceLanguage || "auto"
+    });
   }
 
   function applyRequestLanguageMetadata(event, request) {
@@ -856,6 +1079,10 @@
         return handleGetProviderModels(message);
       case messageTypes.readAloud:
         return handleReadAloud(message);
+      case messageTypes.fetchYouTubeSubtitleTrack:
+        return handleFetchYouTubeSubtitleTrack(message);
+      case messageTypes.translateSubtitleBatch:
+        return handleTranslateSubtitleBatch(message);
       case messageTypes.openComparePage:
         await openComparePage(message.providerId || "");
         return namespace.messages.ok();
@@ -931,15 +1158,7 @@
     }
 
     const frameOptions = getFrameOptions(info.frameId);
-    const message = info.menuItemId === selectionContextMenuId
-      ? { type: messageTypes.manualTranslateSelection, text: info.selectionText || "" }
-      : (info.menuItemId === editableContextMenuId
-        ? { type: messageTypes.manualTranslateEditable }
-        : (info.menuItemId === immersiveContextMenuId
-          ? { type: messageTypes.manualTranslateImmersivePage }
-          : (info.menuItemId === elementPickerContextMenuId
-            ? { type: messageTypes.startElementPicker }
-            : null)));
+    const message = getContextMenuMessage(info);
 
     if (!message) {
       return;
