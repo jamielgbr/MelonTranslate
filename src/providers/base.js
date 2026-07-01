@@ -167,6 +167,14 @@
     }
 
     buildPrompt(request) {
+      if (request && request.task === "subtitle-topic-context") {
+        return this.buildSubtitleTopicContextPrompt(request);
+      }
+
+      if (request && request.task === "subtitle-annotations") {
+        return this.buildSubtitleAnnotationPrompt(request);
+      }
+
       if (request.dictionaryModeForSingleWord && this.isSingleWordInput(request.text)) {
         return this.buildDictionaryPrompt(request);
       }
@@ -177,6 +185,7 @@
         : `Translate the user content into ${request.targetLanguage}.`;
       const contextStyle = request.contextStyle || "auto";
       const styleHint = this.buildContextStyleHint(contextStyle);
+      const subtitleContextHint = this.buildSubtitleContextHint(request.subtitleContext);
       const formattingHint = request.preserveRichTextFormatting
         ? "The user content may contain inline formatting markers [[MTB]], [[/MTB]], [[MTI]], and [[/MTI]]. Preserve these marker tokens exactly around the corresponding translated words; do not translate, remove, duplicate, escape, or explain the markers."
         : "Preserve names, technical terms, and formatting where possible.";
@@ -185,11 +194,84 @@
         "You are a precise translator.",
         sourceHint,
         styleHint,
+        subtitleContextHint,
         formattingHint,
         "For short fragments, tags, search keywords, or noun phrases, translate as one concise phrase and preserve uncertain proper names or titles.",
         "Do not add explanations, alternatives, transliterations, labels, notes, or context not present in the source.",
         "Return only the translated text."
       ].filter(Boolean).join(" ");
+    }
+
+    buildSubtitleContextHint(context) {
+      const value = String(context || "").replace(/\s+/g, " ").trim();
+      if (!value) {
+        return "";
+      }
+      return `Video topic context for subtitle translation: ${value} Use it only to resolve terminology, proper nouns, domain-specific meaning, and tone; do not add facts that are not present in the source subtitle.`;
+    }
+
+    buildSubtitleTopicContextPrompt(request) {
+      const sourceLanguage = String(request.sourceLanguage || "auto").trim() || "auto";
+      const targetLanguage = String(request.targetLanguage || "target language").trim() || "target language";
+      return [
+        "You analyze video subtitles before translation.",
+        `The subtitles will be translated from ${sourceLanguage} into ${targetLanguage}.`,
+        "Read the provided video title, page metadata, and subtitle sample.",
+        "Return one concise English context note for later subtitle translation.",
+        "Include the likely topic/domain, product/person/place names, specialized terms, tone/register, and any translation choices that would help avoid ambiguity.",
+        "Do not translate the subtitle sample.",
+        "Do not invent facts beyond the title or subtitles.",
+        "Return plain text only, no headings, no bullets, no JSON.",
+        "Keep it under 90 words."
+      ].join(" ");
+    }
+
+    buildSubtitleAnnotationPrompt(request) {
+      const sourceLanguage = String(request.sourceLanguage || "auto").trim() || "auto";
+      const targetLanguage = String(request.targetLanguage || "en").trim() || "en";
+      const levelSystem = String(request.learningLevelSystem || "CEFR").trim() || "CEFR";
+      const learningLevel = String(request.learningLevel || "B1").trim() || "B1";
+      const rawMaxAnnotations = Number(request.maxAnnotations);
+      const maxAnnotations = Number.isFinite(rawMaxAnnotations)
+        ? Math.max(1, Math.min(8, Math.round(rawMaxAnnotations)))
+        : 4;
+      const annotationTypeHint = this.buildSubtitleAnnotationTypeHint(request.annotationTypes);
+
+      return [
+        "You are a language-learning subtitle assistant.",
+        `The subtitle source language is ${sourceLanguage}.`,
+        `The learner level is ${levelSystem} ${learningLevel}.`,
+        `Write meanings and notes in ${targetLanguage}.`,
+        this.buildSubtitleContextHint(request.subtitleContext),
+        "Select only source-language words, fixed phrases, idioms, collocations, or grammar chunks that are likely above the learner level or especially useful.",
+        annotationTypeHint,
+        `Return at most ${maxAnnotations} items.`,
+        "Do not translate the whole subtitle sentence.",
+        "Do not include obvious words below the learner level, punctuation, duplicate terms, or unrelated commentary.",
+        "Keep each meaning concise and useful for reading the subtitle.",
+        "Return strict JSON only, with this exact shape:",
+        "{\"items\":[{\"term\":\"source term\",\"meaning\":\"short meaning\",\"note\":\"optional short note\"}]}",
+        "Use source terms exactly as they appear where possible.",
+        "If there is nothing useful to annotate, return {\"items\":[]}."
+      ].filter(Boolean).join(" ");
+    }
+
+    buildSubtitleAnnotationTypeHint(annotationTypes) {
+      const labels = {
+        noun: "nouns and useful noun phrases",
+        verb: "verbs and useful verb phrases",
+        adjective: "adjectives and adjectival phrases",
+        adverb: "adverbs and adverbial phrases",
+        phrase: "fixed phrases, idioms, collocations, and grammar chunks"
+      };
+      const selected = (Array.isArray(annotationTypes) ? annotationTypes : [annotationTypes])
+        .map((item) => String(item || "").trim())
+        .filter((item) => item && item !== "any" && labels[item]);
+      const unique = Array.from(new Set(selected));
+      if (!unique.length) {
+        return "";
+      }
+      return `Only annotate these types: ${unique.map((item) => labels[item]).join(", ")}.`;
     }
 
     buildContextStyleHint(contextStyle) {

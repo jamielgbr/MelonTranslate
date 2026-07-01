@@ -536,6 +536,242 @@
     };
   }
 
+  function normalizeChoice(value, allowed, fallback) {
+    const normalized = String(value || "").trim();
+    return Array.isArray(allowed) && allowed.includes(normalized) ? normalized : fallback;
+  }
+
+  function getLearningLevels(kind) {
+    const levels = namespace.constants && namespace.constants.videoSubtitleLearningLevels || {};
+    return Array.isArray(levels[kind]) ? levels[kind] : [];
+  }
+
+  function normalizeSubtitleLearningLevel(kind, value, fallback) {
+    return normalizeChoice(value, getLearningLevels(kind), fallback);
+  }
+
+  function normalizeSubtitleLearningMaxItems(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) {
+      return 4;
+    }
+    return Math.max(1, Math.min(8, Math.round(number)));
+  }
+
+  function normalizeSubtitleAnnotationTypes(value) {
+    const typeOptions = namespace.constants && namespace.constants.videoSubtitleAnnotationTypes || [];
+    const allowed = new Set(typeOptions.map((item) => item.id));
+    const source = Array.isArray(value) ? value : [value];
+    const normalized = source
+      .map((item) => String(item || "").trim())
+      .filter((item) => allowed.has(item));
+    if (!normalized.length || normalized.includes("any")) {
+      return ["any"];
+    }
+    return Array.from(new Set(normalized));
+  }
+
+  function resolveSubtitleLearningProfile(settings, sourceLanguage) {
+    const cfg = settings || {};
+    const rawSourceLanguage = String(sourceLanguage || "").trim();
+    const annotationTypes = normalizeSubtitleAnnotationTypes(cfg.videoBilingualSubtitlesLearningAnnotationTypes);
+    const baseLanguage = getBaseLanguage(rawSourceLanguage || "en");
+    if (baseLanguage === "ja") {
+      return {
+        sourceLanguage: rawSourceLanguage || "ja",
+        baseLanguage,
+        levelSystem: "JLPT",
+        level: normalizeSubtitleLearningLevel("japanese", cfg.videoBilingualSubtitlesLearningJapaneseLevel, "N3"),
+        maxItems: normalizeSubtitleLearningMaxItems(cfg.videoBilingualSubtitlesLearningMaxItems),
+        annotationTypes
+      };
+    }
+    if (baseLanguage === "zh") {
+      return {
+        sourceLanguage: rawSourceLanguage || "zh",
+        baseLanguage,
+        levelSystem: "HSK",
+        level: normalizeSubtitleLearningLevel("chinese", cfg.videoBilingualSubtitlesLearningChineseLevel, "HSK3"),
+        maxItems: normalizeSubtitleLearningMaxItems(cfg.videoBilingualSubtitlesLearningMaxItems),
+        annotationTypes
+      };
+    }
+    return {
+      sourceLanguage: rawSourceLanguage || "en",
+      baseLanguage: baseLanguage || "en",
+      levelSystem: "CEFR",
+      level: normalizeSubtitleLearningLevel("english", cfg.videoBilingualSubtitlesLearningEnglishLevel, "B1"),
+      maxItems: normalizeSubtitleLearningMaxItems(cfg.videoBilingualSubtitlesLearningMaxItems),
+      annotationTypes
+    };
+  }
+
+  function cleanAnnotationField(value, maxLength) {
+    return String(value || "")
+      .replace(/\s+/g, " ")
+      .replace(/^["'“”‘’]+|["'“”‘’]+$/g, "")
+      .trim()
+      .slice(0, maxLength || 160)
+      .trim();
+  }
+
+  function stripJsonCodeFence(text) {
+    const source = String(text || "").trim();
+    const match = source.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    return match ? match[1].trim() : source;
+  }
+
+  function extractBalancedJsonValue(text, startIndex) {
+    const source = String(text || "");
+    const opener = source.charAt(startIndex);
+    const closer = opener === "{" ? "}" : (opener === "[" ? "]" : "");
+    if (!closer) {
+      return "";
+    }
+    const stack = [closer];
+    let inString = false;
+    let escaped = false;
+    for (let index = startIndex + 1; index < source.length; index += 1) {
+      const ch = source.charAt(index);
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch === "\\") {
+          escaped = true;
+        } else if (ch === "\"") {
+          inString = false;
+        }
+        continue;
+      }
+      if (ch === "\"") {
+        inString = true;
+      } else if (ch === "{" || ch === "[") {
+        stack.push(ch === "{" ? "}" : "]");
+      } else if (ch === "}" || ch === "]") {
+        if (stack.pop() !== ch) {
+          return "";
+        }
+        if (!stack.length) {
+          return source.slice(startIndex, index + 1);
+        }
+      }
+    }
+    return "";
+  }
+
+  function parseJsonFromModelText(text) {
+    const source = stripJsonCodeFence(text);
+    const candidates = [source];
+    const firstJsonIndex = source.search(/[\[{]/);
+    if (firstJsonIndex >= 0) {
+      const balanced = extractBalancedJsonValue(source, firstJsonIndex);
+      if (balanced) {
+        candidates.push(balanced);
+      }
+    }
+    for (const candidate of candidates) {
+      try {
+        return JSON.parse(candidate);
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  function getAnnotationArray(parsed) {
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    if (!parsed || typeof parsed !== "object") {
+      return [];
+    }
+    const keys = ["items", "annotations", "terms", "words", "phrases"];
+    for (const key of keys) {
+      if (Array.isArray(parsed[key])) {
+        return parsed[key];
+      }
+    }
+    return parsed.term || parsed.word || parsed.phrase ? [parsed] : [];
+  }
+
+  function parseFallbackAnnotationLine(line) {
+    const cleaned = cleanAnnotationField(line, 260)
+      .replace(/^[-*]\s+/, "")
+      .replace(/^\d+[.)]\s+/, "");
+    const match = cleaned.match(/^(.{1,80}?)(?:(?:\s*(?:=>|->|=|:)\s*)|\s+-\s+)(.{1,180})$/);
+    if (!match) {
+      return null;
+    }
+    return {
+      term: cleanAnnotationField(match[1], 80),
+      meaning: cleanAnnotationField(match[2], 180),
+      note: ""
+    };
+  }
+
+  function normalizeAnnotationItem(item) {
+    if (typeof item === "string") {
+      return parseFallbackAnnotationLine(item);
+    }
+    if (!item || typeof item !== "object") {
+      return null;
+    }
+    const term = cleanAnnotationField(
+      item.term || item.word || item.phrase || item.source || item.text || item.expression,
+      80
+    );
+    const meaning = cleanAnnotationField(
+      item.meaning || item.translation || item.explanation || item.gloss || item.target || item.definition,
+      180
+    );
+    const note = cleanAnnotationField(item.note || item.usage || item.reason || item.hint, 100);
+    if (!term || !meaning) {
+      return null;
+    }
+    return { term, meaning, note };
+  }
+
+  function dedupeAnnotations(annotations, maxItems) {
+    const seen = new Set();
+    const limit = normalizeSubtitleLearningMaxItems(maxItems);
+    const result = [];
+    (Array.isArray(annotations) ? annotations : []).forEach((item) => {
+      const normalized = normalizeAnnotationItem(item);
+      if (!normalized) {
+        return;
+      }
+      const key = normalized.term.toLowerCase();
+      if (seen.has(key)) {
+        return;
+      }
+      seen.add(key);
+      result.push(normalized);
+    });
+    return result.slice(0, limit);
+  }
+
+  function parseSubtitleAnnotationResponse(text, options) {
+    const opts = options || {};
+    const parsed = parseJsonFromModelText(text);
+    if (parsed !== null) {
+      return dedupeAnnotations(getAnnotationArray(parsed), opts.maxItems);
+    }
+    const fallbackItems = String(text || "")
+      .split(/\n+/)
+      .map(parseFallbackAnnotationLine)
+      .filter(Boolean);
+    return dedupeAnnotations(fallbackItems, opts.maxItems);
+  }
+
+  function formatSubtitleAnnotations(annotations, options) {
+    const opts = options || {};
+    return dedupeAnnotations(annotations, opts.maxItems)
+      .map((item) => {
+        const note = item.note ? ` (${item.note})` : "";
+        return `${item.term} = ${item.meaning}${note}`;
+      })
+      .join(" | ");
+  }
+
   namespace.videoSubtitleUtils = {
     decodeHtmlEntities,
     normalizeCueText,
@@ -551,6 +787,12 @@
     parseYouTubeSrv3Xml,
     parseYouTubeWebVtt,
     parseYouTubeTimedText,
-    resolveSubtitleTarget
+    resolveSubtitleTarget,
+    normalizeSubtitleLearningLevel,
+    normalizeSubtitleLearningMaxItems,
+    normalizeSubtitleAnnotationTypes,
+    resolveSubtitleLearningProfile,
+    parseSubtitleAnnotationResponse,
+    formatSubtitleAnnotations
   };
 }(globalThis));

@@ -42,6 +42,23 @@
       { id: "below-original", label: "Below original" },
       { id: "compact", label: "Compact bilingual" }
     ],
+    videoSubtitleDisplayModes: [
+      { id: "translation", label: "Full translation" },
+      { id: "learning", label: "Learning annotations" }
+    ],
+    videoSubtitleLearningLevels: {
+      english: ["A1", "A2", "B1", "B2", "C1", "C2"],
+      japanese: ["N5", "N4", "N3", "N2", "N1"],
+      chinese: ["HSK1", "HSK2", "HSK3", "HSK4", "HSK5", "HSK6"]
+    },
+    videoSubtitleAnnotationTypes: [
+      { id: "any", label: "Any" },
+      { id: "noun", label: "Nouns" },
+      { id: "verb", label: "Verbs" },
+      { id: "adjective", label: "Adjectives" },
+      { id: "adverb", label: "Adverbs" },
+      { id: "phrase", label: "Phrases" }
+    ],
     modifierKeys: ["Alt", "Control", "Shift", "Meta"],
     modelCacheTtlMs: 24 * 60 * 60 * 1000,
     maxFavoriteModelsPerProvider: 50,

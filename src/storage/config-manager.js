@@ -23,11 +23,53 @@
     return `${providerId}${raw.slice(separatorIndex)}`;
   }
 
+  function normalizeChoice(value, allowed, fallback) {
+    const normalized = String(value || "").trim();
+    return Array.isArray(allowed) && allowed.includes(normalized) ? normalized : fallback;
+  }
+
+  function normalizeVideoSubtitleDisplayMode(value) {
+    const modes = (namespace.constants.videoSubtitleDisplayModes || []).map((item) => item.id);
+    return normalizeChoice(value, modes, "translation");
+  }
+
+  function normalizeVideoSubtitleLearningLevel(kind, value, fallback) {
+    const levels = namespace.constants.videoSubtitleLearningLevels || {};
+    return normalizeChoice(value, levels[kind] || [], fallback);
+  }
+
+  function normalizeVideoSubtitleAnnotationTypes(value) {
+    const allowed = new Set((namespace.constants.videoSubtitleAnnotationTypes || []).map((item) => item.id));
+    const source = Array.isArray(value) ? value : [value];
+    const normalized = source
+      .map((item) => String(item || "").trim())
+      .filter((item) => allowed.has(item));
+    if (!normalized.length || normalized.includes("any")) {
+      return ["any"];
+    }
+    return Array.from(new Set(normalized));
+  }
+
+  function clampInteger(value, fallback, min, max) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) {
+      return fallback;
+    }
+    return Math.max(min, Math.min(max, Math.round(number)));
+  }
+
   function normalizeSettings(settings) {
     const merged = Object.assign(getDefaultSettings(), settings || {});
     return Object.assign({}, merged, {
       defaultTranslationProviderId: normalizeProviderId(merged.defaultTranslationProviderId),
-      defaultTranslationModelKey: normalizeDefaultModelKey(merged.defaultTranslationModelKey)
+      defaultTranslationModelKey: normalizeDefaultModelKey(merged.defaultTranslationModelKey),
+      videoBilingualSubtitlesMode: normalizeVideoSubtitleDisplayMode(merged.videoBilingualSubtitlesMode),
+      videoBilingualSubtitlesLearningEnglishLevel: normalizeVideoSubtitleLearningLevel("english", merged.videoBilingualSubtitlesLearningEnglishLevel, "B1"),
+      videoBilingualSubtitlesLearningJapaneseLevel: normalizeVideoSubtitleLearningLevel("japanese", merged.videoBilingualSubtitlesLearningJapaneseLevel, "N3"),
+      videoBilingualSubtitlesLearningChineseLevel: normalizeVideoSubtitleLearningLevel("chinese", merged.videoBilingualSubtitlesLearningChineseLevel, "HSK3"),
+      videoBilingualSubtitlesLearningAnnotationTypes: normalizeVideoSubtitleAnnotationTypes(merged.videoBilingualSubtitlesLearningAnnotationTypes),
+      videoBilingualSubtitlesLearningMaxItems: clampInteger(merged.videoBilingualSubtitlesLearningMaxItems, 4, 1, 8),
+      videoBilingualSubtitlesTopicContextEnabled: !!merged.videoBilingualSubtitlesTopicContextEnabled
     });
   }
 
@@ -67,6 +109,13 @@
       immersiveTranslationMaxConcurrent: 2,
       immersiveTranslationContextStyle: "auto",
       videoBilingualSubtitlesAutoTranslate: false,
+      videoBilingualSubtitlesMode: "translation",
+      videoBilingualSubtitlesLearningEnglishLevel: "B1",
+      videoBilingualSubtitlesLearningJapaneseLevel: "N3",
+      videoBilingualSubtitlesLearningChineseLevel: "HSK3",
+      videoBilingualSubtitlesLearningAnnotationTypes: ["any"],
+      videoBilingualSubtitlesLearningMaxItems: 4,
+      videoBilingualSubtitlesTopicContextEnabled: false,
       videoBilingualSubtitlesSkipDefaultTargetSource: true,
       videoBilingualSubtitlesShowPlayerButton: true,
       videoBilingualSubtitlesMaxConcurrentBatches: 2,

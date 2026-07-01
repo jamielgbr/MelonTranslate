@@ -26,11 +26,38 @@
     return String(text || "").replace(richTextMarkerPattern, "");
   }
 
-  function cacheKey(text, sourceLanguage, targetLanguage, providerSignature, contextStyle, dictionaryModeForSingleWord, preserveRichTextFormatting) {
+  function cacheKey(text, sourceLanguage, targetLanguage, providerSignature, contextStyle, dictionaryModeForSingleWord, preserveRichTextFormatting, subtitleContext) {
     const style = namespace.pageUtils.getInputContextStyle(contextStyle);
     const dictionaryMode = dictionaryModeForSingleWord ? "dict" : "plain";
     const formatMode = preserveRichTextFormatting ? "rich-v1" : "plain";
-    return `${sourceLanguage || "auto"}\0${targetLanguage}\0${style}\0${dictionaryMode}\0${formatMode}\0${providerSignature}\0${text}`;
+    const contextKey = String(subtitleContext || "").replace(/\s+/g, " ").trim().slice(0, 600);
+    return `${sourceLanguage || "auto"}\0${targetLanguage}\0${style}\0${dictionaryMode}\0${formatMode}\0${contextKey}\0${providerSignature}\0${text}`;
+  }
+
+  function subtitleAnnotationCacheKey(text, sourceLanguage, targetLanguage, providerSignature, learningLevelSystem, learningLevel, maxAnnotations, annotationTypes, subtitleContext) {
+    return [
+      "subtitle-annotations-v1",
+      sourceLanguage || "auto",
+      targetLanguage || "en",
+      learningLevelSystem || "",
+      learningLevel || "",
+      maxAnnotations || 4,
+      (Array.isArray(annotationTypes) ? annotationTypes : ["any"]).join(","),
+      String(subtitleContext || "").replace(/\s+/g, " ").trim().slice(0, 600),
+      providerSignature || "",
+      text || ""
+    ].join("\0");
+  }
+
+  function subtitleTopicContextCacheKey(sampleText, sourceLanguage, targetLanguage, providerSignature, title) {
+    return [
+      "subtitle-topic-context-v1",
+      sourceLanguage || "auto",
+      targetLanguage || "en",
+      providerSignature || "",
+      String(title || "").replace(/\s+/g, " ").trim().slice(0, 200),
+      String(sampleText || "").replace(/\s+/g, " ").trim().slice(0, 4000)
+    ].join("\0");
   }
 
   function getCached(key) {
@@ -169,6 +196,19 @@
       providerIds: [enabled[0].id],
       modelOverrides
     };
+  }
+
+  function getRouteProviderConfigs(route, configuredProviders) {
+    const ids = new Set(route && Array.isArray(route.providerIds) ? route.providerIds : []);
+    if (!ids.size) {
+      return [];
+    }
+    return (configuredProviders || []).filter((provider) => ids.has(provider.id));
+  }
+
+  function providerSupportsSubtitleAnnotations(provider) {
+    const transport = String(provider && provider.transport || "");
+    return transport === "openai-compatible" || transport === "anthropic" || transport === "gemini";
   }
 
   function providerIsSelectableForContent(provider, config) {
@@ -769,6 +809,15 @@
       .trim();
   }
 
+  function normalizeSubtitleTopicContext(text) {
+    return String(text || "")
+      .replace(/```[\s\S]*?```/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 700)
+      .trim();
+  }
+
   function splitSubtitleTextForProvider(text) {
     const splitter = namespace.videoSubtitleUtils && namespace.videoSubtitleUtils.splitTextBySentenceBoundaries;
     if (typeof splitter !== "function") {
@@ -789,6 +838,114 @@
       || null;
   }
 
+  function pickFirstSubtitleAnnotation(results) {
+    const list = Array.isArray(results) ? results : [];
+    return list.find((result) => result && result.ok)
+      || list.find((result) => result && !result.ok)
+      || null;
+  }
+
+  function normalizeSubtitleTopicSampleText(text) {
+    return String(text || "")
+      .replace(/\u00a0/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+      .slice(0, 5000)
+      .trim();
+  }
+
+  function buildSubtitleTopicContextInput(message) {
+    const title = String(message.title || "").replace(/\s+/g, " ").trim().slice(0, 200);
+    const sourceLanguage = String(message.sourceLanguage || "auto").trim() || "auto";
+    const targetLanguage = String(message.targetLanguage || "").trim();
+    const url = String(message.url || "").trim().slice(0, 300);
+    const sampleText = normalizeSubtitleTopicSampleText(message.sampleText);
+    return [
+      title ? `Video title: ${title}` : "",
+      url ? `Page URL: ${url}` : "",
+      `Source language: ${sourceLanguage}`,
+      targetLanguage ? `Target language: ${targetLanguage}` : "",
+      "",
+      "Subtitle sample:",
+      sampleText
+    ].filter((line) => line !== "").join("\n");
+  }
+
+  async function handleSenseSubtitleTopicContext(message) {
+    const sampleText = normalizeSubtitleTopicSampleText(message.sampleText);
+    if (sampleText.length < 80) {
+      return namespace.messages.ok({ context: "", skipped: true, reason: "sample_too_short" });
+    }
+
+    try {
+      const [settings, configuredProviders] = await Promise.all([
+        namespace.configManager.getSettings(),
+        namespace.providerRegistry.buildConfiguredProviders()
+      ]);
+      const targetLanguage = String(message.targetLanguage || settings.targetLanguage || "en").trim();
+      const sourceLanguage = String(message.sourceLanguage || "").trim();
+      const route = resolveEffectiveRoute(message.providerIds || [], message.modelOverrides || {}, settings, configuredProviders);
+      const routeProviders = getRouteProviderConfigs(route, configuredProviders);
+      if (!routeProviders.length || !routeProviders.some(providerSupportsSubtitleAnnotations)) {
+        return namespace.messages.ok({ context: "", skipped: true, reason: "no_ai_provider" });
+      }
+      const temperatureOverrides = resolveTemperatureOverrides(
+        route.providerIds,
+        route.modelOverrides,
+        message.temperatureOverrides || {},
+        configuredProviders
+      );
+      const providerSignature = buildProviderSignature(route.providerIds, route.modelOverrides, temperatureOverrides, configuredProviders);
+      const title = String(message.title || "").replace(/\s+/g, " ").trim();
+      const key = subtitleTopicContextCacheKey(sampleText, sourceLanguage, targetLanguage, providerSignature, title);
+      const cached = message.bypassCache ? null : getCached(key);
+      if (cached && typeof cached.context === "string") {
+        return namespace.messages.ok(Object.assign({ fromCache: true }, cached));
+      }
+
+      const request = {
+        task: "subtitle-topic-context",
+        text: buildSubtitleTopicContextInput(Object.assign({}, message, { sampleText, targetLanguage, sourceLanguage })),
+        displayText: sampleText,
+        sourceLanguage: sourceLanguage && sourceLanguage.toLowerCase() !== "auto" ? sourceLanguage : "",
+        targetLanguage,
+        sourceLanguageDetected: sourceLanguage && sourceLanguage.toLowerCase() !== "auto" ? sourceLanguage : "",
+        dictionaryModeForSingleWord: false,
+        preserveRichTextFormatting: false,
+        contextStyle: "neutral",
+        url: String(message.url || "")
+      };
+      const results = await namespace.providerRegistry.translate(
+        request,
+        route.providerIds,
+        route.modelOverrides,
+        temperatureOverrides,
+        configuredProviders
+      );
+      const picked = pickFirstSubtitleTranslation(attachRequestLanguagesToResults(results, request));
+      const context = picked && picked.ok
+        ? normalizeSubtitleTopicContext(picked.translatedText)
+        : "";
+      const data = {
+        context,
+        skipped: !context,
+        providerId: picked && picked.providerId || "",
+        providerName: picked && picked.providerName || "",
+        model: picked && picked.model || "",
+        sourceLanguage: sourceLanguage || "auto",
+        targetLanguage
+      };
+      setCache(key, data);
+      return namespace.messages.ok(data);
+    } catch (error) {
+      return namespace.messages.ok({
+        context: "",
+        skipped: true,
+        reason: error && error.message ? error.message : "topic_context_failed"
+      });
+    }
+  }
+
   async function translateSubtitleTextPart(partText, details) {
     const request = {
       text: partText,
@@ -799,7 +956,8 @@
       dictionaryModeForSingleWord: false,
       preserveRichTextFormatting: false,
       contextStyle: details.contextStyle,
-      url: details.url
+      url: details.url,
+      subtitleContext: details.subtitleContext
     };
     const key = cacheKey(
       request.text,
@@ -808,7 +966,8 @@
       details.providerSignature,
       request.contextStyle,
       false,
-      false
+      false,
+      request.subtitleContext
     );
     const cached = details.bypassCache ? null : getCached(key);
     const results = cached || await namespace.providerRegistry.translate(
@@ -861,6 +1020,7 @@
       contextStyle,
       bypassCache,
       url,
+      subtitleContext: normalizeSubtitleTopicContext(message.subtitleContext),
       configuredProviders
     };
 
@@ -917,6 +1077,212 @@
       items: translatedItems,
       targetLanguage,
       sourceLanguage: sourceLanguage || "auto"
+    });
+  }
+
+  function mergeSubtitleAnnotations(annotations, maxItems) {
+    const seen = new Set();
+    const limit = namespace.videoSubtitleUtils.normalizeSubtitleLearningMaxItems(maxItems);
+    const result = [];
+    (Array.isArray(annotations) ? annotations : []).forEach((item) => {
+      if (!item || !item.term || !item.meaning) {
+        return;
+      }
+      const key = String(item.term || "").trim().toLowerCase();
+      if (!key || seen.has(key)) {
+        return;
+      }
+      seen.add(key);
+      result.push(item);
+    });
+    return result.slice(0, limit);
+  }
+
+  async function annotateSubtitleTextPart(partText, details) {
+    const request = {
+      task: "subtitle-annotations",
+      text: partText,
+      displayText: partText,
+      sourceLanguage: details.sourceLanguage && details.sourceLanguage.toLowerCase() !== "auto" ? details.sourceLanguage : "",
+      targetLanguage: details.targetLanguage,
+      sourceLanguageDetected: details.sourceLanguage && details.sourceLanguage.toLowerCase() !== "auto" ? details.sourceLanguage : "",
+      dictionaryModeForSingleWord: false,
+      preserveRichTextFormatting: false,
+      contextStyle: details.contextStyle,
+      url: details.url,
+      learningLevelSystem: details.learningLevelSystem,
+      learningLevel: details.learningLevel,
+      maxAnnotations: details.maxAnnotations,
+      annotationTypes: details.annotationTypes,
+      subtitleContext: details.subtitleContext
+    };
+    const key = subtitleAnnotationCacheKey(
+      request.text,
+      request.sourceLanguage || request.sourceLanguageDetected || "auto",
+      request.targetLanguage,
+      details.providerSignature,
+      details.learningLevelSystem,
+      details.learningLevel,
+      details.maxAnnotations,
+      details.annotationTypes,
+      request.subtitleContext
+    );
+    const cached = details.bypassCache ? null : getCached(key);
+    const results = cached || await namespace.providerRegistry.translate(
+      request,
+      details.route.providerIds,
+      details.route.modelOverrides,
+      details.temperatureOverrides,
+      details.configuredProviders
+    );
+    const resultsWithLanguages = attachRequestLanguagesToResults(results, request);
+    if (!cached) {
+      setCache(key, resultsWithLanguages);
+    }
+    let picked = null;
+    let annotations = [];
+    const resultList = Array.isArray(resultsWithLanguages) ? resultsWithLanguages : [];
+    for (const result of resultList) {
+      if (!result || !result.ok) {
+        continue;
+      }
+      const annotationText = String(result.translatedText || "").trim();
+      const parsedAnnotations = annotationText
+        ? namespace.videoSubtitleUtils.parseSubtitleAnnotationResponse(annotationText, { maxItems: details.maxAnnotations })
+        : [];
+      if (!picked) {
+        picked = result;
+        annotations = parsedAnnotations;
+      }
+      if (parsedAnnotations.length) {
+        picked = result;
+        annotations = parsedAnnotations;
+        break;
+      }
+    }
+    if (!picked) {
+      picked = pickFirstSubtitleAnnotation(resultsWithLanguages);
+    }
+    return {
+      picked,
+      annotations,
+      request,
+      cached: !!cached
+    };
+  }
+
+  async function handleAnnotateSubtitleBatch(message) {
+    const items = normalizeSubtitleBatchItems(message.items || message.cues || []);
+    if (!items.length) {
+      return namespace.messages.ok({ items: [] });
+    }
+
+    const [settings, configuredProviders] = await Promise.all([
+      namespace.configManager.getSettings(),
+      namespace.providerRegistry.buildConfiguredProviders()
+    ]);
+    const targetLanguage = String(message.targetLanguage || settings.targetLanguage || "en").trim();
+    const sourceLanguage = String(message.sourceLanguage || "").trim();
+    const profile = namespace.videoSubtitleUtils.resolveSubtitleLearningProfile(settings, sourceLanguage);
+    const route = resolveEffectiveRoute(message.providerIds || [], message.modelOverrides || {}, settings, configuredProviders);
+    const routeProviders = getRouteProviderConfigs(route, configuredProviders);
+    if (routeProviders.length && !routeProviders.some(providerSupportsSubtitleAnnotations)) {
+      return namespace.messages.error("Learning subtitle annotations require an AI text-generation provider. Select an LLM provider in Options.");
+    }
+    const temperatureOverrides = resolveTemperatureOverrides(
+      route.providerIds,
+      route.modelOverrides,
+      message.temperatureOverrides || {},
+      configuredProviders
+    );
+    const providerSignature = buildProviderSignature(route.providerIds, route.modelOverrides, temperatureOverrides, configuredProviders);
+    const contextStyle = namespace.pageUtils.getInputContextStyle(message.contextStyle || "neutral");
+    const maxAnnotations = namespace.videoSubtitleUtils.normalizeSubtitleLearningMaxItems(
+      message.maxAnnotations || profile.maxItems
+    );
+    const annotationTypes = namespace.videoSubtitleUtils.normalizeSubtitleAnnotationTypes(
+      message.annotationTypes || profile.annotationTypes
+    );
+    const annotationDetails = {
+      sourceLanguage,
+      targetLanguage,
+      learningLevelSystem: String(message.learningLevelSystem || profile.levelSystem || "CEFR"),
+      learningLevel: String(message.learningLevel || profile.level || "B1"),
+      maxAnnotations,
+      annotationTypes,
+      route,
+      temperatureOverrides,
+      providerSignature,
+      contextStyle,
+      bypassCache: !!message.bypassCache,
+      url: String(message.url || ""),
+      subtitleContext: normalizeSubtitleTopicContext(message.subtitleContext),
+      configuredProviders
+    };
+
+    const annotatedItems = [];
+    for (const item of items) {
+      try {
+        const parts = splitSubtitleTextForProvider(item.text);
+        let firstPicked = null;
+        let allFromCache = true;
+        let failed = null;
+        let annotations = [];
+        for (const part of parts) {
+          const annotated = await annotateSubtitleTextPart(part, annotationDetails);
+          const picked = annotated.picked;
+          if (!picked || !picked.ok) {
+            failed = picked || { error: "Subtitle annotation failed." };
+            break;
+          }
+          if (!firstPicked) {
+            firstPicked = picked;
+          }
+          allFromCache = allFromCache && annotated.cached;
+          annotations = mergeSubtitleAnnotations(annotations.concat(annotated.annotations), maxAnnotations);
+          if (annotations.length >= maxAnnotations) {
+            break;
+          }
+        }
+        if (!failed && firstPicked) {
+          annotatedItems.push({
+            id: item.id,
+            ok: true,
+            translatedText: namespace.videoSubtitleUtils.formatSubtitleAnnotations(annotations, { maxItems: maxAnnotations }),
+            annotations,
+            providerId: firstPicked.providerId,
+            providerName: firstPicked.providerName,
+            model: firstPicked.model,
+            fromCache: allFromCache,
+            targetLanguage: firstPicked.targetLanguage || targetLanguage,
+            detectedSourceLanguage: firstPicked.detectedSourceLanguage || (sourceLanguage && sourceLanguage.toLowerCase() !== "auto" ? sourceLanguage : ""),
+            learningLevelSystem: annotationDetails.learningLevelSystem,
+            learningLevel: annotationDetails.learningLevel,
+            annotationTypes: annotationDetails.annotationTypes
+          });
+        } else {
+          annotatedItems.push({
+            id: item.id,
+            ok: false,
+            error: failed && failed.error || "Subtitle annotation failed."
+          });
+        }
+      } catch (error) {
+        annotatedItems.push({
+          id: item.id,
+          ok: false,
+          error: error && error.message ? error.message : "Subtitle annotation failed."
+        });
+      }
+    }
+
+    return namespace.messages.ok({
+      items: annotatedItems,
+      targetLanguage,
+      sourceLanguage: sourceLanguage || "auto",
+      learningLevelSystem: annotationDetails.learningLevelSystem,
+      learningLevel: annotationDetails.learningLevel,
+      annotationTypes: annotationDetails.annotationTypes
     });
   }
 
@@ -1083,6 +1449,10 @@
         return handleFetchYouTubeSubtitleTrack(message);
       case messageTypes.translateSubtitleBatch:
         return handleTranslateSubtitleBatch(message);
+      case messageTypes.annotateSubtitleBatch:
+        return handleAnnotateSubtitleBatch(message);
+      case messageTypes.senseSubtitleTopicContext:
+        return handleSenseSubtitleTopicContext(message);
       case messageTypes.openComparePage:
         await openComparePage(message.providerId || "");
         return namespace.messages.ok();

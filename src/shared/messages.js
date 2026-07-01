@@ -16,6 +16,8 @@
       manualToggleVideoSubtitles: "MANUAL_TOGGLE_VIDEO_SUBTITLES",
       fetchYouTubeSubtitleTrack: "FETCH_YOUTUBE_SUBTITLE_TRACK",
       translateSubtitleBatch: "TRANSLATE_SUBTITLE_BATCH",
+      annotateSubtitleBatch: "ANNOTATE_SUBTITLE_BATCH",
+      senseSubtitleTopicContext: "SENSE_SUBTITLE_TOPIC_CONTEXT",
       startElementPicker: "START_ELEMENT_PICKER",
       getSiteRules: "GET_SITE_RULES",
       saveSiteRules: "SAVE_SITE_RULES",

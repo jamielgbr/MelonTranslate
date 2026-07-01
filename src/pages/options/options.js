@@ -108,6 +108,96 @@
     return modes.some((item) => item.id === normalized) ? normalized : "below-original";
   }
 
+  function normalizeVideoSubtitleDisplayMode(value) {
+    const modes = namespace.constants.videoSubtitleDisplayModes || [];
+    const normalized = String(value || "").trim();
+    return modes.some((item) => item.id === normalized) ? normalized : "translation";
+  }
+
+  function getVideoSubtitleLearningLevels(kind) {
+    const levels = namespace.constants.videoSubtitleLearningLevels || {};
+    return Array.isArray(levels[kind]) ? levels[kind] : [];
+  }
+
+  function normalizeVideoSubtitleLearningLevel(kind, value, fallback) {
+    const levels = getVideoSubtitleLearningLevels(kind);
+    const normalized = String(value || "").trim();
+    return levels.includes(normalized) ? normalized : fallback;
+  }
+
+  function getVideoSubtitleAnnotationTypes() {
+    return namespace.constants.videoSubtitleAnnotationTypes || [];
+  }
+
+  function normalizeVideoSubtitleAnnotationTypes(value) {
+    const allowed = new Set(getVideoSubtitleAnnotationTypes().map((item) => item.id));
+    const source = Array.isArray(value) ? value : [value];
+    const normalized = source
+      .map((item) => String(item || "").trim())
+      .filter((item) => allowed.has(item));
+    if (!normalized.length || normalized.includes("any")) {
+      return ["any"];
+    }
+    return Array.from(new Set(normalized));
+  }
+
+  function collectVideoSubtitleAnnotationTypes() {
+    return normalizeVideoSubtitleAnnotationTypes(Array.from(
+      document.querySelectorAll("[data-video-subtitle-annotation-type]:checked")
+    ).map((input) => input.getAttribute("data-video-subtitle-annotation-type")));
+  }
+
+  function renderVideoSubtitleAnnotationTypeOptions() {
+    const wrap = document.getElementById("video-subtitles-learning-annotation-types");
+    if (!wrap) {
+      return;
+    }
+    wrap.replaceChildren();
+    getVideoSubtitleAnnotationTypes().forEach((item) => {
+      const label = document.createElement("label");
+      label.className = "choice-item";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.setAttribute("data-video-subtitle-annotation-type", item.id);
+      input.addEventListener("change", () => {
+        if (input.checked && item.id === "any") {
+          fillVideoSubtitleAnnotationTypes(["any"]);
+          return;
+        }
+        if (input.checked) {
+          const anyInput = document.querySelector('[data-video-subtitle-annotation-type="any"]');
+          if (anyInput) {
+            anyInput.checked = false;
+          }
+        }
+        const checked = Array.from(document.querySelectorAll("[data-video-subtitle-annotation-type]:checked"));
+        if (!checked.length) {
+          fillVideoSubtitleAnnotationTypes(["any"]);
+        }
+      });
+      const text = document.createElement("span");
+      text.textContent = item.label;
+      label.append(input, text);
+      wrap.appendChild(label);
+    });
+  }
+
+  function fillVideoSubtitleAnnotationTypes(value) {
+    const selected = new Set(normalizeVideoSubtitleAnnotationTypes(value));
+    document.querySelectorAll("[data-video-subtitle-annotation-type]").forEach((input) => {
+      const type = input.getAttribute("data-video-subtitle-annotation-type");
+      input.checked = selected.has(type);
+    });
+  }
+
+  function updateVideoSubtitleLearningVisibility() {
+    const modeEl = document.getElementById("video-subtitles-mode");
+    const learningMode = modeEl && normalizeVideoSubtitleDisplayMode(modeEl.value) === "learning";
+    document.querySelectorAll(".video-subtitles-learning-row").forEach((row) => {
+      row.classList.toggle("is-hidden", !learningMode);
+    });
+  }
+
   function clampNumber(value, fallback, min, max) {
     const number = Number(value);
     if (!Number.isFinite(number)) {
@@ -396,6 +486,13 @@
       immersiveTranslationMaxConcurrent: clampNumber(document.getElementById("immersive-max-concurrent").value, 2, 1, 4),
       immersiveTranslationContextStyle: "auto",
       videoBilingualSubtitlesAutoTranslate: document.getElementById("video-subtitles-auto").checked,
+      videoBilingualSubtitlesMode: normalizeVideoSubtitleDisplayMode(document.getElementById("video-subtitles-mode").value),
+      videoBilingualSubtitlesLearningEnglishLevel: normalizeVideoSubtitleLearningLevel("english", document.getElementById("video-subtitles-learning-english-level").value, "B1"),
+      videoBilingualSubtitlesLearningJapaneseLevel: normalizeVideoSubtitleLearningLevel("japanese", document.getElementById("video-subtitles-learning-japanese-level").value, "N3"),
+      videoBilingualSubtitlesLearningChineseLevel: normalizeVideoSubtitleLearningLevel("chinese", document.getElementById("video-subtitles-learning-chinese-level").value, "HSK3"),
+      videoBilingualSubtitlesLearningAnnotationTypes: collectVideoSubtitleAnnotationTypes(),
+      videoBilingualSubtitlesLearningMaxItems: clampNumber(document.getElementById("video-subtitles-learning-max-items").value, 4, 1, 8),
+      videoBilingualSubtitlesTopicContextEnabled: document.getElementById("video-subtitles-topic-context").checked,
       videoBilingualSubtitlesSkipDefaultTargetSource: document.getElementById("video-subtitles-skip-default-target-source").checked,
       videoBilingualSubtitlesShowPlayerButton: document.getElementById("video-subtitles-show-player-button").checked,
       videoBilingualSubtitlesMaxConcurrentBatches: clampNumber(document.getElementById("video-subtitles-max-concurrent-batches").value, 2, 1, 4),
@@ -479,6 +576,38 @@
       videoBilingualSubtitlesAutoTranslate: incoming.videoBilingualSubtitlesAutoTranslate !== undefined
         ? !!incoming.videoBilingualSubtitlesAutoTranslate
         : !!current.videoBilingualSubtitlesAutoTranslate,
+      videoBilingualSubtitlesMode: normalizeVideoSubtitleDisplayMode(incoming.videoBilingualSubtitlesMode || current.videoBilingualSubtitlesMode),
+      videoBilingualSubtitlesLearningEnglishLevel: normalizeVideoSubtitleLearningLevel(
+        "english",
+        incoming.videoBilingualSubtitlesLearningEnglishLevel || current.videoBilingualSubtitlesLearningEnglishLevel,
+        "B1"
+      ),
+      videoBilingualSubtitlesLearningJapaneseLevel: normalizeVideoSubtitleLearningLevel(
+        "japanese",
+        incoming.videoBilingualSubtitlesLearningJapaneseLevel || current.videoBilingualSubtitlesLearningJapaneseLevel,
+        "N3"
+      ),
+      videoBilingualSubtitlesLearningChineseLevel: normalizeVideoSubtitleLearningLevel(
+        "chinese",
+        incoming.videoBilingualSubtitlesLearningChineseLevel || current.videoBilingualSubtitlesLearningChineseLevel,
+        "HSK3"
+      ),
+      videoBilingualSubtitlesLearningAnnotationTypes: normalizeVideoSubtitleAnnotationTypes(
+        incoming.videoBilingualSubtitlesLearningAnnotationTypes !== undefined
+          ? incoming.videoBilingualSubtitlesLearningAnnotationTypes
+          : current.videoBilingualSubtitlesLearningAnnotationTypes
+      ),
+      videoBilingualSubtitlesLearningMaxItems: clampNumber(
+        incoming.videoBilingualSubtitlesLearningMaxItems !== undefined
+          ? incoming.videoBilingualSubtitlesLearningMaxItems
+          : current.videoBilingualSubtitlesLearningMaxItems,
+        4,
+        1,
+        8
+      ),
+      videoBilingualSubtitlesTopicContextEnabled: incoming.videoBilingualSubtitlesTopicContextEnabled !== undefined
+        ? !!incoming.videoBilingualSubtitlesTopicContextEnabled
+        : !!current.videoBilingualSubtitlesTopicContextEnabled,
       videoBilingualSubtitlesSkipDefaultTargetSource: incoming.videoBilingualSubtitlesSkipDefaultTargetSource !== undefined
         ? !!incoming.videoBilingualSubtitlesSkipDefaultTargetSource
         : current.videoBilingualSubtitlesSkipDefaultTargetSource !== false,
@@ -651,6 +780,7 @@
   }
 
   function renderStaticDropdowns() {
+    renderVideoSubtitleAnnotationTypeOptions();
     state.dropdowns["selection-trigger"] = namespace.customDropdown.create(
       document.getElementById("selection-trigger-wrap"),
       {
@@ -708,6 +838,42 @@
           label: item.label
         })),
         selected: "below-original"
+      }
+    );
+    state.dropdowns["video-subtitles-mode"] = namespace.customDropdown.create(
+      document.getElementById("video-subtitles-mode-wrap"),
+      {
+        id: "video-subtitles-mode",
+        items: (namespace.constants.videoSubtitleDisplayModes || []).map((item) => ({
+          value: item.id,
+          label: item.label
+        })),
+        selected: "translation",
+        onChange: updateVideoSubtitleLearningVisibility
+      }
+    );
+    state.dropdowns["video-subtitles-learning-english-level"] = namespace.customDropdown.create(
+      document.getElementById("video-subtitles-learning-english-level-wrap"),
+      {
+        id: "video-subtitles-learning-english-level",
+        items: getVideoSubtitleLearningLevels("english").map((level) => ({ value: level, label: `CEFR ${level}` })),
+        selected: "B1"
+      }
+    );
+    state.dropdowns["video-subtitles-learning-japanese-level"] = namespace.customDropdown.create(
+      document.getElementById("video-subtitles-learning-japanese-level-wrap"),
+      {
+        id: "video-subtitles-learning-japanese-level",
+        items: getVideoSubtitleLearningLevels("japanese").map((level) => ({ value: level, label: `JLPT ${level}` })),
+        selected: "N3"
+      }
+    );
+    state.dropdowns["video-subtitles-learning-chinese-level"] = namespace.customDropdown.create(
+      document.getElementById("video-subtitles-learning-chinese-level-wrap"),
+      {
+        id: "video-subtitles-learning-chinese-level",
+        items: getVideoSubtitleLearningLevels("chinese").map((level) => ({ value: level, label: level })),
+        selected: "HSK3"
       }
     );
   }
@@ -1243,6 +1409,11 @@
     state.dropdowns["input-site-mode"].setValue(pu.normalizeInputSiteMode(state.settings.inputInlineButtonSiteMode));
     state.dropdowns["input-context-style"].setValue(pu.getInputContextStyle(state.settings.defaultInputContextStyle));
     state.dropdowns["immersive-display-mode"].setValue(normalizeImmersiveDisplayMode(state.settings.immersiveTranslationDisplayMode));
+    state.dropdowns["video-subtitles-mode"].setValue(normalizeVideoSubtitleDisplayMode(state.settings.videoBilingualSubtitlesMode));
+    state.dropdowns["video-subtitles-learning-english-level"].setValue(normalizeVideoSubtitleLearningLevel("english", state.settings.videoBilingualSubtitlesLearningEnglishLevel, "B1"));
+    state.dropdowns["video-subtitles-learning-japanese-level"].setValue(normalizeVideoSubtitleLearningLevel("japanese", state.settings.videoBilingualSubtitlesLearningJapaneseLevel, "N3"));
+    state.dropdowns["video-subtitles-learning-chinese-level"].setValue(normalizeVideoSubtitleLearningLevel("chinese", state.settings.videoBilingualSubtitlesLearningChineseLevel, "HSK3"));
+    fillVideoSubtitleAnnotationTypes(state.settings.videoBilingualSubtitlesLearningAnnotationTypes);
     renderDefaultModelSelect();
     renderModelParametersPanel();
     renderLanguageSelect("target-language", "target-language-custom", state.settings.targetLanguage);
@@ -1259,9 +1430,12 @@
     document.getElementById("immersive-min-text-length").value = clampNumber(state.settings.immersiveTranslationMinTextLength, 32, 8, 500);
     document.getElementById("immersive-max-concurrent").value = clampNumber(state.settings.immersiveTranslationMaxConcurrent, 2, 1, 4);
     document.getElementById("video-subtitles-auto").checked = !!state.settings.videoBilingualSubtitlesAutoTranslate;
+    document.getElementById("video-subtitles-topic-context").checked = !!state.settings.videoBilingualSubtitlesTopicContextEnabled;
     document.getElementById("video-subtitles-skip-default-target-source").checked = state.settings.videoBilingualSubtitlesSkipDefaultTargetSource !== false;
     document.getElementById("video-subtitles-show-player-button").checked = state.settings.videoBilingualSubtitlesShowPlayerButton !== false;
+    document.getElementById("video-subtitles-learning-max-items").value = clampNumber(state.settings.videoBilingualSubtitlesLearningMaxItems, 4, 1, 8);
     document.getElementById("video-subtitles-max-concurrent-batches").value = clampNumber(state.settings.videoBilingualSubtitlesMaxConcurrentBatches, 2, 1, 4);
+    updateVideoSubtitleLearningVisibility();
     document.getElementById("persist-history").checked = !!state.settings.persistHistory;
   }
 

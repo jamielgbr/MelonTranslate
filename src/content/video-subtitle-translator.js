@@ -60,6 +60,7 @@
     cues: [],
     targetLanguage: "",
     sourceLanguage: "",
+    subtitleContext: "",
     subtitleMode: "",
     translations: new Map(),
     queuedIds: [],
@@ -104,13 +105,48 @@
 
   function normalizeSettings(settings) {
     const cfg = settings || {};
-    const maxConcurrent = Math.max(1, Math.min(4, Number(cfg.videoBilingualSubtitlesMaxConcurrentBatches || 2)));
+    const rawMaxConcurrent = Number(cfg.videoBilingualSubtitlesMaxConcurrentBatches);
+    const maxConcurrent = Number.isFinite(rawMaxConcurrent)
+      ? Math.max(1, Math.min(4, Math.round(rawMaxConcurrent)))
+      : 2;
+    const displayMode = cfg.videoBilingualSubtitlesMode === "learning" ? "learning" : "translation";
+    const rawMaxLearningItems = Number(cfg.videoBilingualSubtitlesLearningMaxItems);
+    const maxLearningItems = Number.isFinite(rawMaxLearningItems)
+      ? Math.max(1, Math.min(8, Math.round(rawMaxLearningItems)))
+      : 4;
+    const annotationTypes = utils && typeof utils.normalizeSubtitleAnnotationTypes === "function"
+      ? utils.normalizeSubtitleAnnotationTypes(cfg.videoBilingualSubtitlesLearningAnnotationTypes)
+      : ["any"];
     return Object.assign({}, cfg, {
       videoBilingualSubtitlesAutoTranslate: !!cfg.videoBilingualSubtitlesAutoTranslate,
+      videoBilingualSubtitlesMode: displayMode,
+      videoBilingualSubtitlesLearningEnglishLevel: String(cfg.videoBilingualSubtitlesLearningEnglishLevel || "B1"),
+      videoBilingualSubtitlesLearningJapaneseLevel: String(cfg.videoBilingualSubtitlesLearningJapaneseLevel || "N3"),
+      videoBilingualSubtitlesLearningChineseLevel: String(cfg.videoBilingualSubtitlesLearningChineseLevel || "HSK3"),
+      videoBilingualSubtitlesLearningAnnotationTypes: annotationTypes,
+      videoBilingualSubtitlesLearningMaxItems: maxLearningItems,
+      videoBilingualSubtitlesTopicContextEnabled: !!cfg.videoBilingualSubtitlesTopicContextEnabled,
       videoBilingualSubtitlesSkipDefaultTargetSource: cfg.videoBilingualSubtitlesSkipDefaultTargetSource !== false,
       videoBilingualSubtitlesShowPlayerButton: cfg.videoBilingualSubtitlesShowPlayerButton !== false,
       videoBilingualSubtitlesMaxConcurrentBatches: maxConcurrent
     });
+  }
+
+  function isLearningSubtitleMode() {
+    return !!(state.settings && state.settings.videoBilingualSubtitlesMode === "learning");
+  }
+
+  function getSubtitleResultSettingsKey(settings) {
+    const cfg = settings || {};
+    return [
+      cfg.videoBilingualSubtitlesMode || "translation",
+      cfg.videoBilingualSubtitlesLearningEnglishLevel || "B1",
+      cfg.videoBilingualSubtitlesLearningJapaneseLevel || "N3",
+      cfg.videoBilingualSubtitlesLearningChineseLevel || "HSK3",
+      (cfg.videoBilingualSubtitlesLearningAnnotationTypes || ["any"]).join(","),
+      cfg.videoBilingualSubtitlesLearningMaxItems || 4,
+      cfg.videoBilingualSubtitlesTopicContextEnabled ? "topic" : "no-topic"
+    ].join("\0");
   }
 
   async function loadSettings() {
@@ -1184,6 +1220,7 @@
     state.cues = [];
     state.targetLanguage = "";
     state.sourceLanguage = "";
+    state.subtitleContext = "";
     state.subtitleMode = "";
     state.translations = new Map();
     state.queuedIds = [];
@@ -1354,6 +1391,19 @@
     clearQueuedDomTextIds();
   }
 
+  function resetSubtitleResultRuntime() {
+    state.generation += 1;
+    state.translations = new Map();
+    state.queuedIds = [];
+    state.queuedIdSet = new Set();
+    state.pendingIds = new Set();
+    state.failedIds = new Set();
+    state.activeBatches = 0;
+    state.currentCueKey = "";
+    state.lastQueueRefreshMediaTime = null;
+    resetOverlayRenderCache();
+  }
+
   function maybeResetDomRuntimeAfterSeek() {
     const video = state.video;
     if (!video) {
@@ -1380,6 +1430,75 @@
       return state.domSourceById.get(id) || "";
     }
     return "";
+  }
+
+  function getVideoTopicTitle() {
+    return String(document.title || "")
+      .replace(/\s*-\s*YouTube\s*$/i, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function buildSubtitleTopicSampleText() {
+    const cues = Array.isArray(state.cues) ? state.cues : [];
+    if (!cues.length) {
+      return state.subtitleMode === "youtube-dom" ? readYouTubeRenderedCaptionText() : "";
+    }
+    const indexes = new Set();
+    const earlyCount = Math.min(18, cues.length);
+    for (let index = 0; index < earlyCount; index += 1) {
+      indexes.add(index);
+    }
+    if (cues.length > earlyCount) {
+      const sampleCount = Math.min(18, cues.length - earlyCount);
+      const step = Math.max(1, Math.floor((cues.length - earlyCount) / sampleCount));
+      for (let index = earlyCount; index < cues.length && indexes.size < earlyCount + sampleCount; index += step) {
+        indexes.add(index);
+      }
+    }
+    const lines = [];
+    const seen = new Set();
+    Array.from(indexes).sort((a, b) => a - b).forEach((index) => {
+      const text = normalizeRenderedCaptionText(cues[index] && cues[index].text || "");
+      if (!text || seen.has(text)) {
+        return;
+      }
+      seen.add(text);
+      lines.push(text);
+    });
+    return lines.join("\n").slice(0, 4500).trim();
+  }
+
+  async function loadSubtitleTopicContext(generation) {
+    state.subtitleContext = "";
+    if (!state.settings || !state.settings.videoBilingualSubtitlesTopicContextEnabled) {
+      return "";
+    }
+    const sampleText = buildSubtitleTopicSampleText();
+    if (sampleText.length < 80) {
+      return "";
+    }
+    try {
+      const response = await api.runtime.sendMessage({
+        type: messageTypes.senseSubtitleTopicContext,
+        title: getVideoTopicTitle(),
+        sampleText,
+        targetLanguage: state.targetLanguage,
+        sourceLanguage: state.sourceLanguage || "auto",
+        url: window.location.href
+      });
+      if (generation !== state.generation || !state.active) {
+        return "";
+      }
+      if (response && response.ok && response.data && response.data.context) {
+        state.subtitleContext = String(response.data.context || "").trim();
+      }
+    } catch (error) {
+      if (generation === state.generation && state.active) {
+        state.subtitleContext = "";
+      }
+    }
+    return state.subtitleContext;
   }
 
   function processQueue() {
@@ -1409,18 +1528,39 @@
     }
   }
 
+  function getSubtitleLearningProfile() {
+    if (utils && typeof utils.resolveSubtitleLearningProfile === "function") {
+      return utils.resolveSubtitleLearningProfile(state.settings || {}, state.sourceLanguage || "auto");
+    }
+    return {
+      levelSystem: "CEFR",
+      level: "B1",
+      maxItems: 4
+    };
+  }
+
   async function translateBatch(items, generation) {
     state.activeBatches += 1;
     try {
-      const response = await api.runtime.sendMessage({
-        type: messageTypes.translateSubtitleBatch,
+      const learningMode = isLearningSubtitleMode();
+      const learningProfile = learningMode ? getSubtitleLearningProfile() : null;
+      const message = {
+        type: learningMode ? messageTypes.annotateSubtitleBatch : messageTypes.translateSubtitleBatch,
         items,
         targetLanguage: state.targetLanguage,
         sourceLanguage: state.sourceLanguage || "auto",
         contextStyle: "neutral",
         dictionaryModeForSingleWord: false,
+        subtitleContext: state.subtitleContext || "",
         url: window.location.href
-      });
+      };
+      if (learningMode && learningProfile) {
+        message.learningLevelSystem = learningProfile.levelSystem;
+        message.learningLevel = learningProfile.level;
+        message.maxAnnotations = learningProfile.maxItems;
+        message.annotationTypes = learningProfile.annotationTypes;
+      }
+      const response = await api.runtime.sendMessage(message);
       if (generation !== state.generation || !state.active) {
         return;
       }
@@ -1431,7 +1571,7 @@
       translated.forEach((item) => {
         const id = String(item && item.id || "");
         state.pendingIds.delete(id);
-        if (item && item.ok && String(item.translatedText || "").trim()) {
+        if (item && item.ok && (learningMode || String(item.translatedText || "").trim())) {
           state.translations.set(id, String(item.translatedText || "").trim());
         } else if (id) {
           state.failedIds.add(id);
@@ -1874,6 +2014,7 @@
     state.cues = source.kind === "youtube" ? segmentSubtitleCues(source.cues) : source.cues;
     state.targetLanguage = decision.targetLanguage;
     state.sourceLanguage = decision.sourceLanguage || "auto";
+    state.subtitleContext = "";
     state.subtitleMode = source.kind;
     state.translations = new Map();
     state.pendingIds = new Set();
@@ -1896,6 +2037,10 @@
     state.domSourceById = new Map();
     state.autoAttemptKey = activationKey;
     ensureOverlay(source.video, source.kind);
+    await loadSubtitleTopicContext(generation);
+    if (generation !== state.generation || !state.active) {
+      return { started: false, active: false, reason: "stale" };
+    }
     setTakeoverMode(source.kind === "youtube" || source.kind === "youtube-dom");
     setStatus("on");
     enqueuePriorityAroundCurrent();
@@ -2025,10 +2170,25 @@
       if (areaName !== "sync" || !changes || !changes[namespace.constants.storageKeys.settings]) {
         return;
       }
+      const previousResultSettingsKey = getSubtitleResultSettingsKey(state.settings);
       state.settings = normalizeSettings(changes[namespace.constants.storageKeys.settings].newValue || {});
       ensureYouTubeButton();
       if (state.active && !state.manualActive && !state.settings.videoBilingualSubtitlesAutoTranslate) {
         deactivate();
+        return;
+      }
+      if (state.active && previousResultSettingsKey !== getSubtitleResultSettingsKey(state.settings)) {
+        resetSubtitleResultRuntime();
+        const generation = state.generation;
+        setStatus("loading");
+        loadSubtitleTopicContext(generation).finally(() => {
+          if (generation !== state.generation || !state.active) {
+            return;
+          }
+          setStatus("on");
+          enqueuePriorityAroundCurrent();
+          renderCurrentSubtitle();
+        });
         return;
       }
       if (!state.active && state.settings.videoBilingualSubtitlesAutoTranslate) {

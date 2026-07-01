@@ -247,6 +247,75 @@
                                 <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
                             </label>
                         </div>
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="video-subtitles-mode">Subtitle content</label>
+                                <p class="setting-desc">Choose full sentence translation or learner-focused vocabulary
+                                    annotations.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="video-subtitles-mode-wrap"></div>
+                            </div>
+                        </div>
+                        <div class="settings-row settings-row-switch">
+                            <div class="settings-copy">
+                                <label for="video-subtitles-topic-context">Use topic context</label>
+                                <p class="setting-desc">Analyze a subtitle sample before translating to improve domain
+                                    terms and tone. Uses one extra AI request per video.</p>
+                            </div>
+                            <label class="provider-switch" for="video-subtitles-topic-context"
+                                aria-label="Use topic context">
+                                <input id="video-subtitles-topic-context" type="checkbox">
+                                <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                            </label>
+                        </div>
+                        <div class="settings-row video-subtitles-learning-row">
+                            <div class="settings-copy">
+                                <label for="video-subtitles-learning-english-level">English level</label>
+                                <p class="setting-desc">Annotate English words and phrases above this CEFR level.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="video-subtitles-learning-english-level-wrap"></div>
+                            </div>
+                        </div>
+                        <div class="settings-row video-subtitles-learning-row">
+                            <div class="settings-copy">
+                                <label for="video-subtitles-learning-japanese-level">Japanese level</label>
+                                <p class="setting-desc">Annotate Japanese words and phrases above this JLPT level.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="video-subtitles-learning-japanese-level-wrap"></div>
+                            </div>
+                        </div>
+                        <div class="settings-row video-subtitles-learning-row">
+                            <div class="settings-copy">
+                                <label for="video-subtitles-learning-chinese-level">Chinese level</label>
+                                <p class="setting-desc">Annotate Chinese words and phrases above this HSK level.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="video-subtitles-learning-chinese-level-wrap"></div>
+                            </div>
+                        </div>
+                        <div class="settings-row video-subtitles-learning-row">
+                            <div class="settings-copy">
+                                <label for="video-subtitles-learning-max-items">Annotations per subtitle</label>
+                                <p class="setting-desc">Limit how many words or phrases are shown for each subtitle
+                                    line.</p>
+                            </div>
+                            <div class="settings-control">
+                                <input id="video-subtitles-learning-max-items" type="number" min="1" max="8" step="1">
+                            </div>
+                        </div>
+                        <div class="settings-row video-subtitles-learning-row">
+                            <div class="settings-copy">
+                                <label>Annotation types</label>
+                                <p class="setting-desc">Limit annotations to specific parts of speech or phrases. Any
+                                    keeps the current behavior.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="video-subtitles-learning-annotation-types" class="choice-list"></div>
+                            </div>
+                        </div>
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
                                 <label for="video-subtitles-skip-default-target-source">Skip automatic mode when source
