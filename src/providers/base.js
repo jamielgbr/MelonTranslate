@@ -264,14 +264,19 @@
         ? Math.max(1, Math.min(8, Math.round(rawMaxAnnotations)))
         : 4;
       const annotationTypeHint = this.buildSubtitleAnnotationTypeHint(request.annotationTypes);
+      const previousText = String(request.previousSubtitleText || "").replace(/\s+/g, " ").trim();
+      const nextText = String(request.nextSubtitleText || "").replace(/\s+/g, " ").trim();
 
       return [
         "You are a language-learning subtitle assistant.",
         `The subtitle source language is ${sourceLanguage}.`,
         `The learner level is ${levelSystem} ${learningLevel}.`,
         `Write meanings and notes in ${targetLanguage}.`,
+        previousText ? `Previous subtitle context: ${previousText}` : "",
+        nextText ? `Next subtitle context: ${nextText}` : "",
         this.buildSubtitleContextHint(request.subtitleContext),
         "Select only source-language words, fixed phrases, idioms, collocations, or grammar chunks that are likely above the learner level or especially useful.",
+        "Use previous and next subtitle context only to understand the current subtitle text; every returned term must appear in the current subtitle text.",
         annotationTypeHint,
         `Return at most ${maxAnnotations} items.`,
         "Do not translate the whole subtitle sentence.",

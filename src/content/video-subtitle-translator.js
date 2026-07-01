@@ -3,6 +3,7 @@
   const api = namespace.browserApi;
   const messageTypes = namespace.messages.types;
   const utils = namespace.videoSubtitleUtils;
+  const pageUtils = namespace.pageUtils || {};
 
   const STYLE_ID = "melontranslate-video-subtitle-style";
   const BUTTON_CLASS = "mt-video-subtitle-button";
@@ -199,21 +200,58 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 22px;
-        height: 18px;
-        border: 1.5px solid currentColor;
-        border-radius: 4px;
-        font: 800 10px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-        letter-spacing: 0 !important;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(8, 8, 8, 0.24);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+        overflow: hidden;
+        transition: box-shadow 0.16s ease, opacity 0.16s ease, transform 0.16s ease;
+      }
+      .${BUTTON_CLASS} .mt-video-subtitle-button-logo {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: grayscale(1) saturate(0) opacity(0.58);
+        transition: filter 0.16s ease, opacity 0.16s ease;
       }
       .${BUTTON_CLASS}.ytp-button.is-on {
         color: #9ee7d5;
       }
+      .${BUTTON_CLASS}.ytp-button.is-on .mt-video-subtitle-button-logo,
+      .${BUTTON_CLASS}.ytp-button.is-loading .mt-video-subtitle-button-logo {
+        filter: none;
+      }
+      .${BUTTON_CLASS}.ytp-button.is-on .mt-video-subtitle-button-label {
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.95), 0 0 10px rgba(59, 130, 246, 0.7);
+      }
       .${BUTTON_CLASS}.ytp-button.is-loading {
         color: #fde68a;
       }
+      .${BUTTON_CLASS}.ytp-button.is-loading .mt-video-subtitle-button-label {
+        animation: mt-video-subtitle-button-rainbow 0.72s linear infinite;
+      }
       .${BUTTON_CLASS}.ytp-button.is-error {
         color: #fecaca;
+      }
+      .${BUTTON_CLASS}.ytp-button.is-error .mt-video-subtitle-button-label {
+        box-shadow: 0 0 0 1px rgba(254, 202, 202, 0.95), 0 0 8px rgba(254, 202, 202, 0.38);
+      }
+      .${BUTTON_CLASS}.ytp-button.is-working .mt-video-subtitle-button-label {
+        animation: mt-video-subtitle-button-rainbow 0.72s linear infinite;
+      }
+      .${BUTTON_CLASS}.ytp-button.is-working .mt-video-subtitle-button-logo {
+        filter: none;
+      }
+      @keyframes mt-video-subtitle-button-rainbow {
+        0% { box-shadow: 0 0 0 2px #ef4444, 0 0 10px rgba(239, 68, 68, 0.9); }
+        16% { box-shadow: 0 0 0 2px #f97316, 0 0 10px rgba(249, 115, 22, 0.9); }
+        33% { box-shadow: 0 0 0 2px #eab308, 0 0 10px rgba(234, 179, 8, 0.9); }
+        50% { box-shadow: 0 0 0 2px #22c55e, 0 0 10px rgba(34, 197, 94, 0.9); }
+        66% { box-shadow: 0 0 0 2px #06b6d4, 0 0 10px rgba(6, 182, 212, 0.9); }
+        83% { box-shadow: 0 0 0 2px #6366f1, 0 0 10px rgba(99, 102, 241, 0.9); }
+        100% { box-shadow: 0 0 0 2px #ec4899, 0 0 10px rgba(236, 72, 153, 0.9); }
       }
       .${OVERLAY_CLASS} {
         position: absolute;
@@ -340,6 +378,7 @@
     button.classList.toggle("is-on", state.status === "on");
     button.classList.toggle("is-loading", state.status === "loading");
     button.classList.toggle("is-error", state.status === "error");
+    button.classList.toggle("is-working", state.status === "loading" || state.activeBatches > 0);
     const title = state.status === "on"
       ? "Turn off bilingual subtitles"
       : state.status === "loading"
@@ -376,7 +415,11 @@
     button.className = `ytp-button ${BUTTON_CLASS}`;
     const label = document.createElement("span");
     label.className = "mt-video-subtitle-button-label";
-    label.textContent = "MT";
+    if (typeof pageUtils.getAppLogoHtml === "function" && typeof pageUtils.setHtml === "function") {
+      pageUtils.setHtml(label, pageUtils.getAppLogoHtml("mt-video-subtitle-button-logo"));
+    } else {
+      label.textContent = "MT";
+    }
     button.appendChild(label);
     button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -1536,6 +1579,33 @@
     return "";
   }
 
+  function getAdjacentSubtitleContextForCue(id) {
+    if (state.subtitleMode === "youtube-dom") {
+      return { previousText: "", nextText: "" };
+    }
+    const cues = Array.isArray(state.cues) ? state.cues : [];
+    const index = cues.findIndex((cue) => cue && cue.id === id);
+    if (index < 0) {
+      return { previousText: "", nextText: "" };
+    }
+    const currentText = normalizeRenderedCaptionText(cues[index] && cues[index].text || "");
+
+    function findAdjacentText(startIndex, step) {
+      for (let cursor = startIndex; cursor >= 0 && cursor < cues.length; cursor += step) {
+        const text = normalizeRenderedCaptionText(cues[cursor] && cues[cursor].text || "");
+        if (text && text !== currentText) {
+          return text.slice(0, 1000);
+        }
+      }
+      return "";
+    }
+
+    return {
+      previousText: findAdjacentText(index - 1, -1),
+      nextText: findAdjacentText(index + 1, 1)
+    };
+  }
+
   function getVideoTopicTitle() {
     return String(document.title || "")
       .replace(/\s*-\s*YouTube\s*$/i, "")
@@ -1612,6 +1682,7 @@
     if (isManualWordLookupMode()) {
       return;
     }
+    const learningMode = isLearningSubtitleMode();
     const limit = state.settings.videoBilingualSubtitlesMaxConcurrentBatches || 2;
     while (state.activeBatches < limit && state.queuedIds.length) {
       const items = [];
@@ -1626,7 +1697,11 @@
           continue;
         }
         state.pendingIds.add(id);
-        items.push({ id, text });
+        const item = { id, text };
+        if (learningMode) {
+          Object.assign(item, getAdjacentSubtitleContextForCue(id));
+        }
+        items.push(item);
       }
       if (!items.length) {
         continue;
@@ -1648,6 +1723,7 @@
 
   async function translateBatch(items, generation) {
     state.activeBatches += 1;
+    updateButtonState();
     try {
       const learningMode = isLearningSubtitleMode();
       const learningProfile = learningMode ? getSubtitleLearningProfile() : null;
@@ -1699,6 +1775,7 @@
       }
     } finally {
       state.activeBatches = Math.max(0, state.activeBatches - 1);
+      updateButtonState();
       processQueue();
     }
   }

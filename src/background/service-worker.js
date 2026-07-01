@@ -34,7 +34,7 @@
     return `${sourceLanguage || "auto"}\0${targetLanguage}\0${style}\0${dictionaryMode}\0${formatMode}\0${contextKey}\0${providerSignature}\0${text}`;
   }
 
-  function subtitleAnnotationCacheKey(text, sourceLanguage, targetLanguage, providerSignature, learningLevelSystem, learningLevel, maxAnnotations, annotationTypes, subtitleContext) {
+  function subtitleAnnotationCacheKey(text, previousText, nextText, sourceLanguage, targetLanguage, providerSignature, learningLevelSystem, learningLevel, maxAnnotations, annotationTypes, subtitleContext) {
     return [
       "subtitle-annotations-v1",
       sourceLanguage || "auto",
@@ -45,6 +45,8 @@
       (Array.isArray(annotationTypes) ? annotationTypes : ["any"]).join(","),
       String(subtitleContext || "").replace(/\s+/g, " ").trim().slice(0, 600),
       providerSignature || "",
+      String(previousText || "").replace(/\s+/g, " ").trim().slice(0, 500),
+      String(nextText || "").replace(/\s+/g, " ").trim().slice(0, 500),
       text || ""
     ].join("\0");
   }
@@ -809,7 +811,9 @@
       const value = item && typeof item === "object" ? item : {};
       return {
         id: String(value.id || index),
-        text: String(value.text || "").trim().slice(0, 1000)
+        text: String(value.text || "").trim().slice(0, 1000),
+        previousText: normalizeSubtitleProviderText(value.previousText || value.previousSubtitleText || "").slice(0, 1000),
+        nextText: normalizeSubtitleProviderText(value.nextText || value.nextSubtitleText || "").slice(0, 1000)
       };
     }).filter((item) => item.text);
   }
@@ -1214,10 +1218,14 @@
       learningLevel: details.learningLevel,
       maxAnnotations: details.maxAnnotations,
       annotationTypes: details.annotationTypes,
-      subtitleContext: details.subtitleContext
+      subtitleContext: details.subtitleContext,
+      previousSubtitleText: details.previousSubtitleText,
+      nextSubtitleText: details.nextSubtitleText
     };
     const key = subtitleAnnotationCacheKey(
       request.text,
+      request.previousSubtitleText,
+      request.nextSubtitleText,
       request.sourceLanguage || request.sourceLanguageDetected || "auto",
       request.targetLanguage,
       details.providerSignature,
@@ -1324,12 +1332,16 @@
     for (const item of items) {
       try {
         const parts = splitSubtitleTextForProvider(item.text);
+        const itemAnnotationDetails = Object.assign({}, annotationDetails, {
+          previousSubtitleText: item.previousText,
+          nextSubtitleText: item.nextText
+        });
         let firstPicked = null;
         let allFromCache = true;
         let failed = null;
         let annotations = [];
         for (const part of parts) {
-          const annotated = await annotateSubtitleTextPart(part, annotationDetails);
+          const annotated = await annotateSubtitleTextPart(part, itemAnnotationDetails);
           const picked = annotated.picked;
           if (!picked || !picked.ok) {
             failed = picked || { error: "Subtitle annotation failed." };
