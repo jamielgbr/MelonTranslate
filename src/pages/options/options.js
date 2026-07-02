@@ -194,6 +194,37 @@
     return modes.some((item) => item.id === normalized) ? normalized : "translation";
   }
 
+  function normalizeInputButtonStyle(value) {
+    const styles = namespace.constants.inputButtonStyles || [];
+    const normalized = String(value || "").trim();
+    return styles.some((item) => item.id === normalized) ? normalized : "auto";
+  }
+
+  function normalizeInputButtonIconPosition(value) {
+    const positions = namespace.constants.inputButtonIconPositions || [];
+    const normalized = String(value || "").trim();
+    return positions.some((item) => item.id === normalized) ? normalized : "inside-right";
+  }
+
+  function normalizeInputButtonTabPosition(value) {
+    const positions = namespace.constants.inputButtonTabPositions || [];
+    const normalized = String(value || "").trim();
+    return positions.some((item) => item.id === normalized) ? normalized : "bottom-right";
+  }
+
+  function updateInputButtonPositionVisibility() {
+    const styleEl = document.getElementById("input-button-style");
+    const style = normalizeInputButtonStyle(styleEl && styleEl.value);
+    const iconRow = document.getElementById("input-button-icon-position-row");
+    const tabRow = document.getElementById("input-button-tab-position-row");
+    if (iconRow) {
+      iconRow.classList.toggle("is-hidden", style !== "icon");
+    }
+    if (tabRow) {
+      tabRow.classList.toggle("is-hidden", style !== "tab");
+    }
+  }
+
   function getVideoSubtitleLearningLevels(kind) {
     const levels = namespace.constants.videoSubtitleLearningLevels || {};
     return Array.isArray(levels[kind]) ? levels[kind] : [];
@@ -555,6 +586,10 @@
       autoSwitchToSecondTarget: document.getElementById("auto-switch-second-target").checked,
       dictionaryModeForSingleWord: document.getElementById("dictionary-mode-for-single-word").checked,
       inputInlineButtonEnabled: document.getElementById("input-inline-button-enabled").checked,
+      inputInlineButtonStyle: normalizeInputButtonStyle(document.getElementById("input-button-style").value),
+      inputInlineButtonIconPosition: normalizeInputButtonIconPosition(document.getElementById("input-button-icon-position").value),
+      inputInlineButtonTabPosition: normalizeInputButtonTabPosition(document.getElementById("input-button-tab-position").value),
+      inputInlineButtonHorizontalOffset: clampNumber(document.getElementById("input-button-horizontal-offset").value, 0, -80, 80),
       inputInlineButtonSiteMode: pu.normalizeInputSiteMode(document.getElementById("input-site-mode").value),
       inputInlineButtonBlockedHosts: pu.normalizeHostRuleList(document.getElementById("input-blocked-hosts").value),
       inputInlineButtonAllowedHosts: pu.normalizeHostRuleList(document.getElementById("input-allowed-hosts").value),
@@ -617,6 +652,17 @@
       inputInlineButtonEnabled: incoming.inputInlineButtonEnabled !== undefined
         ? !!incoming.inputInlineButtonEnabled
         : current.inputInlineButtonEnabled !== false,
+      inputInlineButtonStyle: normalizeInputButtonStyle(incoming.inputInlineButtonStyle || current.inputInlineButtonStyle),
+      inputInlineButtonIconPosition: normalizeInputButtonIconPosition(incoming.inputInlineButtonIconPosition || current.inputInlineButtonIconPosition),
+      inputInlineButtonTabPosition: normalizeInputButtonTabPosition(incoming.inputInlineButtonTabPosition || current.inputInlineButtonTabPosition),
+      inputInlineButtonHorizontalOffset: clampNumber(
+        incoming.inputInlineButtonHorizontalOffset !== undefined
+          ? incoming.inputInlineButtonHorizontalOffset
+          : current.inputInlineButtonHorizontalOffset,
+        0,
+        -80,
+        80
+      ),
       inputInlineButtonSiteMode: pu.normalizeInputSiteMode(incoming.inputInlineButtonSiteMode || current.inputInlineButtonSiteMode),
       inputInlineButtonBlockedHosts: pu.normalizeHostRuleList(
         incoming.inputInlineButtonBlockedHosts !== undefined
@@ -917,6 +963,40 @@
         ],
         selected: namespace.constants.inputSiteModes.blacklist,
         onChange: updateInputSiteRuleVisibility
+      }
+    );
+    state.dropdowns["input-button-style"] = namespace.customDropdown.create(
+      document.getElementById("input-button-style-wrap"),
+      {
+        id: "input-button-style",
+        items: (namespace.constants.inputButtonStyles || []).map((item) => ({
+          value: item.id,
+          label: t(item.label)
+        })),
+        selected: "auto",
+        onChange: updateInputButtonPositionVisibility
+      }
+    );
+    state.dropdowns["input-button-icon-position"] = namespace.customDropdown.create(
+      document.getElementById("input-button-icon-position-wrap"),
+      {
+        id: "input-button-icon-position",
+        items: (namespace.constants.inputButtonIconPositions || []).map((item) => ({
+          value: item.id,
+          label: t(item.label)
+        })),
+        selected: "inside-right"
+      }
+    );
+    state.dropdowns["input-button-tab-position"] = namespace.customDropdown.create(
+      document.getElementById("input-button-tab-position-wrap"),
+      {
+        id: "input-button-tab-position",
+        items: (namespace.constants.inputButtonTabPositions || []).map((item) => ({
+          value: item.id,
+          label: t(item.label)
+        })),
+        selected: "bottom-right"
       }
     );
     state.dropdowns["input-context-style"] = namespace.customDropdown.create(
@@ -1514,6 +1594,9 @@
     state.dropdowns["selection-trigger"].setValue(state.settings.selectionTrigger);
     state.dropdowns["modifier-key"].setValue(state.settings.modifierKey);
     state.dropdowns["input-site-mode"].setValue(pu.normalizeInputSiteMode(state.settings.inputInlineButtonSiteMode));
+    state.dropdowns["input-button-style"].setValue(normalizeInputButtonStyle(state.settings.inputInlineButtonStyle));
+    state.dropdowns["input-button-icon-position"].setValue(normalizeInputButtonIconPosition(state.settings.inputInlineButtonIconPosition));
+    state.dropdowns["input-button-tab-position"].setValue(normalizeInputButtonTabPosition(state.settings.inputInlineButtonTabPosition));
     state.dropdowns["input-context-style"].setValue(pu.getInputContextStyle(state.settings.defaultInputContextStyle));
     state.dropdowns["immersive-display-mode"].setValue(normalizeImmersiveDisplayMode(state.settings.immersiveTranslationDisplayMode));
     state.dropdowns["video-subtitles-mode"].setValue(normalizeVideoSubtitleDisplayMode(state.settings.videoBilingualSubtitlesMode));
@@ -1528,9 +1611,11 @@
     document.getElementById("auto-switch-second-target").checked = !!state.settings.autoSwitchToSecondTarget;
     document.getElementById("dictionary-mode-for-single-word").checked = !!state.settings.dictionaryModeForSingleWord;
     document.getElementById("input-inline-button-enabled").checked = state.settings.inputInlineButtonEnabled !== false;
+    document.getElementById("input-button-horizontal-offset").value = clampNumber(state.settings.inputInlineButtonHorizontalOffset, 0, -80, 80);
     document.getElementById("input-blocked-hosts").value = formatHostRuleList(state.settings.inputInlineButtonBlockedHosts || []);
     document.getElementById("input-allowed-hosts").value = formatHostRuleList(state.settings.inputInlineButtonAllowedHosts || []);
     updateInputSiteRuleVisibility();
+    updateInputButtonPositionVisibility();
     document.getElementById("immersive-translation-enabled").checked = state.settings.immersiveTranslationEnabled !== false;
     document.getElementById("immersive-translation-auto").checked = !!state.settings.immersiveTranslationAutoTranslate;
     document.getElementById("immersive-translation-visible-only").checked = state.settings.immersiveTranslationVisibleOnly !== false;

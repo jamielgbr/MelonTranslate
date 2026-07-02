@@ -44,6 +44,22 @@
       blacklist: "blacklist",
       whitelist: "whitelist"
     },
+    inputButtonStyles: [
+      { id: "auto", label: "Auto" },
+      { id: "icon", label: "Icon" },
+      { id: "tab", label: "Tab" },
+      { id: "off", label: "Off" }
+    ],
+    inputButtonIconPositions: [
+      { id: "inside-right", label: "Inside right" },
+      { id: "outside-left", label: "Outside left" }
+    ],
+    inputButtonTabPositions: [
+      { id: "top-left", label: "Top left" },
+      { id: "top", label: "Top" },
+      { id: "top-right", label: "Top right" },
+      { id: "bottom-right", label: "Bottom right" }
+    ],
     inputContextStyles: [
       { id: "auto", label: "Auto" },
       { id: "casual", label: "Casual" },

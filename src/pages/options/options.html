@@ -395,13 +395,49 @@
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
                                 <label for="input-inline-button-enabled">Show input translation button</label>
-                                <p class="setting-desc">Display a translate button beside editable text fields.</p>
+                                <p class="setting-desc">Show the translate button while editable text fields are focused.</p>
                             </div>
                             <label class="provider-switch" for="input-inline-button-enabled"
                                 aria-label="Show input translation button">
                                 <input id="input-inline-button-enabled" type="checkbox">
                                 <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
                             </label>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="input-button-style">Button style</label>
+                                <p class="setting-desc">Choose the input button shape or let MelonTranslate place it automatically.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="input-button-style-wrap"></div>
+                            </div>
+                        </div>
+                        <div class="settings-row" id="input-button-icon-position-row">
+                            <div class="settings-copy">
+                                <label for="input-button-icon-position">Icon position</label>
+                                <p class="setting-desc">Choose where the icon button appears.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="input-button-icon-position-wrap"></div>
+                            </div>
+                        </div>
+                        <div class="settings-row" id="input-button-tab-position-row">
+                            <div class="settings-copy">
+                                <label for="input-button-tab-position">Tab position</label>
+                                <p class="setting-desc">Choose where the tab button attaches to the input field.</p>
+                            </div>
+                            <div class="settings-control">
+                                <div id="input-button-tab-position-wrap"></div>
+                            </div>
+                        </div>
+                        <div class="settings-row">
+                            <div class="settings-copy">
+                                <label for="input-button-horizontal-offset">Horizontal offset</label>
+                                <p class="setting-desc">Fine-tune icon and tab buttons. Negative moves left; positive moves right.</p>
+                            </div>
+                            <div class="settings-control">
+                                <input id="input-button-horizontal-offset" type="number" min="-80" max="80" step="1">
+                            </div>
                         </div>
                         <div class="settings-row">
                             <div class="settings-copy">

@@ -214,6 +214,7 @@
         display: block;
         width: 100%;
         height: 100%;
+        overflow: hidden;
         object-fit: contain;
         filter: grayscale(1) saturate(0) opacity(0.58);
         transition: filter 0.16s ease, opacity 0.16s ease;
@@ -392,6 +393,43 @@
     button.setAttribute("aria-label", title);
   }
 
+  function appendLogoToPlayerButtonLabel(label) {
+    if (!label) {
+      return false;
+    }
+    if (typeof pageUtils.getAppLogoInlineHtml !== "function" || typeof pageUtils.setHtml !== "function") {
+      return false;
+    }
+    const logoHost = document.createElement("span");
+    logoHost.className = "mt-video-subtitle-button-logo";
+    try {
+      const shadow = logoHost.attachShadow({ mode: "open" });
+      const style = document.createElement("style");
+      style.textContent = `
+        :host {
+          display: block;
+          width: 100%;
+          height: 100%;
+        }
+        svg {
+          display: block;
+          width: 100%;
+          height: 100%;
+        }
+      `;
+      shadow.appendChild(style);
+      const logoWrap = document.createElement("span");
+      pageUtils.setHtml(logoWrap, pageUtils.getAppLogoInlineHtml("logo"));
+      shadow.append(...Array.from(logoWrap.childNodes));
+      label.appendChild(logoHost);
+      return true;
+    } catch (_) {
+      pageUtils.setHtml(logoHost, pageUtils.getAppLogoInlineHtml("mt-video-subtitle-button-logo-inline"));
+      label.appendChild(logoHost);
+      return !!logoHost.querySelector("svg");
+    }
+  }
+
   function ensureYouTubeButton() {
     const settings = state.settings || {};
     if (!isYouTubePage() || settings.videoBilingualSubtitlesShowPlayerButton === false) {
@@ -417,9 +455,7 @@
     button.className = `ytp-button ${BUTTON_CLASS}`;
     const label = document.createElement("span");
     label.className = "mt-video-subtitle-button-label";
-    if (typeof pageUtils.getAppLogoHtml === "function" && typeof pageUtils.setHtml === "function") {
-      pageUtils.setHtml(label, pageUtils.getAppLogoHtml("mt-video-subtitle-button-logo"));
-    } else {
+    if (!appendLogoToPlayerButtonLabel(label)) {
       label.textContent = "MT";
     }
     button.appendChild(label);

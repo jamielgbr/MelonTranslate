@@ -13,6 +13,7 @@
     "ollama", "lmstudio"
   ]);
   const APP_LOGO_PATH = "assets/publish/logo.svg";
+  var appLogoInlineId = 0;
 
   function escapeHtml(str) {
     return String(str)
@@ -221,6 +222,39 @@
     return '<img src="' + escapeHtml(src) + '" alt="" aria-hidden="true" decoding="async"' + cls + '>';
   }
 
+  function getAppLogoInlineHtml(svgClassName) {
+    var cls = svgClassName ? ' class="' + escapeHtml(svgClassName) + '"' : "";
+    var suffix = String(++appLogoInlineId);
+    var fleshId = "mt-logo-flesh-" + suffix;
+    var clipId = "mt-logo-clip-" + suffix;
+    return '<svg' + cls + ' viewBox="0 0 120 120" fill="none" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">'
+      + '<defs>'
+      + '<radialGradient id="' + fleshId + '" cx="40%" cy="35%" r="65%">'
+      + '<stop offset="0%" style="stop-color:#f0fff4"/>'
+      + '<stop offset="60%" style="stop-color:#d4f5dd"/>'
+      + '<stop offset="100%" style="stop-color:#6fd98a;stop-opacity:0.3"/>'
+      + '</radialGradient>'
+      + '<clipPath id="' + clipId + '"><circle cx="60" cy="60" r="54"/></clipPath>'
+      + '</defs>'
+      + '<circle cx="60" cy="60" r="57" style="fill:#6fd98a"/>'
+      + '<circle cx="60" cy="60" r="54" style="fill:#4caf72"/>'
+      + '<circle cx="60" cy="60" r="50" style="fill:white"/>'
+      + '<circle cx="60" cy="60" r="48" style="fill:url(#' + fleshId + ')"/>'
+      + '<g clip-path="url(#' + clipId + ')">'
+      + '<circle cx="60" cy="60" r="26" style="fill:none;stroke:#4caf72;stroke-width:2.2;opacity:0.9"/>'
+      + '<ellipse cx="60" cy="60" rx="26" ry="10" style="fill:none;stroke:#4caf72;stroke-width:1.8;opacity:0.7"/>'
+      + '<line x1="60" y1="34" x2="60" y2="86" style="stroke:#4caf72;stroke-width:1.8;opacity:0.7"/>'
+      + '<path d="M 34 60 Q 47 46 60 42 Q 73 46 86 60" style="fill:none;stroke:#4caf72;stroke-width:1.5;opacity:0.5"/>'
+      + '<path d="M 34 60 Q 47 74 60 78 Q 73 74 86 60" style="fill:none;stroke:#4caf72;stroke-width:1.5;opacity:0.5"/>'
+      + '</g>'
+      + '<line x1="20" y1="60" x2="30" y2="60" stroke-linecap="round" style="stroke:#4caf72;stroke-width:2"/>'
+      + '<polyline points="43,57 46,60 43,63" stroke-linecap="round" stroke-linejoin="round" transform="translate(-16)" style="fill:none;stroke:#4caf72;stroke-width:2"/>'
+      + '<line x1="90" y1="60" x2="100" y2="60" stroke-linecap="round" style="stroke:#4caf72;stroke-width:2"/>'
+      + '<polyline points="81,57 84,60 81,63" stroke-linecap="round" stroke-linejoin="round" transform="translate(16)" style="fill:none;stroke:#4caf72;stroke-width:2"/>'
+      + '<circle cx="60" cy="60" r="57" style="fill:none;stroke:rgba(255,255,255,0.08);stroke-width:1"/>'
+      + '</svg>';
+  }
+
   function renderLanguageDropdown(wrapEl, customEl, opts) {
     var items = availableLanguageOptions().map(function(item) {
       return { value: item.code, label: i18n.t(item.label) + " (" + item.code + ")" };
@@ -294,6 +328,7 @@
     isHostAllowedForInputButton: isHostAllowedForInputButton,
     getProviderIconHtml: getProviderIconHtml,
     getAppLogoHtml: getAppLogoHtml,
+    getAppLogoInlineHtml: getAppLogoInlineHtml,
     t: i18n.t,
     renderLanguageDropdown: renderLanguageDropdown,
     getLanguageValue: getLanguageValue,

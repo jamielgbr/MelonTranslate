@@ -38,6 +38,25 @@
     return normalizeChoice(value, modes, "translation");
   }
 
+  function normalizeInputButtonStyle(value) {
+    const styles = (namespace.constants.inputButtonStyles || []).map((item) => item.id);
+    return normalizeChoice(value, styles, "auto");
+  }
+
+  function normalizeInputButtonIconPosition(value) {
+    const positions = (namespace.constants.inputButtonIconPositions || []).map((item) => item.id);
+    return normalizeChoice(value, positions, "inside-right");
+  }
+
+  function normalizeInputButtonTabPosition(value) {
+    const positions = (namespace.constants.inputButtonTabPositions || []).map((item) => item.id);
+    return normalizeChoice(value, positions, "bottom-right");
+  }
+
+  function normalizeInputButtonHorizontalOffset(value) {
+    return clampInteger(value, 0, -80, 80);
+  }
+
   function normalizeVideoSubtitleLearningLevel(kind, value, fallback) {
     const levels = namespace.constants.videoSubtitleLearningLevels || {};
     return normalizeChoice(value, levels[kind] || [], fallback);
@@ -69,6 +88,10 @@
       defaultTranslationProviderId: normalizeProviderId(merged.defaultTranslationProviderId),
       defaultTranslationModelKey: normalizeDefaultModelKey(merged.defaultTranslationModelKey),
       uiLanguage: normalizeUiLanguage(merged.uiLanguage),
+      inputInlineButtonStyle: normalizeInputButtonStyle(merged.inputInlineButtonStyle),
+      inputInlineButtonIconPosition: normalizeInputButtonIconPosition(merged.inputInlineButtonIconPosition),
+      inputInlineButtonTabPosition: normalizeInputButtonTabPosition(merged.inputInlineButtonTabPosition),
+      inputInlineButtonHorizontalOffset: normalizeInputButtonHorizontalOffset(merged.inputInlineButtonHorizontalOffset),
       videoBilingualSubtitlesMode: normalizeVideoSubtitleDisplayMode(merged.videoBilingualSubtitlesMode),
       videoBilingualSubtitlesLearningEnglishLevel: normalizeVideoSubtitleLearningLevel("english", merged.videoBilingualSubtitlesLearningEnglishLevel, "B1"),
       videoBilingualSubtitlesLearningJapaneseLevel: normalizeVideoSubtitleLearningLevel("japanese", merged.videoBilingualSubtitlesLearningJapaneseLevel, "N3"),
@@ -105,6 +128,10 @@
       autoSwitchToSecondTarget: true,
       dictionaryModeForSingleWord: true,
       inputInlineButtonEnabled: true,
+      inputInlineButtonStyle: "auto",
+      inputInlineButtonIconPosition: "inside-right",
+      inputInlineButtonTabPosition: "bottom-right",
+      inputInlineButtonHorizontalOffset: 0,
       inputInlineButtonSiteMode: namespace.constants.inputSiteModes.blacklist,
       inputInlineButtonBlockedHosts: [],
       inputInlineButtonAllowedHosts: [],

@@ -30,6 +30,7 @@
 
   const state = {
     getSettings: null,
+    settings: null,
     streamClient: null,
     activeEditable: null,
     contextMenuEditable: null,
@@ -42,6 +43,53 @@
     modelPicker: null,
     modelRevealTimer: null
   };
+
+  function normalizeInputButtonStyle(value) {
+    const styles = constants.inputButtonStyles || [];
+    const normalized = String(value || "").trim();
+    return styles.some((item) => item.id === normalized) ? normalized : "auto";
+  }
+
+  function normalizeInputButtonIconPosition(value) {
+    const positions = constants.inputButtonIconPositions || [];
+    const normalized = String(value || "").trim();
+    return positions.some((item) => item.id === normalized) ? normalized : "inside-right";
+  }
+
+  function normalizeInputButtonTabPosition(value) {
+    const positions = constants.inputButtonTabPositions || [];
+    const normalized = String(value || "").trim();
+    return positions.some((item) => item.id === normalized) ? normalized : "bottom-right";
+  }
+
+  function getInputButtonMode(settings) {
+    const style = normalizeInputButtonStyle(settings && settings.inputInlineButtonStyle);
+    if (style === "off" || style === "auto") {
+      return style;
+    }
+    if (style === "icon") {
+      return normalizeInputButtonIconPosition(settings && settings.inputInlineButtonIconPosition);
+    }
+    const tabPosition = normalizeInputButtonTabPosition(settings && settings.inputInlineButtonTabPosition);
+    if (tabPosition === "top-left") {
+      return "top-left-tab";
+    }
+    if (tabPosition === "top") {
+      return "top-tab";
+    }
+    if (tabPosition === "top-right") {
+      return "top-right-tab";
+    }
+    return "bottom-right-tab";
+  }
+
+  function getInputButtonHorizontalOffset(settings) {
+    const number = Number(settings && settings.inputInlineButtonHorizontalOffset);
+    if (!Number.isFinite(number)) {
+      return 0;
+    }
+    return Math.max(-80, Math.min(80, Math.round(number)));
+  }
 
   function isElement(value) {
     return value && value.nodeType === Node.ELEMENT_NODE;
@@ -511,23 +559,19 @@
     const shadow = host.attachShadow({ mode: "open" });
     const style = document.createElement("style");
     const button = document.createElement("button");
-    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const icon = document.createElement("span");
+    const label = document.createElement("span");
 
     style.textContent = `
       :host { all: initial; }
       .btn {
-        --mt-surface: #ffffff;
-        --mt-text: #0f766e;
-        --mt-border: rgba(15, 118, 110, 0.26);
-        --mt-accent-soft: rgba(15, 118, 110, 0.08);
-        --mt-shadow: rgba(15, 23, 42, 0.16);
-        width: 26px;
-        height: 26px;
-        border: 1px solid var(--mt-border);
-        border-radius: 8px;
-        background: var(--mt-surface);
-        color: var(--mt-text);
-        box-shadow: 0 8px 22px var(--mt-shadow);
+        width: 40px;
+        height: 40px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: rgba(15, 118, 110, 0.92);
+        box-shadow: none;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -537,15 +581,10 @@
         transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, opacity 140ms ease;
       }
       .btn.dark {
-        --mt-surface: rgba(15, 23, 42, 0.96);
-        --mt-text: #6ee7b7;
-        --mt-border: rgba(110, 231, 183, 0.34);
-        --mt-accent-soft: rgba(16, 185, 129, 0.13);
-        --mt-shadow: rgba(0, 0, 0, 0.46);
+        color: rgba(110, 231, 183, 0.96);
       }
       .btn:hover {
-        background: var(--mt-accent-soft);
-        border-color: currentColor;
+        background: transparent;
       }
       .btn:focus-visible {
         outline: 2px solid #0f766e;
@@ -555,51 +594,154 @@
         cursor: progress;
         opacity: 0.75;
       }
-      .btn.loading svg {
-        animation: spin 0.8s linear infinite;
+      .icon-shell {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(8, 8, 8, 0.24);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+        overflow: hidden;
+        transition: box-shadow 0.16s ease, opacity 0.16s ease;
+      }
+      .mt-input-button-logo {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: none;
+        transition: filter 0.16s ease, opacity 0.16s ease;
+      }
+      .logo-fallback {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        color: #d1fae5;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0;
+      }
+      .icon-shell.no-logo .logo-fallback {
+        display: inline-flex;
+      }
+      .btn:hover .icon-shell {
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28);
+      }
+      .btn.loading .icon-shell {
+        animation: mt-input-button-rainbow 0.72s linear infinite;
       }
       .btn.error {
         color: #dc2626;
-        border-color: rgba(220, 38, 38, 0.38);
-        background: rgba(254, 242, 242, 0.96);
+        background: transparent;
       }
       .btn.dark.error {
         color: #fca5a5;
-        border-color: rgba(248, 113, 113, 0.38);
-        background: rgba(127, 29, 29, 0.44);
+        background: transparent;
       }
-      svg {
-        width: 15px;
-        height: 15px;
-        display: block;
+      .btn.error .icon-shell {
+        box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.95), 0 0 8px rgba(248, 113, 113, 0.5);
       }
-      @keyframes spin {
-        to { transform: rotate(360deg); }
+      .btn.tab {
+        width: 82px;
+        height: 26px;
+        border: 1px solid #0f766e;
+        border-color: #0f766e;
+        background: #0f766e;
+        color: #ffffff;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.95), 0 0 10px rgba(59, 130, 246, 0.52), 0 10px 22px rgba(15, 23, 42, 0.16);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0;
+        line-height: 1;
+      }
+      .btn.dark.tab {
+        border-color: #10b981;
+        background: #10b981;
+        color: #052e2b;
+        box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.95), 0 0 10px rgba(96, 165, 250, 0.56), 0 10px 22px rgba(0, 0, 0, 0.42);
+      }
+      .btn.tab:hover {
+        background: #115e59;
+        border-color: #115e59;
+      }
+      .btn.dark.tab:hover {
+        background: #34d399;
+        border-color: #34d399;
+      }
+      .btn.tab.loading {
+        animation: mt-input-button-rainbow 0.72s linear infinite;
+      }
+      .btn.tab.error {
+        border-color: #dc2626;
+        background: #dc2626;
+        color: #ffffff;
+        box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.95), 0 0 8px rgba(248, 113, 113, 0.5), 0 10px 22px rgba(15, 23, 42, 0.16);
+      }
+      .btn.dark.tab.error {
+        border-color: #f87171;
+        background: #f87171;
+        color: #450a0a;
+        box-shadow: 0 0 0 2px rgba(252, 165, 165, 0.95), 0 0 8px rgba(252, 165, 165, 0.5), 0 10px 22px rgba(0, 0, 0, 0.42);
+      }
+      .btn.tab.bottom-right-tab {
+        border-radius: 0 0 8px 8px;
+        border-top-color: transparent;
+      }
+      .btn.tab.top-tab,
+      .btn.tab.top-right-tab,
+      .btn.tab.top-left-tab {
+        border-radius: 8px 8px 0 0;
+        border-bottom-color: transparent;
+      }
+      .btn.tab .icon-shell {
+        display: none;
+      }
+      .label {
+        display: none;
+        white-space: nowrap;
+      }
+      .btn.tab .label {
+        display: inline;
+      }
+      .btn.tab.loading .label {
+        opacity: 0.74;
+      }
+      @keyframes mt-input-button-rainbow {
+        0% { box-shadow: 0 0 0 2px #ef4444, 0 0 10px rgba(239, 68, 68, 0.9), 0 10px 22px rgba(15, 23, 42, 0.16); }
+        16% { box-shadow: 0 0 0 2px #f97316, 0 0 10px rgba(249, 115, 22, 0.9), 0 10px 22px rgba(15, 23, 42, 0.16); }
+        33% { box-shadow: 0 0 0 2px #eab308, 0 0 10px rgba(234, 179, 8, 0.9), 0 10px 22px rgba(15, 23, 42, 0.16); }
+        50% { box-shadow: 0 0 0 2px #22c55e, 0 0 10px rgba(34, 197, 94, 0.9), 0 10px 22px rgba(15, 23, 42, 0.16); }
+        66% { box-shadow: 0 0 0 2px #06b6d4, 0 0 10px rgba(6, 182, 212, 0.9), 0 10px 22px rgba(15, 23, 42, 0.16); }
+        83% { box-shadow: 0 0 0 2px #6366f1, 0 0 10px rgba(99, 102, 241, 0.9), 0 10px 22px rgba(15, 23, 42, 0.16); }
+        100% { box-shadow: 0 0 0 2px #ec4899, 0 0 10px rgba(236, 72, 153, 0.9), 0 10px 22px rgba(15, 23, 42, 0.16); }
       }
     `;
     button.className = "btn";
     button.type = "button";
     button.setAttribute("aria-label", "Translate and replace input text");
     button.title = "Translate and replace";
-    icon.setAttribute("viewBox", "0 0 24 24");
+    icon.className = "icon-shell";
     icon.setAttribute("aria-hidden", "true");
-    icon.setAttribute("fill", "none");
-    icon.setAttribute("stroke", "currentColor");
-    icon.setAttribute("stroke-width", "2");
-    icon.setAttribute("stroke-linecap", "round");
-    icon.setAttribute("stroke-linejoin", "round");
-    [
-      "M5 8h8",
-      "M9 4v4c0 4-2 7-5 9",
-      "M7 12c1 2 3 4 6 5",
-      "M14 20l4-9 4 9",
-      "M15.5 17h5"
-    ].forEach((pathData) => {
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute("d", pathData);
-      icon.appendChild(path);
-    });
+    const fallback = document.createElement("span");
+    fallback.className = "logo-fallback";
+    fallback.textContent = "MT";
+    if (pu && typeof pu.getAppLogoInlineHtml === "function" && typeof pu.setHtml === "function") {
+      pu.setHtml(icon, pu.getAppLogoInlineHtml("mt-input-button-logo"));
+      if (!icon.querySelector("svg")) {
+        icon.classList.add("no-logo");
+      }
+    } else {
+      icon.classList.add("no-logo");
+    }
+    icon.appendChild(fallback);
+    label.className = "label";
+    label.textContent = "Translate";
     button.appendChild(icon);
+    button.appendChild(label);
     shadow.appendChild(style);
     shadow.appendChild(button);
     applyStoredTheme(button);
@@ -714,10 +856,61 @@
     });
   }
 
-  function buildButtonCandidates(rect, size, gap) {
+  function applyHorizontalOffset(candidate, horizontalOffset) {
+    return Object.assign({}, candidate, {
+      left: candidate.left + horizontalOffset
+    });
+  }
+
+  function buildFixedButtonCandidate(rect, size, gap, mode, horizontalOffset) {
+    const inset = 4;
+    const midTop = rect.top + (rect.height / 2) - (size / 2);
+    const canFitVertically = rect.height >= size + (inset * 2);
+    const insideTop = canFitVertically
+      ? clampNumber(midTop, rect.top + inset, rect.bottom - size - inset)
+      : midTop;
+    const offset = Number(horizontalOffset) || 0;
+
+    if (mode === "bottom-right-tab") {
+      const width = 82;
+      const height = 26;
+      const minLeft = rect.left + inset;
+      const maxLeft = rect.right - width - inset;
+      const left = maxLeft >= minLeft ? maxLeft : rect.right - width;
+      return applyHorizontalOffset({ left, top: rect.bottom - 1, width, height, variant: "bottom-right-tab" }, offset);
+    }
+    if (mode === "top-tab") {
+      const width = 82;
+      const height = 26;
+      return applyHorizontalOffset({ left: rect.left + (rect.width / 2) - (width / 2), top: rect.top - height + 1, width, height, variant: "top-tab" }, offset);
+    }
+    if (mode === "top-right-tab") {
+      const width = 82;
+      const height = 26;
+      const minLeft = rect.left + inset;
+      const maxLeft = rect.right - width - inset;
+      const left = maxLeft >= minLeft ? maxLeft : rect.right - width;
+      return applyHorizontalOffset({ left, top: rect.top - height + 1, width, height, variant: "top-right-tab" }, offset);
+    }
+    if (mode === "top-left-tab") {
+      const width = 82;
+      const height = 26;
+      return applyHorizontalOffset({ left: rect.left + inset, top: rect.top - height + 1, width, height, variant: "top-left-tab" }, offset);
+    }
+    if (mode === "outside-left") {
+      return applyHorizontalOffset({ left: rect.left - size - gap, top: midTop, width: size, height: size }, offset);
+    }
+    if (mode === "top-right") {
+      return applyHorizontalOffset({ left: rect.right - size, top: rect.top - size - gap, width: size, height: size }, offset);
+    }
+    return applyHorizontalOffset({ left: rect.right - size - inset, top: insideTop, width: size, height: size }, offset);
+  }
+
+  function buildInsideShiftButtonCandidates(rect, size, gap, horizontalOffset) {
     const inset = 4;
     const midTop = rect.top + (rect.height / 2) - (size / 2);
     const candidates = [];
+    const offset = Number(horizontalOffset) || 0;
     const canFitInside = rect.width >= size + (inset * 2);
     const canFitVertically = rect.height >= size + (inset * 2);
 
@@ -747,19 +940,45 @@
       shiftValues.forEach((shift) => {
         const left = clampNumber(maxLeft - shift, minLeft, maxLeft);
         topValues.forEach((candidateTop) => {
-          candidates.push({ left, top: candidateTop, width: size, height: size });
+          candidates.push(applyHorizontalOffset({ left, top: candidateTop, width: size, height: size }, offset));
         });
       });
     }
 
+    return candidates;
+  }
+
+  function buildAutoButtonCandidates(rect, size, gap, horizontalOffset) {
+    const candidates = [
+      buildFixedButtonCandidate(rect, size, gap, "inside-right", horizontalOffset),
+      buildFixedButtonCandidate(rect, size, gap, "outside-left", horizontalOffset),
+      buildFixedButtonCandidate(rect, size, gap, "bottom-right-tab", horizontalOffset),
+      buildFixedButtonCandidate(rect, size, gap, "top-tab", horizontalOffset),
+      buildFixedButtonCandidate(rect, size, gap, "top-right-tab", horizontalOffset),
+      buildFixedButtonCandidate(rect, size, gap, "top-left-tab", horizontalOffset),
+      ...buildInsideShiftButtonCandidates(rect, size, gap, horizontalOffset)
+    ];
+
     // Last resort: stay visually attached to the field instead of floating
     // completely outside it.
+    const midTop = rect.top + (rect.height / 2) - (size / 2);
     candidates.push(
-      { left: rect.right - size + 2, top: midTop, width: size, height: size },
-      { left: rect.left - 2, top: midTop, width: size, height: size }
+      applyHorizontalOffset({ left: rect.right - size + 2, top: midTop, width: size, height: size }, horizontalOffset),
+      applyHorizontalOffset({ left: rect.left - 2, top: midTop, width: size, height: size }, horizontalOffset)
     );
 
     return uniqueCandidates(candidates).map(clampCandidate);
+  }
+
+  function buildButtonCandidates(rect, size, gap, mode, horizontalOffset) {
+    const normalizedMode = mode || "auto";
+    if (normalizedMode === "off") {
+      return [];
+    }
+    if (normalizedMode !== "auto") {
+      return [clampCandidate(buildFixedButtonCandidate(rect, size, gap, normalizedMode, horizontalOffset))];
+    }
+    return buildAutoButtonCandidates(rect, size, gap, horizontalOffset);
   }
 
   function positionButton() {
@@ -767,14 +986,36 @@
       hideButton();
       return;
     }
+    const mode = getInputButtonMode(state.settings);
+    if (mode === "off") {
+      hideButton();
+      return;
+    }
 
     const host = ensureButtonHost();
     const rect = state.activeEditable.getBoundingClientRect();
-    const size = 26;
+    const size = 40;
     const gap = 6;
-    const candidates = buildButtonCandidates(rect, size, gap);
+    const horizontalOffset = getInputButtonHorizontalOffset(state.settings);
+    const candidates = buildButtonCandidates(rect, size, gap, mode, horizontalOffset);
+    if (!candidates.length) {
+      hideButton();
+      return;
+    }
 
-    const selected = candidates.find((candidate) => !candidateCollides(candidate)) || candidates[0];
+    const selected = mode === "auto"
+      ? (candidates.find((candidate) => !candidateCollides(candidate)) || candidates[0])
+      : candidates[0];
+    const button = getInlineButton();
+    if (button) {
+      const isTopTab = selected.variant === "top-tab" || selected.variant === "top-right-tab" || selected.variant === "top-left-tab";
+      const isTab = selected.variant === "bottom-right-tab" || isTopTab;
+      button.classList.toggle("tab", isTab);
+      button.classList.toggle("bottom-right-tab", selected.variant === "bottom-right-tab");
+      button.classList.toggle("top-tab", selected.variant === "top-tab");
+      button.classList.toggle("top-right-tab", selected.variant === "top-right-tab");
+      button.classList.toggle("top-left-tab", selected.variant === "top-left-tab");
+    }
     host.style.left = `${Math.round(selected.left)}px`;
     host.style.top = `${Math.round(selected.top)}px`;
     host.style.display = "block";
@@ -798,8 +1039,19 @@
 
   function deactivateEditable() {
     state.activeEditable = null;
+    state.settings = null;
     observeEditable(null);
     hideButton();
+  }
+
+  function editableHasFocus(editable) {
+    const active = document.activeElement;
+    return !!editable
+      && !!active
+      && (
+        active === editable
+        || editable.contains(active)
+      );
   }
 
   function observeEditable(editable) {
@@ -813,18 +1065,27 @@
     }
   }
 
-  async function activateEditable(editable) {
+  async function activateEditable(editable, options) {
     if (!editable || !canShowInlineButtonForEditable(editable)) {
       deactivateEditable();
       return false;
     }
 
     const settings = await state.getSettings();
+    if (!(options && options.allowWithoutFocus) && !editableHasFocus(editable)) {
+      deactivateEditable();
+      return false;
+    }
     if (!pu.isHostAllowedForInputButton(settings, window.location.hostname)) {
       deactivateEditable();
       return false;
     }
+    if (getInputButtonMode(settings) === "off") {
+      deactivateEditable();
+      return false;
+    }
 
+    state.settings = settings;
     state.activeEditable = editable;
     observeEditable(editable);
     ensureButtonHost();
@@ -1123,6 +1384,7 @@
     elements.panel.style.width = "";
     elements.panel.style.height = "";
     elements.panel.classList.remove("hidden");
+    hideButton();
     shell.scheduleModelReveal(elements.panel, state, false);
     placePanel(elements, editable);
     elements.target.focus();
@@ -1315,6 +1577,7 @@
   }
 
   function hidePanel() {
+    const hadPanel = !!state.panel;
     shell.clearModelReveal(state);
     if (state.streamClient) {
       state.streamClient.disconnect();
@@ -1327,6 +1590,17 @@
       }
     }
     state.panel = null;
+    if (hadPanel && state.activeEditable) {
+      if (editableHasFocus(state.activeEditable)) {
+        scheduleButtonPosition();
+      } else {
+        deactivateEditable();
+      }
+    }
+  }
+
+  function editableStillHasFocus() {
+    return editableHasFocus(state.activeEditable) || isOwnElement(document.activeElement);
   }
 
   function bindDocumentEvents() {
@@ -1347,11 +1621,17 @@
         return;
       }
       const editable = findEditable(event.target);
-      if (editable) {
-        activateEditable(editable).catch(() => deactivateEditable());
-      } else if (!state.panel) {
+      if (!editable && !state.panel) {
         deactivateEditable();
       }
+    }, true);
+
+    document.addEventListener("focusout", () => {
+      setTimeout(() => {
+        if (!state.panel && !editableStillHasFocus()) {
+          deactivateEditable();
+        }
+      }, 0);
     }, true);
 
     document.addEventListener("contextmenu", (event) => {
@@ -1360,7 +1640,7 @@
       }
       state.contextMenuEditable = findEditable(event.target);
       if (state.contextMenuEditable) {
-        activateEditable(state.contextMenuEditable).catch(() => {});
+        activateEditable(state.contextMenuEditable, { allowWithoutFocus: true }).catch(() => {});
       }
     }, true);
 
@@ -1396,7 +1676,7 @@
       if (!editable) {
         return false;
       }
-      await activateEditable(editable);
+      await activateEditable(editable, { allowWithoutFocus: true });
       // Context menu is an explicit user action, so it can translate ignored inline-button fields.
       return openForEditable(editable);
     }
