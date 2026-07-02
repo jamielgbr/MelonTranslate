@@ -10,3 +10,4 @@ test-results/
 .env.test.example
 package.json
 tests/
+NOTES.md
