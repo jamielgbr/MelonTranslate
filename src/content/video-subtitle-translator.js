@@ -300,6 +300,7 @@
         text-shadow: 0 2px 3px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.75);
         white-space: pre-line;
         overflow-wrap: anywhere;
+        transition: bottom 120ms ease;
       }
       .${OVERLAY_CLASS}.is-takeover {
         bottom: 2.4%;
@@ -307,6 +308,9 @@
         justify-content: center;
         font-weight: 400;
         text-shadow: none;
+      }
+      .html5-video-player:not(.ytp-autohide) .${OVERLAY_CLASS}.is-takeover {
+        bottom: clamp(54px, 10%, 88px);
       }
       .${OVERLAY_CLASS} .mt-video-subtitle-lines {
         display: inline-flex;
