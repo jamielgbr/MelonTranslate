@@ -8,13 +8,11 @@ Bring your own API key to translate web pages inline or selected text on demand.
 
 ## Features
 
-- **Inline page translation** — translate page content in place while preserving the surrounding layout and reading flow
-- **Select-to-translate** — highlight text, popup appears instantly
-- **Multiple providers** — OpenAI, Anthropic, DeepSeek, Groq, or any OpenAI-compatible endpoints
-- **Read aloud** — TTS for source and translated text (via Google Translate audio)
-- **Compare mode** — side-by-side translation from multiple providers
-- **Dictionary mode** — single-word definitions
-- **Auto language detection** — switches to secondary target when source matches primary
+- **Immersive page translation** — translate full pages inline while preserving layout.
+- **Select-to-translate** — highlight text to translate, compare, copy, or read aloud.
+- **Input translation button** — translate text fields in place.
+- **Bilingual video subtitles** — show translated subtitles alongside the original, with learning annotations and hover word lookup.
+- **Multiple providers** — use OpenAI, Anthropic, Gemini, DeepSeek, Groq, Google Translate, or any OpenAI-compatible provider.
 
 ---
 
@@ -27,6 +25,10 @@ Bring your own API key to translate web pages inline or selected text on demand.
 ### Select-to-Translate
 
 <img src="assets/publish/select_to_translate.png" alt="Select-to-translate" width="820">
+
+### Bilingual Video Subtitles
+
+<img src="assets/publish/bilingual_subtitles.png" alt="Bilingual video subtitles" width="820">
 
 ### Compare Mode
 
