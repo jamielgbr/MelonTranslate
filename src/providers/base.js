@@ -179,6 +179,10 @@
         return this.buildSubtitleAnnotationPrompt(request);
       }
 
+      if (request && request.task === "subtitle-translation") {
+        return this.buildSubtitleTranslationPrompt(request);
+      }
+
       if (request.dictionaryModeForSingleWord && this.isSingleWordInput(request.text)) {
         return this.buildDictionaryPrompt(request);
       }
@@ -212,6 +216,33 @@
         return "";
       }
       return `Video topic context for subtitle translation: ${value} Use it only to resolve terminology, proper nouns, domain-specific meaning, and tone; do not add facts that are not present in the source subtitle.`;
+    }
+
+    buildSubtitleTranslationPrompt(request) {
+      const sourceLanguage = String(request.sourceLanguage || "").trim();
+      const sourceHint = sourceLanguage && sourceLanguage.toLowerCase() !== "auto"
+        ? `Translate the current subtitle from ${sourceLanguage} into ${request.targetLanguage}.`
+        : `Translate the current subtitle into ${request.targetLanguage}.`;
+      const contextStyle = request.contextStyle || "neutral";
+      const styleHint = this.buildContextStyleHint(contextStyle);
+      const previousText = String(request.previousSubtitleText || "").replace(/\s+/g, " ").trim();
+      const nextText = String(request.nextSubtitleText || "").replace(/\s+/g, " ").trim();
+
+      return [
+        "You are a precise subtitle translator.",
+        sourceHint,
+        previousText ? `Previous subtitle context: ${previousText}` : "",
+        nextText ? `Next subtitle context: ${nextText}` : "",
+        this.buildSubtitleContextHint(request.subtitleContext),
+        styleHint,
+        "Use the previous subtitle, next subtitle, and video topic context only to resolve pronouns, ellipsis, terminology, proper nouns, domain-specific meaning, and tone.",
+        "Translate only the current subtitle text provided by the user message.",
+        "Do not translate or summarize the previous or next subtitle context.",
+        "Preserve names, technical terms, and formatting where possible.",
+        "For short fragments or noun phrases, translate as one concise phrase and preserve uncertain proper names or titles.",
+        "Do not add explanations, alternatives, transliterations, labels, notes, or context not present in the current subtitle.",
+        "Return only the translated subtitle text."
+      ].filter(Boolean).join(" ");
     }
 
     buildSubtitleTopicContextPrompt(request) {

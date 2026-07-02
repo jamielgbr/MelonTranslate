@@ -53,6 +53,20 @@
     ].join("\0");
   }
 
+  function subtitleTranslationCacheKey(text, previousText, nextText, sourceLanguage, targetLanguage, providerSignature, contextStyle, subtitleContext) {
+    return [
+      "subtitle-translation-v1",
+      sourceLanguage || "auto",
+      targetLanguage || "en",
+      namespace.pageUtils.getInputContextStyle(contextStyle),
+      String(subtitleContext || "").replace(/\s+/g, " ").trim().slice(0, 600),
+      providerSignature || "",
+      String(previousText || "").replace(/\s+/g, " ").trim().slice(0, 500),
+      String(nextText || "").replace(/\s+/g, " ").trim().slice(0, 500),
+      text || ""
+    ].join("\0");
+  }
+
   function subtitleTopicContextCacheKey(sampleText, sourceLanguage, targetLanguage, providerSignature, title) {
     return [
       "subtitle-topic-context-v1",
@@ -1097,6 +1111,7 @@
 
   async function translateSubtitleTextPart(partText, details) {
     const request = {
+      task: "subtitle-translation",
       text: partText,
       displayText: partText,
       sourceLanguage: details.sourceLanguage && details.sourceLanguage.toLowerCase() !== "auto" ? details.sourceLanguage : "",
@@ -1106,16 +1121,18 @@
       preserveRichTextFormatting: false,
       contextStyle: details.contextStyle,
       url: details.url,
-      subtitleContext: details.subtitleContext
+      subtitleContext: details.subtitleContext,
+      previousSubtitleText: details.previousSubtitleText,
+      nextSubtitleText: details.nextSubtitleText
     };
-    const key = cacheKey(
+    const key = subtitleTranslationCacheKey(
       request.text,
+      request.previousSubtitleText,
+      request.nextSubtitleText,
       request.sourceLanguage || request.sourceLanguageDetected || "auto",
       request.targetLanguage,
       details.providerSignature,
       request.contextStyle,
-      false,
-      false,
       request.subtitleContext
     );
     const cached = details.bypassCache ? null : getCached(key);
@@ -1182,7 +1199,10 @@
         let allFromCache = true;
         let failed = null;
         for (const part of parts) {
-          const translated = await translateSubtitleTextPart(part, subtitleTranslationDetails);
+          const translated = await translateSubtitleTextPart(part, Object.assign({}, subtitleTranslationDetails, {
+            previousSubtitleText: item.previousText,
+            nextSubtitleText: item.nextText
+          }));
           const picked = translated.picked;
           if (!picked || !picked.ok || !String(picked.translatedText || "").trim()) {
             failed = picked || { error: "Translation failed." };

@@ -2117,7 +2117,6 @@
     if (isManualWordLookupMode()) {
       return;
     }
-    const learningMode = isLearningSubtitleMode();
     const limit = state.settings.videoBilingualSubtitlesMaxConcurrentBatches || 2;
     while (state.activeBatches < limit && state.queuedIds.length) {
       const items = [];
@@ -2132,10 +2131,7 @@
           continue;
         }
         state.pendingIds.add(id);
-        const item = { id, text };
-        if (learningMode) {
-          Object.assign(item, getAdjacentSubtitleContextForCue(id));
-        }
+        const item = Object.assign({ id, text }, getAdjacentSubtitleContextForCue(id));
         items.push(item);
       }
       if (!items.length) {
