@@ -480,6 +480,48 @@ textarea:focus {
   font-size: 12px;
 }
 
+.video-subtitle-site-rules {
+  margin-top: 4px;
+}
+
+.video-subtitle-rule-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.video-subtitle-rule-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.video-subtitle-rule-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.video-subtitle-rule-field input,
+.video-subtitle-rule-field select {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.video-subtitle-rule-field-wide {
+  grid-column: 1 / -1;
+}
+
 .history-section {
   margin-top: 22px;
   padding-top: 20px;
@@ -1226,6 +1268,10 @@ textarea:focus {
   .settings-row-data-actions .settings-control,
   .settings-row-data-actions .settings-actions {
     justify-content: flex-start;
+  }
+
+  .video-subtitle-rule-grid {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -309,6 +309,41 @@
     return Array.from(new Set(normalized));
   }
 
+  function createVideoSubtitleSiteRuleId() {
+    const webCrypto = globalThis.crypto;
+    if (webCrypto && typeof webCrypto.randomUUID === "function") {
+      return `video-subtitle-rule-${webCrypto.randomUUID()}`;
+    }
+    return `video-subtitle-rule-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  function normalizeVideoSubtitleSiteRule(rule, index) {
+    const value = rule && typeof rule === "object" ? rule : {};
+    const hostPattern = String(value.hostPattern || "").trim().toLowerCase();
+    const urlSelector = String(value.urlSelector || "").trim();
+    if (!hostPattern || !urlSelector) {
+      return null;
+    }
+    return {
+      id: String(value.id || `video-subtitle-rule-${index || 0}`).trim(),
+      enabled: value.enabled !== false,
+      name: String(value.name || "").trim(),
+      hostPattern,
+      urlSelector,
+      urlAttribute: String(value.urlAttribute || "src").trim() || "src",
+      languageCode: String(value.languageCode || "").trim(),
+      label: String(value.label || "").trim(),
+      updatedAt: String(value.updatedAt || "")
+    };
+  }
+
+  function normalizeVideoSubtitleSiteRules(rules) {
+    return (Array.isArray(rules) ? rules : [])
+      .slice(0, 50)
+      .map(normalizeVideoSubtitleSiteRule)
+      .filter(Boolean);
+  }
+
   function collectVideoSubtitleAnnotationTypes() {
     return normalizeVideoSubtitleAnnotationTypes(Array.from(
       document.querySelectorAll("[data-video-subtitle-annotation-type]:checked")
@@ -356,6 +391,103 @@
       const type = input.getAttribute("data-video-subtitle-annotation-type");
       input.checked = selected.has(type);
     });
+  }
+
+  function getVideoSubtitleSiteRulesDraft() {
+    return normalizeVideoSubtitleSiteRules(state.settings && state.settings.videoBilingualSubtitlesSiteRules || []);
+  }
+
+  function setVideoSubtitleSiteRulesDraft(rules) {
+    if (!state.settings) {
+      state.settings = {};
+    }
+    state.settings.videoBilingualSubtitlesSiteRules = normalizeVideoSubtitleSiteRules(rules || []);
+  }
+
+  function renderVideoSubtitleSiteRules() {
+    const container = document.getElementById("video-subtitle-site-rules");
+    if (!container) {
+      return;
+    }
+    const rules = getVideoSubtitleSiteRulesDraft();
+    if (!rules.length) {
+      pu.setHtml(container, '<p class="hint">No custom subtitle sources yet.</p>');
+      return;
+    }
+    pu.setHtml(container, rules.map((rule) => {
+      return `
+        <article class="site-rule-card video-subtitle-rule-card" data-video-subtitle-rule-id="${pu.escapeHtml(rule.id)}">
+          <div class="site-rule-main">
+            <label class="site-rule-title">
+              <input type="checkbox" data-video-subtitle-rule-field="enabled" ${rule.enabled !== false ? "checked" : ""}>
+              <span>${pu.escapeHtml(rule.name || rule.hostPattern || t("Custom subtitle source"))}</span>
+            </label>
+            <div class="video-subtitle-rule-grid">
+              <label class="video-subtitle-rule-field">
+                <span>${t("Rule name")}</span>
+                <input type="text" data-video-subtitle-rule-field="name" value="${pu.escapeHtml(rule.name)}" placeholder="${pu.escapeHtml(t("Epic subtitles"))}">
+              </label>
+              <label class="video-subtitle-rule-field">
+                <span>${t("Host pattern")}</span>
+                <input type="text" data-video-subtitle-rule-field="hostPattern" value="${pu.escapeHtml(rule.hostPattern)}" placeholder="dev.epicgames.com">
+              </label>
+              <label class="video-subtitle-rule-field video-subtitle-rule-field-wide">
+                <span>${t("Subtitle URL selector")}</span>
+                <input type="text" data-video-subtitle-rule-field="urlSelector" value="${pu.escapeHtml(rule.urlSelector)}" placeholder="script[type='application/json']">
+              </label>
+              <label class="video-subtitle-rule-field">
+                <span>${t("URL attribute")}</span>
+                <input type="text" data-video-subtitle-rule-field="urlAttribute" value="${pu.escapeHtml(rule.urlAttribute)}" placeholder="src, href, data-src, textContent">
+              </label>
+              <label class="video-subtitle-rule-field">
+                <span>${t("Source language")}</span>
+                <input type="text" data-video-subtitle-rule-field="languageCode" value="${pu.escapeHtml(rule.languageCode)}" placeholder="en">
+              </label>
+            </div>
+          </div>
+          <button class="secondary" type="button" data-delete-video-subtitle-rule="${pu.escapeHtml(rule.id)}">${t("Delete")}</button>
+        </article>
+      `;
+    }).join(""));
+  }
+
+  function updateVideoSubtitleSiteRule(ruleId, patch) {
+    const rules = Array.isArray(state.settings && state.settings.videoBilingualSubtitlesSiteRules)
+      ? state.settings.videoBilingualSubtitlesSiteRules.slice()
+      : getVideoSubtitleSiteRulesDraft();
+    state.settings.videoBilingualSubtitlesSiteRules = rules.map((rule) => {
+      if (!rule || rule.id !== ruleId) {
+        return rule;
+      }
+      return Object.assign({}, rule, patch || {}, { updatedAt: new Date().toISOString() });
+    });
+  }
+
+  function addVideoSubtitleSiteRule() {
+    const rules = Array.isArray(state.settings && state.settings.videoBilingualSubtitlesSiteRules)
+      ? state.settings.videoBilingualSubtitlesSiteRules.slice()
+      : getVideoSubtitleSiteRulesDraft();
+    rules.push({
+      id: createVideoSubtitleSiteRuleId(),
+      enabled: true,
+      name: "New subtitle source",
+      hostPattern: "example.com",
+      urlSelector: "script",
+      urlAttribute: "textContent",
+      languageCode: "en",
+      label: "",
+      updatedAt: new Date().toISOString()
+    });
+    state.settings.videoBilingualSubtitlesSiteRules = rules;
+    renderVideoSubtitleSiteRules();
+  }
+
+  function deleteVideoSubtitleSiteRule(ruleId) {
+    const rules = Array.isArray(state.settings && state.settings.videoBilingualSubtitlesSiteRules)
+      ? state.settings.videoBilingualSubtitlesSiteRules.slice()
+      : getVideoSubtitleSiteRulesDraft();
+    state.settings.videoBilingualSubtitlesSiteRules = rules.filter((rule) => rule && rule.id !== ruleId);
+    renderVideoSubtitleSiteRules();
   }
 
   function updateVideoSubtitleLearningVisibility() {
@@ -670,6 +802,7 @@
       videoBilingualSubtitlesSkipDefaultTargetSource: document.getElementById("video-subtitles-skip-default-target-source").checked,
       videoBilingualSubtitlesShowPlayerButton: document.getElementById("video-subtitles-show-player-button").checked,
       videoBilingualSubtitlesMaxConcurrentBatches: clampNumber(document.getElementById("video-subtitles-max-concurrent-batches").value, 2, 1, 4),
+      videoBilingualSubtitlesSiteRules: getVideoSubtitleSiteRulesDraft(),
       persistHistory: document.getElementById("persist-history").checked
     };
   }
@@ -810,6 +943,11 @@
         2,
         1,
         4
+      ),
+      videoBilingualSubtitlesSiteRules: normalizeVideoSubtitleSiteRules(
+        incoming.videoBilingualSubtitlesSiteRules !== undefined
+          ? incoming.videoBilingualSubtitlesSiteRules
+          : current.videoBilingualSubtitlesSiteRules
       ),
       persistHistory: incoming.persistHistory !== undefined
         ? !!incoming.persistHistory
@@ -1685,6 +1823,8 @@
     document.getElementById("video-subtitles-show-player-button").checked = state.settings.videoBilingualSubtitlesShowPlayerButton !== false;
     document.getElementById("video-subtitles-learning-max-items").value = clampNumber(state.settings.videoBilingualSubtitlesLearningMaxItems, 4, 1, 8);
     document.getElementById("video-subtitles-max-concurrent-batches").value = clampNumber(state.settings.videoBilingualSubtitlesMaxConcurrentBatches, 2, 1, 4);
+    setVideoSubtitleSiteRulesDraft(state.settings.videoBilingualSubtitlesSiteRules || []);
+    renderVideoSubtitleSiteRules();
     updateVideoSubtitleLearningVisibility();
     document.getElementById("persist-history").checked = !!state.settings.persistHistory;
   }
@@ -2060,6 +2200,48 @@
     state.siteRules = response.data.siteRules || [];
     renderSiteRules();
     status("Site rule deleted.");
+  });
+
+  document.getElementById("add-video-subtitle-site-rule").addEventListener("click", addVideoSubtitleSiteRule);
+
+  document.getElementById("video-subtitle-site-rules").addEventListener("input", (event) => {
+    const input = event.target;
+    if (!input || !input.dataset || !input.dataset.videoSubtitleRuleField) {
+      return;
+    }
+    const card = input.closest("[data-video-subtitle-rule-id]");
+    const ruleId = card && card.dataset.videoSubtitleRuleId;
+    const field = input.dataset.videoSubtitleRuleField;
+    if (!ruleId || field === "enabled") {
+      return;
+    }
+    updateVideoSubtitleSiteRule(ruleId, {
+      [field]: input.value
+    });
+  });
+
+  document.getElementById("video-subtitle-site-rules").addEventListener("change", (event) => {
+    const input = event.target;
+    if (!input || !input.dataset || !input.dataset.videoSubtitleRuleField) {
+      return;
+    }
+    const card = input.closest("[data-video-subtitle-rule-id]");
+    const ruleId = card && card.dataset.videoSubtitleRuleId;
+    const field = input.dataset.videoSubtitleRuleField;
+    if (!ruleId) {
+      return;
+    }
+    updateVideoSubtitleSiteRule(ruleId, {
+      [field]: field === "enabled" ? input.checked : input.value
+    });
+  });
+
+  document.getElementById("video-subtitle-site-rules").addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-delete-video-subtitle-rule]");
+    if (!button) {
+      return;
+    }
+    deleteVideoSubtitleSiteRule(button.dataset.deleteVideoSubtitleRule);
   });
 
   document.getElementById("save-button").addEventListener("click", save);

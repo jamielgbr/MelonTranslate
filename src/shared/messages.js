@@ -15,6 +15,7 @@
       manualTranslateImmersivePage: "MANUAL_TRANSLATE_IMMERSIVE_PAGE",
       manualToggleVideoSubtitles: "MANUAL_TOGGLE_VIDEO_SUBTITLES",
       fetchYouTubeSubtitleTrack: "FETCH_YOUTUBE_SUBTITLE_TRACK",
+      fetchVideoSubtitleTrack: "FETCH_VIDEO_SUBTITLE_TRACK",
       translateSubtitleBatch: "TRANSLATE_SUBTITLE_BATCH",
       annotateSubtitleBatch: "ANNOTATE_SUBTITLE_BATCH",
       senseSubtitleTopicContext: "SENSE_SUBTITLE_TOPIC_CONTEXT",

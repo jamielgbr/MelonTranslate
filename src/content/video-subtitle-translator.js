@@ -41,6 +41,8 @@
   const YOUTUBE_BRIDGE_REQUEST_SNAPSHOT = "REQUEST_TIMEDTEXT_SNAPSHOT";
   const YOUTUBE_BRIDGE_CAPTURED = "CAPTURED_TIMEDTEXT";
   const YOUTUBE_BRIDGE_SNAPSHOT = "TIMEDTEXT_SNAPSHOT";
+  const SUBTITLE_URL_EXT_PATTERN = /\.(?:vtt|webvtt|srt|ttml|dfxp|xml|json|m3u8)(?:[?#]|$)/i;
+  const SUBTITLE_TEXT_HINT_PATTERN = /(?:caption|subtitle|subtitles|transcript|timedtext|texttrack)/i;
 
   const state = {
     getSettings: null,
@@ -141,8 +143,35 @@
       videoBilingualSubtitlesTopicContextEnabled: !!cfg.videoBilingualSubtitlesTopicContextEnabled,
       videoBilingualSubtitlesSkipDefaultTargetSource: cfg.videoBilingualSubtitlesSkipDefaultTargetSource !== false,
       videoBilingualSubtitlesShowPlayerButton: cfg.videoBilingualSubtitlesShowPlayerButton !== false,
-      videoBilingualSubtitlesMaxConcurrentBatches: maxConcurrent
+      videoBilingualSubtitlesMaxConcurrentBatches: maxConcurrent,
+      videoBilingualSubtitlesSiteRules: normalizeVideoSubtitleSiteRules(cfg.videoBilingualSubtitlesSiteRules)
     });
+  }
+
+  function normalizeVideoSubtitleSiteRule(rule, index) {
+    const value = rule && typeof rule === "object" ? rule : {};
+    const hostPattern = String(value.hostPattern || "").trim().toLowerCase();
+    const urlSelector = String(value.urlSelector || "").trim();
+    if (!hostPattern || !urlSelector) {
+      return null;
+    }
+    return {
+      id: String(value.id || `video-subtitle-rule-${index || 0}`).trim(),
+      enabled: value.enabled !== false,
+      name: String(value.name || "").trim(),
+      hostPattern,
+      urlSelector,
+      urlAttribute: String(value.urlAttribute || "src").trim() || "src",
+      languageCode: String(value.languageCode || "").trim(),
+      label: String(value.label || "").trim()
+    };
+  }
+
+  function normalizeVideoSubtitleSiteRules(rules) {
+    return (Array.isArray(rules) ? rules : [])
+      .slice(0, 50)
+      .map(normalizeVideoSubtitleSiteRule)
+      .filter(Boolean);
   }
 
   function isLearningSubtitleMode() {
@@ -362,6 +391,7 @@
       .${HTML5_OVERLAY_CLASS} {
         position: fixed;
         z-index: 2147483646;
+        transform: none;
       }
     `;
     document.documentElement.appendChild(style);
@@ -1286,6 +1316,333 @@
     return cues;
   }
 
+  function normalizeEscapedSubtitleUrl(value) {
+    return utils.decodeHtmlEntities(String(value || ""))
+      .replace(/\\u0026/gi, "&")
+      .replace(/\\u003d/gi, "=")
+      .replace(/\\u003f/gi, "?")
+      .replace(/\\\//g, "/")
+      .trim()
+      .replace(/^[("'`\s]+|[)"'`,\s]+$/g, "");
+  }
+
+  function resolveSubtitleUrl(value, baseUrl) {
+    const cleaned = normalizeEscapedSubtitleUrl(value);
+    if (!cleaned) {
+      return "";
+    }
+    try {
+      const parsed = new URL(cleaned, baseUrl || window.location.href);
+      return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.toString() : "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function looksLikeSubtitleUrl(url) {
+    const value = normalizeEscapedSubtitleUrl(url);
+    if (!value) {
+      return false;
+    }
+    return SUBTITLE_URL_EXT_PATTERN.test(value) || SUBTITLE_TEXT_HINT_PATTERN.test(value);
+  }
+
+  function createSubtitleCandidate(rawUrl, meta) {
+    const opts = meta || {};
+    const url = resolveSubtitleUrl(rawUrl, opts.baseUrl || window.location.href);
+    if (!url || !looksLikeSubtitleUrl(url)) {
+      return null;
+    }
+    return {
+      url,
+      source: String(opts.source || "auto"),
+      languageCode: String(opts.languageCode || "").trim(),
+      label: String(opts.label || "").trim(),
+      priority: Number.isFinite(Number(opts.priority)) ? Number(opts.priority) : 50
+    };
+  }
+
+  function extractSubtitleUrlCandidatesFromText(text, meta) {
+    const source = normalizeEscapedSubtitleUrl(text).slice(0, 700000);
+    if (!source) {
+      return [];
+    }
+    const candidates = [];
+    const add = (rawUrl) => {
+      const candidate = createSubtitleCandidate(rawUrl, meta);
+      if (candidate) {
+        candidates.push(candidate);
+      }
+    };
+
+    if (/^(?:https?:\/\/|\/|\.{1,2}\/)/i.test(source) && source.length < 4000) {
+      add(source);
+    }
+
+    const absolutePattern = /https?:\\?\/\\?\/[^\s"'<>]+/gi;
+    let match;
+    while ((match = absolutePattern.exec(source))) {
+      add(match[0]);
+    }
+
+    const relativePattern = /(?:^|[\s"'(])((?:\/|\.\/|\.\.\/)[^\s"'<>)]*?(?:\.vtt|\.webvtt|\.srt|\.ttml|\.dfxp|\.xml|\.json|\.m3u8)(?:[?#][^\s"'<>)]*)?)/gi;
+    while ((match = relativePattern.exec(source))) {
+      add(match[1]);
+    }
+    return candidates;
+  }
+
+  function readElementSubtitleValue(element, attribute) {
+    if (!element) {
+      return "";
+    }
+    const attr = String(attribute || "").trim();
+    const lower = attr.toLowerCase();
+    if (!attr || lower === "auto") {
+      return element.getAttribute("src")
+        || element.getAttribute("href")
+        || element.getAttribute("data-src")
+        || element.getAttribute("data-url")
+        || element.textContent
+        || "";
+    }
+    if (lower === "text" || lower === "textcontent") {
+      return element.textContent || "";
+    }
+    if (lower === "innertext") {
+      return element.innerText || element.textContent || "";
+    }
+    return element.getAttribute(attr) || element[attr] || "";
+  }
+
+  function dedupeSubtitleCandidates(candidates) {
+    const seen = new Set();
+    return (Array.isArray(candidates) ? candidates : [])
+      .filter(Boolean)
+      .sort((a, b) => a.priority - b.priority)
+      .filter((candidate) => {
+        const key = `${candidate.url}\0${candidate.languageCode || ""}`;
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
+  }
+
+  function getMatchingVideoSubtitleSiteRules() {
+    const rules = normalizeVideoSubtitleSiteRules(state.settings && state.settings.videoBilingualSubtitlesSiteRules || []);
+    const host = window.location.hostname || "";
+    const pu = namespace.pageUtils;
+    return rules.filter((rule) => {
+      if (rule.enabled === false) {
+        return false;
+      }
+      return pu && typeof pu.hostMatchesRule === "function"
+        ? pu.hostMatchesRule(host, rule.hostPattern)
+        : host === rule.hostPattern;
+    });
+  }
+
+  function collectRuleSubtitleCandidates() {
+    const candidates = [];
+    getMatchingVideoSubtitleSiteRules().forEach((rule, ruleIndex) => {
+      let elements = [];
+      try {
+        elements = Array.from(document.querySelectorAll(rule.urlSelector));
+      } catch (_) {
+        elements = [];
+      }
+      elements.slice(0, 20).forEach((element, elementIndex) => {
+        const value = readElementSubtitleValue(element, rule.urlAttribute);
+        candidates.push(...extractSubtitleUrlCandidatesFromText(value, {
+          source: rule.name || rule.hostPattern || "custom-rule",
+          languageCode: rule.languageCode,
+          label: rule.label || rule.name,
+          priority: 5 + ruleIndex + elementIndex / 100
+        }));
+      });
+    });
+    return candidates;
+  }
+
+  function collectAutomaticSubtitleCandidates(video) {
+    const candidates = [];
+    const addElementValue = (element, attribute, meta) => {
+      const value = readElementSubtitleValue(element, attribute);
+      candidates.push(...extractSubtitleUrlCandidatesFromText(value, meta));
+    };
+
+    Array.from(document.querySelectorAll("track[src]")).forEach((track, index) => {
+      const kind = String(track.getAttribute("kind") || "").toLowerCase();
+      if (kind && !/subtitles|captions/.test(kind)) {
+        return;
+      }
+      addElementValue(track, "src", {
+        source: "track",
+        languageCode: track.getAttribute("srclang") || track.getAttribute("lang") || "",
+        label: track.getAttribute("label") || "",
+        priority: 20 + index / 100
+      });
+    });
+
+    const scopedRoot = video && video.parentElement ? video.parentElement : document;
+    Array.from(scopedRoot.querySelectorAll("source[src], a[href]")).slice(0, 120).forEach((element, index) => {
+      const attribute = element.hasAttribute("href") ? "href" : "src";
+      const value = readElementSubtitleValue(element, attribute);
+      if (!looksLikeSubtitleUrl(value)) {
+        return;
+      }
+      addElementValue(element, attribute, {
+        source: element.tagName.toLowerCase(),
+        priority: 35 + index / 100
+      });
+    });
+
+    Array.from(document.scripts || []).slice(-80).forEach((script, index) => {
+      const text = script && !script.src ? script.textContent || "" : "";
+      if (!SUBTITLE_TEXT_HINT_PATTERN.test(text) && !SUBTITLE_URL_EXT_PATTERN.test(text)) {
+        return;
+      }
+      candidates.push(...extractSubtitleUrlCandidatesFromText(text, {
+        source: "script",
+        priority: 60 + index / 100
+      }));
+    });
+
+    return candidates;
+  }
+
+  async function fetchGenericSubtitleUrl(url) {
+    const response = await api.runtime.sendMessage({
+      type: messageTypes.fetchVideoSubtitleTrack,
+      url
+    });
+    if (!response || !response.ok) {
+      throw new Error(response && response.error && response.error.message || "Could not load subtitles.");
+    }
+    return response.data || {};
+  }
+
+  function isM3u8Response(body, contentType, url) {
+    const hint = `${contentType || ""} ${url || ""}`.toLowerCase();
+    return hint.includes("mpegurl") || hint.includes("m3u8") || /^#EXTM3U/i.test(String(body || "").trim());
+  }
+
+  function offsetCueList(cues, offset, duration) {
+    const numberOffset = Number(offset || 0);
+    if (!numberOffset || !Number.isFinite(numberOffset)) {
+      return cues;
+    }
+    const maxEnd = Math.max(...cues.map((cue) => Number(cue.end || 0)), 0);
+    const segmentDuration = Number(duration || 0);
+    const looksSegmentRelative = maxEnd <= Math.max(3, segmentDuration + 2);
+    if (!looksSegmentRelative) {
+      return cues;
+    }
+    return cues.map((cue) => Object.assign({}, cue, {
+      start: cue.start + numberOffset,
+      end: cue.end + numberOffset
+    }));
+  }
+
+  async function parseM3u8SubtitleCues(body, finalUrl, candidate) {
+    const subtitlePlaylists = utils.extractM3u8SubtitlePlaylists(body, finalUrl);
+    const playlistCandidates = subtitlePlaylists.length
+      ? subtitlePlaylists
+      : [{
+        url: finalUrl,
+        body,
+        contentType: "application/vnd.apple.mpegurl",
+        languageCode: candidate.languageCode || "",
+        name: candidate.label || ""
+      }];
+    const preferredLanguage = String(candidate.languageCode || "").toLowerCase();
+    const sorted = playlistCandidates.slice().sort((a, b) => {
+      const aMatches = preferredLanguage && String(a.languageCode || "").toLowerCase().startsWith(preferredLanguage) ? 0 : 1;
+      const bMatches = preferredLanguage && String(b.languageCode || "").toLowerCase().startsWith(preferredLanguage) ? 0 : 1;
+      return aMatches - bMatches;
+    });
+
+    for (const playlist of sorted.slice(0, 8)) {
+      const response = playlist.body !== undefined
+        ? playlist
+        : await fetchGenericSubtitleUrl(playlist.url);
+      const playlistBody = String(response.body || "");
+      const playlistUrl = response.finalUrl || playlist.url;
+      if (!isM3u8Response(playlistBody, response.contentType, playlistUrl)) {
+        const cues = utils.parseGenericSubtitleText(playlistBody, response.contentType, playlistUrl);
+        if (cues.length) {
+          return {
+            cues,
+            languageCode: playlist.languageCode || candidate.languageCode || "",
+            label: playlist.name || candidate.label || ""
+          };
+        }
+        continue;
+      }
+
+      const segments = utils.extractM3u8MediaSegments(playlistBody, playlistUrl)
+        .filter((segment) => looksLikeSubtitleUrl(segment.url) && !/\.(?:ts|m4s|mp4)(?:[?#]|$)/i.test(segment.url))
+        .slice(0, 160);
+      const allCues = [];
+      for (const segment of segments) {
+        const segmentResponse = await fetchGenericSubtitleUrl(segment.url);
+        const segmentCues = utils.parseGenericSubtitleText(
+          segmentResponse.body || "",
+          segmentResponse.contentType || "",
+          segmentResponse.finalUrl || segment.url
+        );
+        allCues.push(...offsetCueList(segmentCues, segment.offset, segment.duration));
+      }
+      const normalized = utils.normalizeCueList(allCues);
+      if (normalized.length) {
+        return {
+          cues: normalized,
+          languageCode: playlist.languageCode || candidate.languageCode || "",
+          label: playlist.name || candidate.label || ""
+        };
+      }
+    }
+    return null;
+  }
+
+  async function loadSubtitleCandidate(video, candidate) {
+    const response = await fetchGenericSubtitleUrl(candidate.url);
+    const body = String(response.body || "");
+    const finalUrl = response.finalUrl || candidate.url;
+    let cues = [];
+    let languageCode = candidate.languageCode || "";
+    let label = candidate.label || "";
+
+    if (isM3u8Response(body, response.contentType, finalUrl)) {
+      const parsed = await parseM3u8SubtitleCues(body, finalUrl, candidate);
+      if (parsed) {
+        cues = parsed.cues;
+        languageCode = parsed.languageCode || languageCode;
+        label = parsed.label || label;
+      }
+    } else {
+      cues = utils.parseGenericSubtitleText(body, response.contentType, finalUrl);
+    }
+
+    if (!cues.length) {
+      return null;
+    }
+    return {
+      kind: "generic",
+      video,
+      track: {
+        id: candidate.url,
+        label: label || candidate.source || "Subtitles",
+        languageCode,
+        url: candidate.url
+      },
+      cues,
+      sourceLanguage: languageCode
+    };
+  }
+
   async function loadHtml5SubtitleSource() {
     const video = findVideo();
     if (!video) {
@@ -1308,11 +1665,47 @@
     };
   }
 
+  async function loadGenericSubtitleSource() {
+    const video = findVideo();
+    if (!video) {
+      throw new Error(t("Video element not found."));
+    }
+    const candidates = dedupeSubtitleCandidates([
+      ...collectRuleSubtitleCandidates(),
+      ...collectAutomaticSubtitleCandidates(video)
+    ]);
+    for (const candidate of candidates.slice(0, 40)) {
+      try {
+        const source = await loadSubtitleCandidate(video, candidate);
+        if (source && source.cues && source.cues.length) {
+          console.info("[MelonTranslate] Using generic video subtitle source.", {
+            source: candidate.source,
+            url: candidate.url,
+            cueCount: source.cues.length,
+            languageCode: source.sourceLanguage || ""
+          });
+          return source;
+        }
+      } catch (error) {
+        console.debug("[MelonTranslate] Generic subtitle candidate failed.", {
+          source: candidate.source,
+          url: candidate.url,
+          error: error && error.message ? error.message : String(error || "")
+        });
+      }
+    }
+    throw new Error(t("No readable subtitle track found."));
+  }
+
   async function loadSubtitleSource() {
     if (isYouTubePage()) {
       return loadYouTubeSubtitleSource();
     }
-    return loadHtml5SubtitleSource();
+    try {
+      return await loadHtml5SubtitleSource();
+    } catch (error) {
+      return loadGenericSubtitleSource();
+    }
   }
 
   function ensureOverlay(video, kind) {
@@ -2450,7 +2843,7 @@
     state.video = source.video;
     state.videoId = String(source.videoId || "");
     state.track = source.track;
-    state.cues = source.kind === "youtube" ? segmentSubtitleCues(source.cues) : source.cues;
+    state.cues = source.kind === "youtube" || source.kind === "generic" ? segmentSubtitleCues(source.cues) : source.cues;
     state.targetLanguage = decision.targetLanguage;
     state.sourceLanguage = decision.sourceLanguage || "auto";
     state.subtitleContext = "";
@@ -2684,7 +3077,8 @@
       readPlayerResponseFromScripts,
       chooseYouTubeTrack,
       textTrackToCues,
-      segmentSubtitleCues
+      segmentSubtitleCues,
+      extractSubtitleUrlCandidatesFromText
     }
   };
 }(globalThis));

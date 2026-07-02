@@ -416,6 +416,58 @@
     }));
   }
 
+  function parseTtmlTimestamp(value) {
+    const source = String(value || "").trim();
+    if (!source) {
+      return NaN;
+    }
+    const clock = source.match(/^(\d{1,2}):(\d{2}):(\d{2})(?:[.,](\d{1,3}))?$/);
+    if (clock) {
+      const hours = Number(clock[1]);
+      const minutes = Number(clock[2]);
+      const seconds = Number(clock[3]);
+      const millis = Number(String(clock[4] || "0").padEnd(3, "0"));
+      return hours * 3600 + minutes * 60 + seconds + millis / 1000;
+    }
+    const seconds = source.match(/^(\d+(?:\.\d+)?)s$/i);
+    if (seconds) {
+      return Number(seconds[1]);
+    }
+    const millis = source.match(/^(\d+(?:\.\d+)?)ms$/i);
+    if (millis) {
+      return Number(millis[1]) / 1000;
+    }
+    return NaN;
+  }
+
+  function parseTtmlXml(body) {
+    const source = String(body || "");
+    const cues = [];
+    const pattern = /<p\b([^>]*)>([\s\S]*?)<\/p>/gi;
+    let match;
+    while ((match = pattern.exec(source))) {
+      const attrs = parseAttributes(match[1]);
+      const start = parseTtmlTimestamp(attrs.begin || attrs.start);
+      const rawEnd = parseTtmlTimestamp(attrs.end);
+      const duration = parseTtmlTimestamp(attrs.dur);
+      const end = Number.isFinite(rawEnd)
+        ? rawEnd
+        : (Number.isFinite(duration) ? start + duration : NaN);
+      const text = normalizeCueText(match[2]
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<[^>]+>/g, ""));
+      if (Number.isFinite(start) && Number.isFinite(end) && end > start && text) {
+        cues.push({
+          id: String(cues.length),
+          start,
+          end,
+          text
+        });
+      }
+    }
+    return normalizeCueList(cues);
+  }
+
   function parseVttTimestamp(value) {
     const parts = String(value || "").trim().replace(",", ".").split(":");
     if (parts.length < 2 || parts.length > 3) {
@@ -466,6 +518,52 @@
     return normalizeCueList(cues);
   }
 
+  function parseSrtTimestamp(value) {
+    const match = String(value || "").trim().match(/^(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})$/);
+    if (!match) {
+      return NaN;
+    }
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    const seconds = Number(match[3]);
+    const millis = Number(match[4].padEnd(3, "0"));
+    if (![hours, minutes, seconds, millis].every(Number.isFinite)) {
+      return NaN;
+    }
+    return hours * 3600 + minutes * 60 + seconds + millis / 1000;
+  }
+
+  function parseSubRip(body) {
+    const source = String(body || "").replace(/\r/g, "").trim();
+    if (!source) {
+      return [];
+    }
+    const cues = [];
+    source.split(/\n{2,}/).forEach((block) => {
+      const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
+      if (!lines.length) {
+        return;
+      }
+      const timingIndex = lines.findIndex((line) => line.includes("-->"));
+      if (timingIndex < 0) {
+        return;
+      }
+      const timingParts = lines[timingIndex].split("-->");
+      const start = parseSrtTimestamp(timingParts[0]);
+      const end = parseSrtTimestamp(timingParts[1]);
+      const text = normalizeCueText(lines.slice(timingIndex + 1).join("\n").replace(/<[^>]+>/g, ""));
+      if (Number.isFinite(start) && Number.isFinite(end) && end > start && text) {
+        cues.push({
+          id: String(cues.length),
+          start,
+          end,
+          text
+        });
+      }
+    });
+    return normalizeCueList(cues);
+  }
+
   function parseYouTubeTimedText(body, contentType, url) {
     const source = String(body || "").trim();
     const hint = `${contentType || ""} ${url || ""}`.toLowerCase();
@@ -490,7 +588,124 @@
     if (transcriptCues.length) {
       return transcriptCues;
     }
+    const ttmlCues = parseTtmlXml(source);
+    if (ttmlCues.length) {
+      return ttmlCues;
+    }
     return parseYouTubeSrv3Xml(source);
+  }
+
+  function parseGenericSubtitleText(body, contentType, url) {
+    const source = String(body || "").trim();
+    const hint = `${contentType || ""} ${url || ""}`.toLowerCase();
+    if (!source) {
+      return [];
+    }
+    if (hint.includes("srt") || /^\d+\s*\n\d{1,2}:\d{2}:\d{2}[,.]\d{1,3}\s*-->/m.test(source)) {
+      const cues = parseSubRip(source);
+      if (cues.length) {
+        return cues;
+      }
+    }
+    return parseYouTubeTimedText(source, contentType, url);
+  }
+
+  function parseHlsAttributeList(raw) {
+    const attrs = {};
+    const source = String(raw || "");
+    let index = 0;
+    while (index < source.length) {
+      while (index < source.length && /[\s,]/.test(source.charAt(index))) {
+        index += 1;
+      }
+      const keyStart = index;
+      while (index < source.length && /[A-Za-z0-9-]/.test(source.charAt(index))) {
+        index += 1;
+      }
+      const key = source.slice(keyStart, index);
+      if (!key || source.charAt(index) !== "=") {
+        index += 1;
+        continue;
+      }
+      index += 1;
+      let value = "";
+      if (source.charAt(index) === "\"") {
+        index += 1;
+        const valueStart = index;
+        while (index < source.length && source.charAt(index) !== "\"") {
+          index += 1;
+        }
+        value = source.slice(valueStart, index);
+        index += 1;
+      } else {
+        const valueStart = index;
+        while (index < source.length && source.charAt(index) !== ",") {
+          index += 1;
+        }
+        value = source.slice(valueStart, index).trim();
+      }
+      attrs[key.toUpperCase()] = value;
+    }
+    return attrs;
+  }
+
+  function resolveUrl(rawUrl, baseUrl) {
+    try {
+      return new URL(String(rawUrl || "").trim(), baseUrl || globalThis.location && globalThis.location.href || "").toString();
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function extractM3u8SubtitlePlaylists(body, baseUrl) {
+    const source = String(body || "");
+    const playlists = [];
+    source.split(/\r?\n/).forEach((line) => {
+      const trimmed = line.trim();
+      if (!/^#EXT-X-MEDIA:/i.test(trimmed) || !/TYPE=SUBTITLES/i.test(trimmed)) {
+        return;
+      }
+      const attrs = parseHlsAttributeList(trimmed.replace(/^#EXT-X-MEDIA:/i, ""));
+      const url = resolveUrl(attrs.URI || "", baseUrl);
+      if (!url) {
+        return;
+      }
+      playlists.push({
+        url,
+        languageCode: attrs.LANGUAGE || "",
+        name: attrs.NAME || attrs.GROUP_ID || ""
+      });
+    });
+    return playlists;
+  }
+
+  function extractM3u8MediaSegments(body, baseUrl) {
+    const source = String(body || "");
+    const segments = [];
+    let pendingDuration = 0;
+    let offset = 0;
+    source.split(/\r?\n/).forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        return;
+      }
+      if (/^#EXTINF:/i.test(trimmed)) {
+        const duration = Number(trimmed.replace(/^#EXTINF:/i, "").split(",")[0]);
+        pendingDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+        return;
+      }
+      if (trimmed.charAt(0) === "#") {
+        return;
+      }
+      const url = resolveUrl(trimmed, baseUrl);
+      if (!url) {
+        return;
+      }
+      segments.push({ url, offset, duration: pendingDuration });
+      offset += pendingDuration;
+      pendingDuration = 0;
+    });
+    return segments;
   }
 
   function getBaseLanguage(tag) {
@@ -785,8 +1000,14 @@
     parseYouTubeJson3,
     parseYouTubeTimedTextXml,
     parseYouTubeSrv3Xml,
+    parseTtmlXml,
     parseYouTubeWebVtt,
+    parseSubRip,
     parseYouTubeTimedText,
+    parseGenericSubtitleText,
+    parseHlsAttributeList,
+    extractM3u8SubtitlePlaylists,
+    extractM3u8MediaSegments,
     resolveSubtitleTarget,
     normalizeSubtitleLearningLevel,
     normalizeSubtitleLearningMaxItems,

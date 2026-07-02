@@ -413,6 +413,20 @@
                                     step="1">
                             </div>
                         </div>
+                        <div class="settings-row settings-row-data-actions">
+                            <div class="settings-copy">
+                                <div class="setting-title">
+                                    <label>Custom subtitle sources</label>
+                                    <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                        data-help="For non-YouTube sites, add rules that read subtitle URLs from page elements or scripts. Use this when the automatic detector cannot find captions.">?</button>
+                                </div>
+                                <p class="setting-desc">Match a site and read subtitle URLs from a CSS selector.</p>
+                            </div>
+                            <div class="settings-control settings-actions">
+                                <button id="add-video-subtitle-site-rule" class="secondary" type="button">Add subtitle source</button>
+                            </div>
+                        </div>
+                        <div id="video-subtitle-site-rules" class="site-rules video-subtitle-site-rules"></div>
                     </div>
                 </section>
                 <section id="input-button" class="panel settings-section">

@@ -1973,6 +1973,133 @@
     Object.assign(translations[localeKey], projectInfoTranslations[localeKey]);
   });
 
+  const videoSubtitleSourceTranslations = {
+    "ja": {
+      "Custom subtitle sources": "カスタム字幕ソース",
+      "For non-YouTube sites, add rules that read subtitle URLs from page elements or scripts. Use this when the automatic detector cannot find captions.": "YouTube 以外のサイトでは、ページ要素や script から字幕 URL を読み取るルールを追加できます。自動検出で字幕が見つからない場合に使ってください。",
+      "Match a site and read subtitle URLs from a CSS selector.": "サイトに一致させ、CSS selector から字幕 URL を読み取ります。",
+      "Add subtitle source": "字幕ソースを追加",
+      "No custom subtitle sources yet.": "カスタム字幕ソースはまだありません。",
+      "Custom subtitle source": "カスタム字幕ソース",
+      "Rule name": "ルール名",
+      "Host pattern": "ホストパターン",
+      "Subtitle URL selector": "字幕 URL selector",
+      "URL attribute": "URL 属性",
+      "Source language": "元言語",
+      "Text content": "テキスト内容",
+      "Epic subtitles": "Epic 字幕"
+    },
+    "zh-CN": {
+      "Custom subtitle sources": "自定义字幕源",
+      "For non-YouTube sites, add rules that read subtitle URLs from page elements or scripts. Use this when the automatic detector cannot find captions.": "对于非 YouTube 网站，可以添加从页面元素或脚本中读取字幕 URL 的规则。当自动检测找不到字幕时使用。",
+      "Match a site and read subtitle URLs from a CSS selector.": "匹配站点，并从 CSS selector 读取字幕 URL。",
+      "Add subtitle source": "添加字幕源",
+      "No custom subtitle sources yet.": "还没有自定义字幕源。",
+      "Custom subtitle source": "自定义字幕源",
+      "Rule name": "规则名称",
+      "Host pattern": "域名匹配",
+      "Subtitle URL selector": "字幕 URL selector",
+      "URL attribute": "URL 属性",
+      "Source language": "源语言",
+      "Text content": "文本内容",
+      "Epic subtitles": "Epic 字幕"
+    },
+    "zh-TW": {
+      "Custom subtitle sources": "自訂字幕來源",
+      "For non-YouTube sites, add rules that read subtitle URLs from page elements or scripts. Use this when the automatic detector cannot find captions.": "對於非 YouTube 網站，可以新增從頁面元素或 script 讀取字幕 URL 的規則。當自動偵測找不到字幕時使用。",
+      "Match a site and read subtitle URLs from a CSS selector.": "匹配網站，並從 CSS selector 讀取字幕 URL。",
+      "Add subtitle source": "新增字幕來源",
+      "No custom subtitle sources yet.": "尚無自訂字幕來源。",
+      "Custom subtitle source": "自訂字幕來源",
+      "Rule name": "規則名稱",
+      "Host pattern": "網域匹配",
+      "Subtitle URL selector": "字幕 URL selector",
+      "URL attribute": "URL 屬性",
+      "Source language": "來源語言",
+      "Text content": "文字內容",
+      "Epic subtitles": "Epic 字幕"
+    },
+    "fr": {
+      "Custom subtitle sources": "Sources de sous-titres personnalisées",
+      "For non-YouTube sites, add rules that read subtitle URLs from page elements or scripts. Use this when the automatic detector cannot find captions.": "Pour les sites hors YouTube, ajoutez des règles qui lisent les URL de sous-titres depuis des éléments de page ou des scripts. À utiliser si la détection automatique ne trouve pas de sous-titres.",
+      "Match a site and read subtitle URLs from a CSS selector.": "Associe un site et lit les URL de sous-titres depuis un CSS selector.",
+      "Add subtitle source": "Ajouter une source",
+      "No custom subtitle sources yet.": "Aucune source personnalisée pour le moment.",
+      "Custom subtitle source": "Source personnalisée",
+      "Rule name": "Nom de la règle",
+      "Host pattern": "Motif d’hôte",
+      "Subtitle URL selector": "Selector d’URL de sous-titres",
+      "URL attribute": "Attribut URL",
+      "Source language": "Langue source",
+      "Text content": "Contenu texte",
+      "Epic subtitles": "Sous-titres Epic"
+    },
+    "de": {
+      "Custom subtitle sources": "Eigene Untertitelquellen",
+      "For non-YouTube sites, add rules that read subtitle URLs from page elements or scripts. Use this when the automatic detector cannot find captions.": "Für Nicht-YouTube-Seiten können Regeln hinzugefügt werden, die Untertitel-URLs aus Seitenelementen oder Scripts lesen. Nutzen Sie dies, wenn die automatische Erkennung keine Untertitel findet.",
+      "Match a site and read subtitle URLs from a CSS selector.": "Ordnet eine Seite zu und liest Untertitel-URLs aus einem CSS selector.",
+      "Add subtitle source": "Untertitelquelle hinzufügen",
+      "No custom subtitle sources yet.": "Noch keine eigenen Untertitelquellen.",
+      "Custom subtitle source": "Eigene Untertitelquelle",
+      "Rule name": "Regelname",
+      "Host pattern": "Host-Muster",
+      "Subtitle URL selector": "Untertitel-URL-selector",
+      "URL attribute": "URL-Attribut",
+      "Source language": "Ausgangssprache",
+      "Text content": "Textinhalt",
+      "Epic subtitles": "Epic-Untertitel"
+    },
+    "es": {
+      "Custom subtitle sources": "Fuentes de subtítulos personalizadas",
+      "For non-YouTube sites, add rules that read subtitle URLs from page elements or scripts. Use this when the automatic detector cannot find captions.": "Para sitios que no sean YouTube, agrega reglas que lean URL de subtítulos desde elementos de la página o scripts. Úsalo cuando la detección automática no encuentre subtítulos.",
+      "Match a site and read subtitle URLs from a CSS selector.": "Relaciona un sitio y lee URL de subtítulos desde un CSS selector.",
+      "Add subtitle source": "Agregar fuente",
+      "No custom subtitle sources yet.": "Aún no hay fuentes personalizadas.",
+      "Custom subtitle source": "Fuente personalizada",
+      "Rule name": "Nombre de regla",
+      "Host pattern": "Patrón de host",
+      "Subtitle URL selector": "Selector de URL de subtítulos",
+      "URL attribute": "Atributo URL",
+      "Source language": "Idioma fuente",
+      "Text content": "Contenido de texto",
+      "Epic subtitles": "Subtítulos de Epic"
+    },
+    "ru": {
+      "Custom subtitle sources": "Пользовательские источники субтитров",
+      "For non-YouTube sites, add rules that read subtitle URLs from page elements or scripts. Use this when the automatic detector cannot find captions.": "Для сайтов не YouTube добавьте правила, которые читают URL субтитров из элементов страницы или скриптов. Используйте, если автоматическое обнаружение не находит субтитры.",
+      "Match a site and read subtitle URLs from a CSS selector.": "Сопоставляет сайт и читает URL субтитров через CSS selector.",
+      "Add subtitle source": "Добавить источник",
+      "No custom subtitle sources yet.": "Пользовательских источников пока нет.",
+      "Custom subtitle source": "Пользовательский источник",
+      "Rule name": "Название правила",
+      "Host pattern": "Шаблон хоста",
+      "Subtitle URL selector": "Selector URL субтитров",
+      "URL attribute": "Атрибут URL",
+      "Source language": "Исходный язык",
+      "Text content": "Текстовое содержимое",
+      "Epic subtitles": "Субтитры Epic"
+    },
+    "pt": {
+      "Custom subtitle sources": "Fontes de legenda personalizadas",
+      "For non-YouTube sites, add rules that read subtitle URLs from page elements or scripts. Use this when the automatic detector cannot find captions.": "Para sites que não são YouTube, adicione regras que leem URLs de legenda de elementos da página ou scripts. Use quando a detecção automática não encontrar legendas.",
+      "Match a site and read subtitle URLs from a CSS selector.": "Associa um site e lê URLs de legenda por um CSS selector.",
+      "Add subtitle source": "Adicionar fonte",
+      "No custom subtitle sources yet.": "Ainda não há fontes personalizadas.",
+      "Custom subtitle source": "Fonte personalizada",
+      "Rule name": "Nome da regra",
+      "Host pattern": "Padrão de host",
+      "Subtitle URL selector": "Selector de URL da legenda",
+      "URL attribute": "Atributo URL",
+      "Source language": "Idioma de origem",
+      "Text content": "Conteúdo de texto",
+      "Epic subtitles": "Legendas da Epic"
+    }
+  };
+
+  Object.keys(videoSubtitleSourceTranslations).forEach(function(localeKey) {
+    Object.assign(translations[localeKey], videoSubtitleSourceTranslations[localeKey]);
+  });
+
   function normalizeKey(value) {
     return String(value || "").replace(/\s+/g, " ").trim();
   }

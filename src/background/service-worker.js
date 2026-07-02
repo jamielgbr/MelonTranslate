@@ -808,6 +808,49 @@
     }
   }
 
+  function isAllowedVideoSubtitleUrl(rawUrl) {
+    let url;
+    try {
+      url = new URL(String(rawUrl || ""));
+    } catch (_) {
+      return false;
+    }
+    return url.protocol === "https:" || url.protocol === "http:";
+  }
+
+  async function handleFetchVideoSubtitleTrack(message) {
+    const url = String(message.url || "").trim();
+    if (!isAllowedVideoSubtitleUrl(url)) {
+      return namespace.messages.error("Unsupported subtitle URL.");
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "text/vtt,application/x-subrip,text/plain,application/xml,text/xml,application/json,application/vnd.apple.mpegurl,application/x-mpegurl,*/*"
+        },
+        signal: controller.signal
+      });
+      const body = await response.text();
+      if (!response.ok) {
+        return namespace.messages.error(`Could not load subtitles (${response.status}).`);
+      }
+      return namespace.messages.ok({
+        body,
+        contentType: response.headers.get("content-type") || "",
+        finalUrl: response.url || url
+      });
+    } catch (error) {
+      return namespace.messages.error(error && error.message ? error.message : "Could not load subtitles.");
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   function normalizeSubtitleBatchItems(items) {
     return (Array.isArray(items) ? items : []).slice(0, 50).map((item, index) => {
       const value = item && typeof item === "object" ? item : {};
@@ -1569,6 +1612,8 @@
         return handleReadAloud(message);
       case messageTypes.fetchYouTubeSubtitleTrack:
         return handleFetchYouTubeSubtitleTrack(message);
+      case messageTypes.fetchVideoSubtitleTrack:
+        return handleFetchVideoSubtitleTrack(message);
       case messageTypes.translateSubtitleBatch:
         return handleTranslateSubtitleBatch(message);
       case messageTypes.annotateSubtitleBatch:

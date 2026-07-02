@@ -74,6 +74,35 @@
     return Array.from(new Set(normalized));
   }
 
+  function normalizeVideoSubtitleSiteRule(rule, index) {
+    const value = rule && typeof rule === "object" ? rule : {};
+    const hostPattern = String(value.hostPattern || "").trim().toLowerCase();
+    const urlSelector = String(value.urlSelector || "").trim();
+    if (!hostPattern || !urlSelector) {
+      return null;
+    }
+    const id = String(value.id || `video-subtitle-rule-${index || 0}`).trim().slice(0, 120);
+    const urlAttribute = String(value.urlAttribute || "src").trim().slice(0, 60) || "src";
+    return {
+      id,
+      enabled: value.enabled !== false,
+      name: String(value.name || "").trim().slice(0, 100),
+      hostPattern: hostPattern.slice(0, 180),
+      urlSelector: urlSelector.slice(0, 300),
+      urlAttribute,
+      languageCode: String(value.languageCode || "").trim().slice(0, 40),
+      label: String(value.label || "").trim().slice(0, 100),
+      updatedAt: String(value.updatedAt || "")
+    };
+  }
+
+  function normalizeVideoSubtitleSiteRules(rules) {
+    return (Array.isArray(rules) ? rules : [])
+      .slice(0, 50)
+      .map(normalizeVideoSubtitleSiteRule)
+      .filter(Boolean);
+  }
+
   function clampInteger(value, fallback, min, max) {
     const number = Number(value);
     if (!Number.isFinite(number)) {
@@ -99,7 +128,8 @@
       videoBilingualSubtitlesLearningAnnotationTypes: normalizeVideoSubtitleAnnotationTypes(merged.videoBilingualSubtitlesLearningAnnotationTypes),
       videoBilingualSubtitlesLearningMaxItems: clampInteger(merged.videoBilingualSubtitlesLearningMaxItems, 4, 1, 8),
       videoBilingualSubtitlesWordLookupEnabled: merged.videoBilingualSubtitlesWordLookupEnabled !== false,
-      videoBilingualSubtitlesTopicContextEnabled: !!merged.videoBilingualSubtitlesTopicContextEnabled
+      videoBilingualSubtitlesTopicContextEnabled: !!merged.videoBilingualSubtitlesTopicContextEnabled,
+      videoBilingualSubtitlesSiteRules: normalizeVideoSubtitleSiteRules(merged.videoBilingualSubtitlesSiteRules)
     });
   }
 
@@ -155,6 +185,7 @@
       videoBilingualSubtitlesSkipDefaultTargetSource: true,
       videoBilingualSubtitlesShowPlayerButton: true,
       videoBilingualSubtitlesMaxConcurrentBatches: 2,
+      videoBilingualSubtitlesSiteRules: [],
       persistHistory: false,
       maxHistoryItems: namespace.constants.historyLimit
     };
