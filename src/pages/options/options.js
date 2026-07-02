@@ -76,6 +76,61 @@
     popover.style.setProperty("--tip-x", `${tipX}px`);
   }
 
+  function appendHelpLink(popover, text, href) {
+    const link = document.createElement("a");
+    link.href = href;
+    link.textContent = text;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    popover.appendChild(link);
+  }
+
+  function isExternalHelpUrl(url) {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "https:" || parsed.protocol === "http:";
+    } catch (_err) {
+      return false;
+    }
+  }
+
+  function appendHelpTextWithUrls(popover, text) {
+    const urlPattern = /https?:\/\/[^\s]+/g;
+    let lastIndex = 0;
+    let match;
+    while ((match = urlPattern.exec(text))) {
+      if (match.index > lastIndex) {
+        popover.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      }
+      const rawUrl = match[0];
+      const url = rawUrl.replace(/[),.;!?]+$/, "");
+      const trailing = rawUrl.slice(url.length);
+      appendHelpLink(popover, url, url);
+      if (trailing) {
+        popover.appendChild(document.createTextNode(trailing));
+      }
+      lastIndex = match.index + rawUrl.length;
+    }
+    if (lastIndex < text.length) {
+      popover.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
+  }
+
+  function renderSettingHelpMessage(popover, message, linkUrl, linkLabel) {
+    const safeLinkUrl = isExternalHelpUrl(linkUrl) ? linkUrl : "";
+    const safeLinkLabel = safeLinkUrl ? String(linkLabel || "").trim() : "";
+    const linkIndex = safeLinkLabel ? message.indexOf(safeLinkLabel) : -1;
+
+    if (linkIndex >= 0) {
+      appendHelpTextWithUrls(popover, message.slice(0, linkIndex));
+      appendHelpLink(popover, safeLinkLabel, safeLinkUrl);
+      appendHelpTextWithUrls(popover, message.slice(linkIndex + safeLinkLabel.length));
+      return;
+    }
+
+    appendHelpTextWithUrls(popover, message);
+  }
+
   function openSettingHelp(button) {
     if (activeHelpButton === button) {
       closeSettingHelp();
@@ -83,6 +138,8 @@
     }
     closeSettingHelp();
     const message = t(button.getAttribute("data-help") || "");
+    const linkUrl = button.getAttribute("data-help-link-url") || "";
+    const linkLabel = linkUrl ? t(button.getAttribute("data-help-link-label") || "Privacy Policy") : "";
     if (!message) {
       return;
     }
@@ -91,7 +148,7 @@
     helpPopover.id = "setting-help-popover";
     helpPopover.className = "setting-help-popover";
     helpPopover.setAttribute("role", "tooltip");
-    helpPopover.textContent = message;
+    renderSettingHelpMessage(helpPopover, message, linkUrl, linkLabel);
     document.body.appendChild(helpPopover);
 
     activeHelpButton = button;

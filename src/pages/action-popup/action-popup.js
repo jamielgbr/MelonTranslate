@@ -36,7 +36,7 @@
   };
 
   function resultPlaceholder() {
-    return t("No translation yet.");
+    return "";
   }
 
   function expandResultLabel() {

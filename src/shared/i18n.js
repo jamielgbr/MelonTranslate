@@ -76,7 +76,7 @@
       "Topic Sensing": "Topic Sensing",
       "Analyze a subtitle sample first for better terminology and tone. Uses one extra AI request per video.": "先に字幕サンプルを分析し、用語とトーンを改善します。動画ごとに AI リクエストを1回追加で使います。",
       "Hover word lookup": "ホバー単語検索",
-      "Hover a subtitle word for a contextual explanation. Works in all modes.": "字幕の単語にホバーすると文脈に応じた説明を表示します。すべてのモードで使えます。",
+      "Hover a subtitle word for a contextual explanation.": "字幕の単語にホバーすると文脈に応じた説明を表示します。",
       "English level": "英語レベル",
       "Annotate English terms above this CEFR level.": "この CEFR レベルを超える英語表現を注釈します。",
       "Japanese level": "日本語レベル",
@@ -134,7 +134,6 @@
       "Expand translation": "翻訳を拡大",
       "Exit expanded translation": "拡大表示を終了",
       "Model reasoning": "モデル推論",
-      "No translation yet.": "まだ翻訳はありません。",
       "Translate": "翻訳",
       "Copy": "コピー",
       "Compare": "比較",
@@ -294,7 +293,7 @@
       "Topic Sensing": "Topic Sensing",
       "Analyze a subtitle sample first for better terminology and tone. Uses one extra AI request per video.": "先分析一段字幕样本，以改善术语和语气。每个视频会额外使用一次 AI 请求。",
       "Hover word lookup": "悬停查词",
-      "Hover a subtitle word for a contextual explanation. Works in all modes.": "悬停字幕单词可查看上下文解释。适用于所有模式。",
+      "Hover a subtitle word for a contextual explanation.": "悬停字幕单词可查看上下文解释。",
       "English level": "英语水平",
       "Annotate English terms above this CEFR level.": "标注高于该 CEFR 等级的英语词汇。",
       "Japanese level": "日语水平",
@@ -352,7 +351,6 @@
       "Expand translation": "展开译文",
       "Exit expanded translation": "退出展开译文",
       "Model reasoning": "模型推理",
-      "No translation yet.": "暂无译文。",
       "Translate": "翻译",
       "Copy": "复制",
       "Compare": "比较",
@@ -518,7 +516,6 @@
     "Read source text aloud": "朗讀來源文字",
     "Read translation aloud": "朗讀譯文",
     "Stop reading": "停止朗讀",
-    "No translation yet.": "尚無譯文。",
     "Source text": "來源文字",
     "Source language": "來源語言",
     "Target language": "目標語言",
@@ -564,7 +561,7 @@
       "Site access": "Accès au site", "Enable": "Activer", "Translation": "Traduction", "Default model": "Modèle par défaut", "Default target language": "Default target language", "Second target language": "Second target language", "Interaction": "Interaction", "Reading": "Lecture", "Writing": "Saisie", "Video": "Vidéo", "Scope": "Portée", "Services": "Services", "Tuning": "Réglage", "Local data": "Données locales",
       "Auto-start bilingual subtitles": "Démarrer automatiquement les sous-titres bilingues", "Start automatically on supported video pages. On by default.": "Démarre automatiquement sur les pages vidéo prises en charge. Activé par défaut.", "Subtitle mode": "Mode de sous-titres", "Choose Full translation, Learning annotations, or Manual.": "Choisissez Full translation, Learning annotations ou Manual.", "Topic Sensing": "Topic Sensing", "Hover word lookup": "Recherche au survol", "English level": "Niveau d’anglais", "Japanese level": "Niveau de japonais", "Chinese level": "Niveau de chinois", "Annotations per subtitle": "Annotations par sous-titre", "Annotation types": "Types d’annotations", "YouTube player button": "Bouton du lecteur YouTube", "Parallel subtitle requests": "Requêtes de sous-titres en parallèle",
       "Bilingual subtitles": "Sous-titres bilingues", "Immersive translation": "Traduction immersive", "Enable immersive translation": "Activer la traduction immersive", "Automatically translate pages": "Traduire automatiquement les pages", "Translate visible content first": "Traduire d’abord le contenu visible", "Display mode": "Mode d’affichage", "Minimum text length": "Longueur minimale du texte", "Parallel translations": "Traductions en parallèle",
-      "Source": "Source", "Target": "Cible", "Input": "Entrée", "Hide": "Masquer", "Show": "Afficher", "Enter a language code": "Saisissez un code de langue", "Enter text to translate.": "Saisissez le texte à traduire.", "Read source text aloud": "Lire le texte source", "Read translation aloud": "Lire la traduction", "Stop reading": "Arrêter la lecture", "Model reasoning": "Raisonnement du modèle", "No translation yet.": "Aucune traduction pour le moment.", "Translate": "Traduire", "Copy": "Copier", "Compare": "Comparer", "Source text": "Texte source", "Source language": "Langue source", "Target language": "Langue cible", "Choose providers": "Choisir les providers", "Results": "Résultats",
+      "Source": "Source", "Target": "Cible", "Input": "Entrée", "Hide": "Masquer", "Show": "Afficher", "Enter a language code": "Saisissez un code de langue", "Enter text to translate.": "Saisissez le texte à traduire.", "Read source text aloud": "Lire le texte source", "Read translation aloud": "Lire la traduction", "Stop reading": "Arrêter la lecture", "Model reasoning": "Raisonnement du modèle", "Translate": "Traduire", "Copy": "Copier", "Compare": "Comparer", "Source text": "Texte source", "Source language": "Langue source", "Target language": "Langue cible", "Choose providers": "Choisir les providers", "Results": "Résultats",
       "Full translation": "Full translation", "Learning annotations": "Learning annotations", "Manual": "Manual", "Below original": "Sous l’original", "Compact bilingual": "Bilingue compact", "Auto": "Auto", "Casual": "Décontracté", "Formal": "Formel", "Neutral": "Neutre", "Any": "Any", "Nouns": "Noms", "Verbs": "Verbes", "Adjectives": "Adjectifs", "Adverbs": "Adverbes", "Phrases": "Expressions", "Auto-detect": "Détection auto", "Custom…": "Personnalisé…", "Search…": "Rechercher…",
       "Loading settings...": "Chargement des paramètres...", "Loading settings…": "Chargement des paramètres…", "Could not load settings.": "Impossible de charger les paramètres.", "Saving...": "Enregistrement...", "Saving settings": "Enregistrement des paramètres", "Saving…": "Enregistrement…", "Could not save settings.": "Impossible d’enregistrer les paramètres.", "Settings saved.": "Paramètres enregistrés.", "Loading…": "Chargement…", "Cached": "En cache", "Translating...": "Traduction...", "Translating…": "Traduction…", "Translation complete.": "Traduction terminée.", "Translation failed.": "Échec de la traduction.", "Copied.": "Copié.", "Copied!": "Copié !", "Could not copy": "Impossible de copier", "Try again": "Réessayer", "Refresh": "Actualiser", "Retry": "Réessayer",
       "Translate selected text": "Traduire le texte sélectionné", "Translate input text": "Traduire le texte saisi", "Translate page inline": "Traduire la page en ligne", "Toggle bilingual subtitles": "Basculer les sous-titres bilingues", "Select inline translation area": "Sélectionner la zone de traduction inline", "Show bilingual subtitles": "Afficher les sous-titres bilingues", "Hide bilingual subtitles": "Masquer les sous-titres bilingues", "Loading subtitles": "Chargement des sous-titres", "Bilingual subtitles unavailable": "Sous-titres bilingues indisponibles", "Cancel": "Annuler", "Select translation area": "Sélectionner une zone de traduction", "Save site rule": "Enregistrer la règle de site", "Translate this area": "Traduire cette zone", "Exclude this area": "Exclure cette zone"
@@ -575,7 +572,7 @@
       "Site access": "Website-Zugriff", "Enable": "Aktivieren", "Translation": "Übersetzung", "Default model": "Standardmodell", "Default target language": "Default target language", "Second target language": "Second target language", "Interaction": "Interaktion", "Reading": "Lesen", "Writing": "Eingabe", "Video": "Video", "Scope": "Bereich", "Services": "Dienste", "Tuning": "Feinabstimmung", "Local data": "Lokale Daten",
       "Auto-start bilingual subtitles": "Zweisprachige Untertitel automatisch starten", "Start automatically on supported video pages. On by default.": "Startet automatisch auf unterstützten Videoseiten. Standardmäßig aktiviert.", "Subtitle mode": "Untertitelmodus", "Choose Full translation, Learning annotations, or Manual.": "Wähle Full translation, Learning annotations oder Manual.", "Topic Sensing": "Topic Sensing", "Hover word lookup": "Wortsuche beim Hover", "English level": "Englischniveau", "Japanese level": "Japanischniveau", "Chinese level": "Chinesischniveau", "Annotations per subtitle": "Annotationen pro Untertitel", "Annotation types": "Annotationstypen", "YouTube player button": "YouTube-Player-Schaltfläche", "Parallel subtitle requests": "Parallele Untertitelanfragen",
       "Bilingual subtitles": "Zweisprachige Untertitel", "Immersive translation": "Immersive Übersetzung", "Enable immersive translation": "Immersive Übersetzung aktivieren", "Automatically translate pages": "Seiten automatisch übersetzen", "Translate visible content first": "Sichtbare Inhalte zuerst übersetzen", "Display mode": "Anzeigemodus", "Minimum text length": "Minimale Textlänge", "Parallel translations": "Parallele Übersetzungen",
-      "Source": "Quelle", "Target": "Ziel", "Input": "Eingabe", "Hide": "Ausblenden", "Show": "Anzeigen", "Enter a language code": "Sprachcode eingeben", "Enter text to translate.": "Zu übersetzenden Text eingeben.", "Read source text aloud": "Quelltext vorlesen", "Read translation aloud": "Übersetzung vorlesen", "Stop reading": "Vorlesen stoppen", "Model reasoning": "Modellbegründung", "No translation yet.": "Noch keine Übersetzung.", "Translate": "Übersetzen", "Copy": "Kopieren", "Compare": "Vergleichen", "Source text": "Quelltext", "Source language": "Quellsprache", "Target language": "Zielsprache", "Choose providers": "Provider auswählen", "Results": "Ergebnisse",
+      "Source": "Quelle", "Target": "Ziel", "Input": "Eingabe", "Hide": "Ausblenden", "Show": "Anzeigen", "Enter a language code": "Sprachcode eingeben", "Enter text to translate.": "Zu übersetzenden Text eingeben.", "Read source text aloud": "Quelltext vorlesen", "Read translation aloud": "Übersetzung vorlesen", "Stop reading": "Vorlesen stoppen", "Model reasoning": "Modellbegründung", "Translate": "Übersetzen", "Copy": "Kopieren", "Compare": "Vergleichen", "Source text": "Quelltext", "Source language": "Quellsprache", "Target language": "Zielsprache", "Choose providers": "Provider auswählen", "Results": "Ergebnisse",
       "Full translation": "Full translation", "Learning annotations": "Learning annotations", "Manual": "Manual", "Below original": "Unter dem Original", "Compact bilingual": "Kompakt zweisprachig", "Auto": "Auto", "Casual": "Locker", "Formal": "Formell", "Neutral": "Neutral", "Any": "Any", "Nouns": "Substantive", "Verbs": "Verben", "Adjectives": "Adjektive", "Adverbs": "Adverbien", "Phrases": "Phrasen", "Auto-detect": "Automatisch erkennen", "Custom…": "Benutzerdefiniert…", "Search…": "Suchen…",
       "Loading settings...": "Einstellungen werden geladen...", "Loading settings…": "Einstellungen werden geladen…", "Could not load settings.": "Einstellungen konnten nicht geladen werden.", "Saving...": "Speichern...", "Saving settings": "Einstellungen werden gespeichert", "Saving…": "Speichern…", "Could not save settings.": "Einstellungen konnten nicht gespeichert werden.", "Settings saved.": "Einstellungen gespeichert.", "Loading…": "Laden…", "Cached": "Zwischengespeichert", "Translating...": "Übersetzen...", "Translating…": "Übersetzen…", "Translation complete.": "Übersetzung abgeschlossen.", "Translation failed.": "Übersetzung fehlgeschlagen.", "Copied.": "Kopiert.", "Copied!": "Kopiert!", "Could not copy": "Kopieren fehlgeschlagen", "Try again": "Erneut versuchen", "Refresh": "Aktualisieren", "Retry": "Erneut versuchen",
       "Translate selected text": "Ausgewählten Text übersetzen", "Translate input text": "Eingabetext übersetzen", "Translate page inline": "Seite inline übersetzen", "Toggle bilingual subtitles": "Zweisprachige Untertitel umschalten", "Select inline translation area": "Inline-Übersetzungsbereich auswählen", "Show bilingual subtitles": "Zweisprachige Untertitel anzeigen", "Hide bilingual subtitles": "Zweisprachige Untertitel ausblenden", "Loading subtitles": "Untertitel werden geladen", "Bilingual subtitles unavailable": "Zweisprachige Untertitel nicht verfügbar", "Cancel": "Abbrechen", "Select translation area": "Übersetzungsbereich auswählen", "Save site rule": "Website-Regel speichern", "Translate this area": "Diesen Bereich übersetzen", "Exclude this area": "Diesen Bereich ausschließen"
@@ -586,7 +583,7 @@
       "Site access": "Acceso al sitio", "Enable": "Activar", "Translation": "Traducción", "Default model": "Modelo predeterminado", "Default target language": "Default target language", "Second target language": "Second target language", "Interaction": "Interacción", "Reading": "Lectura", "Writing": "Entrada", "Video": "Video", "Scope": "Alcance", "Services": "Servicios", "Tuning": "Ajustes", "Local data": "Datos locales",
       "Auto-start bilingual subtitles": "Iniciar subtítulos bilingües automáticamente", "Start automatically on supported video pages. On by default.": "Se inicia automáticamente en páginas de video compatibles. Activado por defecto.", "Subtitle mode": "Modo de subtítulos", "Choose Full translation, Learning annotations, or Manual.": "Elige Full translation, Learning annotations o Manual.", "Topic Sensing": "Topic Sensing", "Hover word lookup": "Consulta al pasar el cursor", "English level": "Nivel de inglés", "Japanese level": "Nivel de japonés", "Chinese level": "Nivel de chino", "Annotations per subtitle": "Anotaciones por subtítulo", "Annotation types": "Tipos de anotación", "YouTube player button": "Botón del reproductor de YouTube", "Parallel subtitle requests": "Solicitudes de subtítulos en paralelo",
       "Bilingual subtitles": "Subtítulos bilingües", "Immersive translation": "Traducción inmersiva", "Enable immersive translation": "Activar traducción inmersiva", "Automatically translate pages": "Traducir páginas automáticamente", "Translate visible content first": "Traducir primero el contenido visible", "Display mode": "Modo de visualización", "Minimum text length": "Longitud mínima del texto", "Parallel translations": "Traducciones en paralelo",
-      "Source": "Origen", "Target": "Destino", "Input": "Entrada", "Hide": "Ocultar", "Show": "Mostrar", "Enter a language code": "Introduce un código de idioma", "Enter text to translate.": "Introduce texto para traducir.", "Read source text aloud": "Leer texto de origen", "Read translation aloud": "Leer traducción", "Stop reading": "Detener lectura", "Model reasoning": "Razonamiento del modelo", "No translation yet.": "Aún no hay traducción.", "Translate": "Traducir", "Copy": "Copiar", "Compare": "Comparar", "Source text": "Texto de origen", "Source language": "Idioma de origen", "Target language": "Idioma de destino", "Choose providers": "Elegir providers", "Results": "Resultados",
+      "Source": "Origen", "Target": "Destino", "Input": "Entrada", "Hide": "Ocultar", "Show": "Mostrar", "Enter a language code": "Introduce un código de idioma", "Enter text to translate.": "Introduce texto para traducir.", "Read source text aloud": "Leer texto de origen", "Read translation aloud": "Leer traducción", "Stop reading": "Detener lectura", "Model reasoning": "Razonamiento del modelo", "Translate": "Traducir", "Copy": "Copiar", "Compare": "Comparar", "Source text": "Texto de origen", "Source language": "Idioma de origen", "Target language": "Idioma de destino", "Choose providers": "Elegir providers", "Results": "Resultados",
       "Full translation": "Full translation", "Learning annotations": "Learning annotations", "Manual": "Manual", "Below original": "Debajo del original", "Compact bilingual": "Bilingüe compacto", "Auto": "Auto", "Casual": "Informal", "Formal": "Formal", "Neutral": "Neutral", "Any": "Any", "Nouns": "Sustantivos", "Verbs": "Verbos", "Adjectives": "Adjetivos", "Adverbs": "Adverbios", "Phrases": "Frases", "Auto-detect": "Detectar automáticamente", "Custom…": "Personalizado…", "Search…": "Buscar…",
       "Loading settings...": "Cargando configuración...", "Loading settings…": "Cargando configuración…", "Could not load settings.": "No se pudo cargar la configuración.", "Saving...": "Guardando...", "Saving settings": "Guardando configuración", "Saving…": "Guardando…", "Could not save settings.": "No se pudo guardar la configuración.", "Settings saved.": "Configuración guardada.", "Loading…": "Cargando…", "Cached": "En caché", "Translating...": "Traduciendo...", "Translating…": "Traduciendo…", "Translation complete.": "Traducción completa.", "Translation failed.": "Error de traducción.", "Copied.": "Copiado.", "Copied!": "¡Copiado!", "Could not copy": "No se pudo copiar", "Try again": "Intentar de nuevo", "Refresh": "Actualizar", "Retry": "Reintentar",
       "Translate selected text": "Traducir texto seleccionado", "Translate input text": "Traducir texto de entrada", "Translate page inline": "Traducir página en línea", "Toggle bilingual subtitles": "Alternar subtítulos bilingües", "Select inline translation area": "Seleccionar área de traducción en línea", "Show bilingual subtitles": "Mostrar subtítulos bilingües", "Hide bilingual subtitles": "Ocultar subtítulos bilingües", "Loading subtitles": "Cargando subtítulos", "Bilingual subtitles unavailable": "Subtítulos bilingües no disponibles", "Cancel": "Cancelar", "Select translation area": "Seleccionar área de traducción", "Save site rule": "Guardar regla del sitio", "Translate this area": "Traducir esta área", "Exclude this area": "Excluir esta área"
@@ -597,7 +594,7 @@
       "Site access": "Доступ к сайту", "Enable": "Включить", "Translation": "Перевод", "Default model": "Модель по умолчанию", "Default target language": "Default target language", "Second target language": "Second target language", "Interaction": "Взаимодействие", "Reading": "Чтение", "Writing": "Ввод", "Video": "Видео", "Scope": "Область", "Services": "Сервисы", "Tuning": "Настройка", "Local data": "Локальные данные",
       "Auto-start bilingual subtitles": "Автозапуск двуязычных субтитров", "Start automatically on supported video pages. On by default.": "Автоматически запускается на поддерживаемых страницах видео. Включено по умолчанию.", "Subtitle mode": "Режим субтитров", "Choose Full translation, Learning annotations, or Manual.": "Выберите Full translation, Learning annotations или Manual.", "Topic Sensing": "Topic Sensing", "Hover word lookup": "Поиск слова при наведении", "English level": "Уровень английского", "Japanese level": "Уровень японского", "Chinese level": "Уровень китайского", "Annotations per subtitle": "Аннотаций на субтитр", "Annotation types": "Типы аннотаций", "YouTube player button": "Кнопка плеера YouTube", "Parallel subtitle requests": "Параллельные запросы субтитров",
       "Bilingual subtitles": "Двуязычные субтитры", "Immersive translation": "Иммерсивный перевод", "Enable immersive translation": "Включить иммерсивный перевод", "Automatically translate pages": "Автоматически переводить страницы", "Translate visible content first": "Сначала переводить видимый контент", "Display mode": "Режим отображения", "Minimum text length": "Минимальная длина текста", "Parallel translations": "Параллельные переводы",
-      "Source": "Источник", "Target": "Цель", "Input": "Ввод", "Hide": "Скрыть", "Show": "Показать", "Enter a language code": "Введите код языка", "Enter text to translate.": "Введите текст для перевода.", "Read source text aloud": "Прочитать исходный текст", "Read translation aloud": "Прочитать перевод", "Stop reading": "Остановить чтение", "Model reasoning": "Рассуждение модели", "No translation yet.": "Перевода пока нет.", "Translate": "Перевести", "Copy": "Копировать", "Compare": "Сравнить", "Source text": "Исходный текст", "Source language": "Исходный язык", "Target language": "Целевой язык", "Choose providers": "Выбрать providers", "Results": "Результаты",
+      "Source": "Источник", "Target": "Цель", "Input": "Ввод", "Hide": "Скрыть", "Show": "Показать", "Enter a language code": "Введите код языка", "Enter text to translate.": "Введите текст для перевода.", "Read source text aloud": "Прочитать исходный текст", "Read translation aloud": "Прочитать перевод", "Stop reading": "Остановить чтение", "Model reasoning": "Рассуждение модели", "Translate": "Перевести", "Copy": "Копировать", "Compare": "Сравнить", "Source text": "Исходный текст", "Source language": "Исходный язык", "Target language": "Целевой язык", "Choose providers": "Выбрать providers", "Results": "Результаты",
       "Full translation": "Full translation", "Learning annotations": "Learning annotations", "Manual": "Manual", "Below original": "Под оригиналом", "Compact bilingual": "Компактный двуязычный", "Auto": "Авто", "Casual": "Неформальный", "Formal": "Формальный", "Neutral": "Нейтральный", "Any": "Any", "Nouns": "Существительные", "Verbs": "Глаголы", "Adjectives": "Прилагательные", "Adverbs": "Наречия", "Phrases": "Фразы", "Auto-detect": "Автоопределение", "Custom…": "Пользовательский…", "Search…": "Поиск…",
       "Loading settings...": "Загрузка настроек...", "Loading settings…": "Загрузка настроек…", "Could not load settings.": "Не удалось загрузить настройки.", "Saving...": "Сохранение...", "Saving settings": "Сохранение настроек", "Saving…": "Сохранение…", "Could not save settings.": "Не удалось сохранить настройки.", "Settings saved.": "Настройки сохранены.", "Loading…": "Загрузка…", "Cached": "Из кэша", "Translating...": "Перевод...", "Translating…": "Перевод…", "Translation complete.": "Перевод завершен.", "Translation failed.": "Ошибка перевода.", "Copied.": "Скопировано.", "Copied!": "Скопировано!", "Could not copy": "Не удалось скопировать", "Try again": "Повторить", "Refresh": "Обновить", "Retry": "Повторить",
       "Translate selected text": "Перевести выделенный текст", "Translate input text": "Перевести введенный текст", "Translate page inline": "Перевести страницу встроенно", "Toggle bilingual subtitles": "Переключить двуязычные субтитры", "Select inline translation area": "Выбрать область встроенного перевода", "Show bilingual subtitles": "Показать двуязычные субтитры", "Hide bilingual subtitles": "Скрыть двуязычные субтитры", "Loading subtitles": "Загрузка субтитров", "Bilingual subtitles unavailable": "Двуязычные субтитры недоступны", "Cancel": "Отмена", "Select translation area": "Выбрать область перевода", "Save site rule": "Сохранить правило сайта", "Translate this area": "Перевести эту область", "Exclude this area": "Исключить эту область"
@@ -608,7 +605,7 @@
       "Site access": "Acesso ao site", "Enable": "Ativar", "Translation": "Tradução", "Default model": "Modelo padrão", "Default target language": "Default target language", "Second target language": "Second target language", "Interaction": "Interação", "Reading": "Leitura", "Writing": "Entrada", "Video": "Vídeo", "Scope": "Escopo", "Services": "Serviços", "Tuning": "Ajustes", "Local data": "Dados locais",
       "Auto-start bilingual subtitles": "Iniciar legendas bilíngues automaticamente", "Start automatically on supported video pages. On by default.": "Inicia automaticamente em páginas de vídeo compatíveis. Ativado por padrão.", "Subtitle mode": "Modo de legenda", "Choose Full translation, Learning annotations, or Manual.": "Escolha Full translation, Learning annotations ou Manual.", "Topic Sensing": "Topic Sensing", "Hover word lookup": "Consulta ao passar o mouse", "English level": "Nível de inglês", "Japanese level": "Nível de japonês", "Chinese level": "Nível de chinês", "Annotations per subtitle": "Anotações por legenda", "Annotation types": "Tipos de anotação", "YouTube player button": "Botão do player do YouTube", "Parallel subtitle requests": "Solicitações de legenda em paralelo",
       "Bilingual subtitles": "Legendas bilíngues", "Immersive translation": "Tradução imersiva", "Enable immersive translation": "Ativar tradução imersiva", "Automatically translate pages": "Traduzir páginas automaticamente", "Translate visible content first": "Traduzir conteúdo visível primeiro", "Display mode": "Modo de exibição", "Minimum text length": "Comprimento mínimo do texto", "Parallel translations": "Traduções paralelas",
-      "Source": "Origem", "Target": "Destino", "Input": "Entrada", "Hide": "Ocultar", "Show": "Mostrar", "Enter a language code": "Digite um código de idioma", "Enter text to translate.": "Digite o texto para traduzir.", "Read source text aloud": "Ler texto de origem", "Read translation aloud": "Ler tradução", "Stop reading": "Parar leitura", "Model reasoning": "Raciocínio do modelo", "No translation yet.": "Ainda não há tradução.", "Translate": "Traduzir", "Copy": "Copiar", "Compare": "Comparar", "Source text": "Texto de origem", "Source language": "Idioma de origem", "Target language": "Idioma de destino", "Choose providers": "Escolher providers", "Results": "Resultados",
+      "Source": "Origem", "Target": "Destino", "Input": "Entrada", "Hide": "Ocultar", "Show": "Mostrar", "Enter a language code": "Digite um código de idioma", "Enter text to translate.": "Digite o texto para traduzir.", "Read source text aloud": "Ler texto de origem", "Read translation aloud": "Ler tradução", "Stop reading": "Parar leitura", "Model reasoning": "Raciocínio do modelo", "Translate": "Traduzir", "Copy": "Copiar", "Compare": "Comparar", "Source text": "Texto de origem", "Source language": "Idioma de origem", "Target language": "Idioma de destino", "Choose providers": "Escolher providers", "Results": "Resultados",
       "Full translation": "Full translation", "Learning annotations": "Learning annotations", "Manual": "Manual", "Below original": "Abaixo do original", "Compact bilingual": "Bilíngue compacto", "Auto": "Auto", "Casual": "Casual", "Formal": "Formal", "Neutral": "Neutro", "Any": "Any", "Nouns": "Substantivos", "Verbs": "Verbos", "Adjectives": "Adjetivos", "Adverbs": "Advérbios", "Phrases": "Frases", "Auto-detect": "Detectar automaticamente", "Custom…": "Personalizado…", "Search…": "Pesquisar…",
       "Loading settings...": "Carregando configurações...", "Loading settings…": "Carregando configurações…", "Could not load settings.": "Não foi possível carregar as configurações.", "Saving...": "Salvando...", "Saving settings": "Salvando configurações", "Saving…": "Salvando…", "Could not save settings.": "Não foi possível salvar as configurações.", "Settings saved.": "Configurações salvas.", "Loading…": "Carregando…", "Cached": "Em cache", "Translating...": "Traduzindo...", "Translating…": "Traduzindo…", "Translation complete.": "Tradução concluída.", "Translation failed.": "Falha na tradução.", "Copied.": "Copiado.", "Copied!": "Copiado!", "Could not copy": "Não foi possível copiar", "Try again": "Tentar novamente", "Refresh": "Atualizar", "Retry": "Tentar novamente",
       "Translate selected text": "Traduzir texto selecionado", "Translate input text": "Traduzir texto de entrada", "Translate page inline": "Traduzir página inline", "Toggle bilingual subtitles": "Alternar legendas bilíngues", "Select inline translation area": "Selecionar área de tradução inline", "Show bilingual subtitles": "Mostrar legendas bilíngues", "Hide bilingual subtitles": "Ocultar legendas bilíngues", "Loading subtitles": "Carregando legendas", "Bilingual subtitles unavailable": "Legendas bilíngues indisponíveis", "Cancel": "Cancelar", "Select translation area": "Selecionar área de tradução", "Save site rule": "Salvar regra do site", "Translate this area": "Traduzir esta área", "Exclude this area": "Excluir esta área"
@@ -911,7 +908,7 @@
       "Ignore short labels and navigation text below this character count.": "Ignore les libellés courts et la navigation sous ce nombre de caractères.",
       "Limit simultaneous requests to avoid overwhelming the selected provider.": "Limite les requêtes simultanées pour ne pas surcharger le provider choisi.",
       "Analyze a subtitle sample first for better terminology and tone. Uses one extra AI request per video.": "Analyse d’abord un échantillon de sous-titres pour améliorer terminologie et ton. Utilise une requête IA supplémentaire par vidéo.",
-      "Hover a subtitle word for a contextual explanation. Works in all modes.": "Survolez un mot de sous-titre pour obtenir une explication contextuelle. Fonctionne dans tous les modes.",
+      "Hover a subtitle word for a contextual explanation.": "Survolez un mot de sous-titre pour obtenir une explication contextuelle.",
       "Annotate English terms above this CEFR level.": "Annote les termes anglais au-dessus de ce niveau CEFR.",
       "Annotate Japanese terms above this JLPT level.": "Annote les termes japonais au-dessus de ce niveau JLPT.",
       "Annotate Chinese terms above this HSK level.": "Annote les termes chinois au-dessus de ce niveau HSK.",
@@ -1018,7 +1015,7 @@
       "Ignore short labels and navigation text below this character count.": "Ignoriert kurze Labels und Navigationstext unter dieser Zeichenanzahl.",
       "Limit simultaneous requests to avoid overwhelming the selected provider.": "Begrenzt gleichzeitige Anfragen, um den ausgewählten Provider nicht zu überlasten.",
       "Analyze a subtitle sample first for better terminology and tone. Uses one extra AI request per video.": "Analysiert zuerst eine Untertitelprobe für bessere Terminologie und Tonalität. Nutzt eine zusätzliche KI-Anfrage pro Video.",
-      "Hover a subtitle word for a contextual explanation. Works in all modes.": "Bewegen Sie den Mauszeiger über ein Untertitelwort für eine kontextbezogene Erklärung. Funktioniert in allen Modi.",
+      "Hover a subtitle word for a contextual explanation.": "Bewegen Sie den Mauszeiger über ein Untertitelwort für eine kontextbezogene Erklärung.",
       "Annotate English terms above this CEFR level.": "Markiert englische Begriffe oberhalb dieses CEFR-Niveaus.",
       "Annotate Japanese terms above this JLPT level.": "Markiert japanische Begriffe oberhalb dieses JLPT-Niveaus.",
       "Annotate Chinese terms above this HSK level.": "Markiert chinesische Begriffe oberhalb dieses HSK-Niveaus.",
@@ -1125,7 +1122,7 @@
       "Ignore short labels and navigation text below this character count.": "Ignora etiquetas cortas y navegación por debajo de este número de caracteres.",
       "Limit simultaneous requests to avoid overwhelming the selected provider.": "Limita solicitudes simultáneas para no sobrecargar el provider seleccionado.",
       "Analyze a subtitle sample first for better terminology and tone. Uses one extra AI request per video.": "Analiza primero una muestra de subtítulos para mejorar terminología y tono. Usa una solicitud de IA adicional por video.",
-      "Hover a subtitle word for a contextual explanation. Works in all modes.": "Pasa el cursor sobre una palabra de subtítulo para ver una explicación contextual. Funciona en todos los modos.",
+      "Hover a subtitle word for a contextual explanation.": "Pasa el cursor sobre una palabra de subtítulo para ver una explicación contextual.",
       "Annotate English terms above this CEFR level.": "Anota términos en inglés por encima de este nivel CEFR.",
       "Annotate Japanese terms above this JLPT level.": "Anota términos en japonés por encima de este nivel JLPT.",
       "Annotate Chinese terms above this HSK level.": "Anota términos en chino por encima de este nivel HSK.",
@@ -1232,7 +1229,7 @@
       "Ignore short labels and navigation text below this character count.": "Игнорирует короткие подписи и навигационный текст меньше этого числа символов.",
       "Limit simultaneous requests to avoid overwhelming the selected provider.": "Ограничивает одновременные запросы, чтобы не перегружать выбранный provider.",
       "Analyze a subtitle sample first for better terminology and tone. Uses one extra AI request per video.": "Сначала анализирует образец субтитров для лучшей терминологии и тона. Использует один дополнительный AI-запрос на видео.",
-      "Hover a subtitle word for a contextual explanation. Works in all modes.": "Наведите курсор на слово в субтитрах для контекстного объяснения. Работает во всех режимах.",
+      "Hover a subtitle word for a contextual explanation.": "Наведите курсор на слово в субтитрах для контекстного объяснения.",
       "Annotate English terms above this CEFR level.": "Аннотирует английские термины выше этого уровня CEFR.",
       "Annotate Japanese terms above this JLPT level.": "Аннотирует японские термины выше этого уровня JLPT.",
       "Annotate Chinese terms above this HSK level.": "Аннотирует китайские термины выше этого уровня HSK.",
@@ -1339,7 +1336,7 @@
       "Ignore short labels and navigation text below this character count.": "Ignora rótulos curtos e texto de navegação abaixo desta contagem de caracteres.",
       "Limit simultaneous requests to avoid overwhelming the selected provider.": "Limita solicitações simultâneas para não sobrecarregar o provider selecionado.",
       "Analyze a subtitle sample first for better terminology and tone. Uses one extra AI request per video.": "Analisa primeiro uma amostra de legendas para melhorar terminologia e tom. Usa uma solicitação de IA extra por vídeo.",
-      "Hover a subtitle word for a contextual explanation. Works in all modes.": "Passe o mouse sobre uma palavra da legenda para ver uma explicação contextual. Funciona em todos os modos.",
+      "Hover a subtitle word for a contextual explanation.": "Passe o mouse sobre uma palavra da legenda para ver uma explicação contextual.",
       "Annotate English terms above this CEFR level.": "Anota termos em inglês acima deste nível CEFR.",
       "Annotate Japanese terms above this JLPT level.": "Anota termos em japonês acima deste nível JLPT.",
       "Annotate Chinese terms above this HSK level.": "Anota termos em chinês acima deste nível HSK.",
@@ -1575,7 +1572,14 @@
     "ja": {
       "Help": "ヘルプ",
       "Show help": "ヘルプを表示",
-      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "モデル選択では、レイテンシ、出力速度、品質のバランスを取る必要があります。翻訳タスクでは通常、最先端モデルは不要です。レイテンシが 1000 ms 未満、TPS が 70 tok/s を超えるモデル、例えば Gemini 3.5 Flash Lite をおすすめします。",
+      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a non-reasoning model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "モデル選択では、レイテンシ、出力速度、品質のバランスを取る必要があります。翻訳タスクでは通常、最先端モデルは不要です。レイテンシが 1000 ms 未満、TPS が 70 tok/s を超える Non-Reasoning モデル、例えば Gemini 3.5 Flash Lite をおすすめします。",
+      "When using Learning annotations mode, only words and phrases selected by your language level settings are translated. This is useful for language learners.": "Learning annotations モードでは、設定した言語レベルに基づいて選ばれた単語やフレーズのみを翻訳します。言語学習者に適しています。",
+      "When enabled, Topic Sensing uses more input tokens, but caching usually keeps the cost impact small. Recommended.": "有効にすると Topic Sensing は入力トークンを多く使いますが、通常はキャッシュによりコスト増は大きくありません。推奨設定です。",
+      "Starts lookup after you hover a word for 300 ms.": "単語に 300 ms ホバーすると検索を開始します。",
+      "If you hide the player button, you can still use bilingual subtitles from the context menu.": "プレーヤーボタンを非表示にしても、コンテキストメニューからバイリンガル字幕を使用できます。",
+      "The input button translates focused editable text in place.": "入力ボタンはフォーカス中の編集可能テキストをその場で翻訳します。",
+      "MelonTranslate caches translation results to improve responsiveness and reduce duplicate requests. This cache cannot be disabled, is not translation history, is kept only temporarily in RAM, is not persisted, and is cleared when the browser closes. For details, see Privacy Policy.": "MelonTranslate は体験向上と重複リクエスト削減のために翻訳結果をキャッシュします。このキャッシュは無効化できず、翻訳履歴ではありません。一時的に RAM 内にのみ保存され、永続化されず、ブラウザーを閉じると削除されます。プライバシーポリシーについては Privacy Policy を参照してください。",
+      "Shows a translate control next to focused text fields. If it conflicts with a site or another extension, change the style, position, or site rules.": "フォーカス中のテキスト欄の横に翻訳コントロールを表示します。サイトや他の拡張機能と競合する場合は、スタイル、位置、またはサイトルールを変更してください。",
       "Very small models may behave inconsistently with this feature.": "パラメーター数が少なすぎるモデルでは、この機能の挙動が不安定になる場合があります。",
       "Adjust this only if you know what you are doing.": "何をしているか分かっている場合にのみ調整してください。",
       "Lower this value if your provider rejects requests during heavy translation.": "大量翻訳時に Provider から拒否される場合は、この値を下げてください。",
@@ -1584,7 +1588,14 @@
     "zh-CN": {
       "Help": "帮助",
       "Show help": "显示帮助",
-      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "模型的选择需要兼顾延迟、输出速度、质量，翻译任务通常并不需要最先进的模型。推荐使用延迟 < 1000ms，TPS > 70 tok/s的模型，例如 Gemini 3.5 Flash Lite。",
+      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a non-reasoning model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "模型的选择需要兼顾延迟、输出速度、质量，翻译任务通常并不需要最先进的模型。推荐使用延迟 < 1000ms，TPS > 70 tok/s 的 Non-Reasoning 模型，例如 Gemini 3.5 Flash Lite。",
+      "When using Learning annotations mode, only words and phrases selected by your language level settings are translated. This is useful for language learners.": "当使用 Learning annotations 模式时，仅会根据设置的语言等级对单词、短语进行翻译，适合语言学习者。",
+      "When enabled, Topic Sensing uses more input tokens, but caching usually keeps the cost impact small. Recommended.": "开启后会使用更多的 Input Token，但通常因为缓存而不会显著增加成本，推荐开启。",
+      "Starts lookup after you hover a word for 300 ms.": "会在鼠标停留在单词上 300ms 后开始查询。",
+      "If you hide the player button, you can still use bilingual subtitles from the context menu.": "隐藏播放器按钮后，你仍然可以通过右键菜单使用该功能。",
+      "The input button translates focused editable text in place.": "Input button 会就地翻译当前聚焦的可编辑文本。",
+      "MelonTranslate caches translation results to improve responsiveness and reduce duplicate requests. This cache cannot be disabled, is not translation history, is kept only temporarily in RAM, is not persisted, and is cleared when the browser closes. For details, see Privacy Policy.": "MelonTranslate 会对翻译结果进行缓存，这是为了优化体验与减少重复请求，此特性无法关闭，这并非历史记录，缓存仅临时保存在内存中，不会被持久化存储，会随着关闭浏览器而被清除。关于隐私政策请参见 Privacy Policy。",
+      "Shows a translate control next to focused text fields. If it conflicts with a site or another extension, change the style, position, or site rules.": "在聚焦的输入框旁显示翻译控件。如果它与网站或其它扩展冲突，请调整样式、位置或站点规则。",
       "Very small models may behave inconsistently with this feature.": "参数量过低的模型使用该功能可能会表现不稳定。",
       "Adjust this only if you know what you are doing.": "仅在你知道你在做什么时调整。",
       "Lower this value if your provider rejects requests during heavy translation.": "当你在进行大量翻译时被 Provider 拒绝后适当降低这个选项。",
@@ -1593,7 +1604,14 @@
     "zh-TW": {
       "Help": "說明",
       "Show help": "顯示說明",
-      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "模型選擇需要兼顧延遲、輸出速度與品質。翻譯任務通常不需要最先進的模型。建議使用延遲 < 1000ms、TPS > 70 tok/s 的模型，例如 Gemini 3.5 Flash Lite。",
+      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a non-reasoning model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "模型選擇需要兼顧延遲、輸出速度與品質。翻譯任務通常不需要最先進的模型。建議使用延遲 < 1000ms、TPS > 70 tok/s 的 Non-Reasoning 模型，例如 Gemini 3.5 Flash Lite。",
+      "When using Learning annotations mode, only words and phrases selected by your language level settings are translated. This is useful for language learners.": "使用 Learning annotations 模式時，只會依照設定的語言等級翻譯單字與片語，適合語言學習者。",
+      "When enabled, Topic Sensing uses more input tokens, but caching usually keeps the cost impact small. Recommended.": "開啟後會使用更多 Input Token，但通常因快取而不會明顯增加成本，建議開啟。",
+      "Starts lookup after you hover a word for 300 ms.": "滑鼠停留在單字上 300ms 後會開始查詢。",
+      "If you hide the player button, you can still use bilingual subtitles from the context menu.": "隱藏播放器按鈕後，仍可透過右鍵選單使用此功能。",
+      "The input button translates focused editable text in place.": "Input button 會就地翻譯目前聚焦的可編輯文字。",
+      "MelonTranslate caches translation results to improve responsiveness and reduce duplicate requests. This cache cannot be disabled, is not translation history, is kept only temporarily in RAM, is not persisted, and is cleared when the browser closes. For details, see Privacy Policy.": "MelonTranslate 會對翻譯結果進行快取，這是為了優化體驗並減少重複請求。此功能無法關閉，這不是歷史記錄；快取只會暫時保存在記憶體中，不會被持久化儲存，並會在關閉瀏覽器後清除。關於隱私政策請參見 Privacy Policy。",
+      "Shows a translate control next to focused text fields. If it conflicts with a site or another extension, change the style, position, or site rules.": "在聚焦的輸入框旁顯示翻譯控制項。若與網站或其他擴充功能衝突，請調整樣式、位置或網站規則。",
       "Very small models may behave inconsistently with this feature.": "參數量過低的模型使用此功能時可能表現不穩定。",
       "Adjust this only if you know what you are doing.": "僅在你知道自己在做什麼時調整。",
       "Lower this value if your provider rejects requests during heavy translation.": "大量翻譯時若被 Provider 拒絕，可適當降低此選項。",
@@ -1602,7 +1620,14 @@
     "fr": {
       "Help": "Aide",
       "Show help": "Afficher l’aide",
-      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "Le choix du modèle doit équilibrer latence, vitesse de sortie et qualité. La traduction n’a généralement pas besoin du modèle le plus avancé. Nous recommandons un modèle avec une latence inférieure à 1000 ms et un TPS supérieur à 70 tok/s, comme Gemini 3.5 Flash Lite.",
+      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a non-reasoning model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "Le choix du modèle doit équilibrer latence, vitesse de sortie et qualité. La traduction n’a généralement pas besoin du modèle le plus avancé. Nous recommandons un modèle Non-Reasoning avec une latence inférieure à 1000 ms et un TPS supérieur à 70 tok/s, comme Gemini 3.5 Flash Lite.",
+      "When using Learning annotations mode, only words and phrases selected by your language level settings are translated. This is useful for language learners.": "En mode Learning annotations, seuls les mots et expressions sélectionnés par votre niveau de langue sont traduits. C’est utile pour les apprenants.",
+      "When enabled, Topic Sensing uses more input tokens, but caching usually keeps the cost impact small. Recommended.": "Quand Topic Sensing est activé, il utilise plus d’input tokens, mais le cache limite généralement l’impact sur le coût. Recommandé.",
+      "Starts lookup after you hover a word for 300 ms.": "La recherche commence après 300 ms de survol d’un mot.",
+      "If you hide the player button, you can still use bilingual subtitles from the context menu.": "Si vous masquez le bouton du lecteur, vous pouvez toujours utiliser les sous-titres bilingues depuis le menu contextuel.",
+      "The input button translates focused editable text in place.": "Le bouton de saisie traduit sur place le texte éditable actif.",
+      "MelonTranslate caches translation results to improve responsiveness and reduce duplicate requests. This cache cannot be disabled, is not translation history, is kept only temporarily in RAM, is not persisted, and is cleared when the browser closes. For details, see Privacy Policy.": "MelonTranslate met en cache les résultats de traduction pour améliorer la réactivité et réduire les requêtes répétées. Ce cache ne peut pas être désactivé, ce n’est pas l’historique de traduction, il est conservé temporairement en RAM, n’est pas stocké de façon persistante et est effacé à la fermeture du navigateur. Pour plus de détails, consultez Privacy Policy.",
+      "Shows a translate control next to focused text fields. If it conflicts with a site or another extension, change the style, position, or site rules.": "Affiche un contrôle de traduction près des champs de texte actifs. En cas de conflit avec un site ou une autre extension, modifiez le style, la position ou les règles de site.",
       "Very small models may behave inconsistently with this feature.": "Les modèles trop petits peuvent être instables avec cette fonctionnalité.",
       "Adjust this only if you know what you are doing.": "Ajustez ce réglage uniquement si vous savez ce que vous faites.",
       "Lower this value if your provider rejects requests during heavy translation.": "Réduisez cette valeur si votre provider rejette les requêtes lors de traductions volumineuses.",
@@ -1611,7 +1636,14 @@
     "de": {
       "Help": "Hilfe",
       "Show help": "Hilfe anzeigen",
-      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "Die Modellauswahl sollte Latenz, Ausgabegeschwindigkeit und Qualität ausbalancieren. Übersetzungen benötigen normalerweise nicht das modernste Modell. Empfohlen wird ein Modell mit weniger als 1000 ms Latenz und mehr als 70 tok/s TPS, zum Beispiel Gemini 3.5 Flash Lite.",
+      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a non-reasoning model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "Die Modellauswahl sollte Latenz, Ausgabegeschwindigkeit und Qualität ausbalancieren. Übersetzungen benötigen normalerweise nicht das modernste Modell. Empfohlen wird ein Non-Reasoning-Modell mit weniger als 1000 ms Latenz und mehr als 70 tok/s TPS, zum Beispiel Gemini 3.5 Flash Lite.",
+      "When using Learning annotations mode, only words and phrases selected by your language level settings are translated. This is useful for language learners.": "Im Modus Learning annotations werden nur Wörter und Phrasen übersetzt, die durch Ihre Sprachniveau-Einstellungen ausgewählt wurden. Das ist für Sprachlernende nützlich.",
+      "When enabled, Topic Sensing uses more input tokens, but caching usually keeps the cost impact small. Recommended.": "Wenn Topic Sensing aktiviert ist, werden mehr Input Tokens verwendet, aber Caching hält die Kosten meist gering. Empfohlen.",
+      "Starts lookup after you hover a word for 300 ms.": "Die Suche startet, nachdem Sie ein Wort 300 ms lang hovern.",
+      "If you hide the player button, you can still use bilingual subtitles from the context menu.": "Wenn Sie die Player-Schaltfläche ausblenden, können Sie zweisprachige Untertitel weiterhin über das Kontextmenü verwenden.",
+      "The input button translates focused editable text in place.": "Der Eingabebutton übersetzt fokussierten bearbeitbaren Text direkt im Feld.",
+      "MelonTranslate caches translation results to improve responsiveness and reduce duplicate requests. This cache cannot be disabled, is not translation history, is kept only temporarily in RAM, is not persisted, and is cleared when the browser closes. For details, see Privacy Policy.": "MelonTranslate speichert Übersetzungsergebnisse im Cache, um die Reaktionszeit zu verbessern und doppelte Anfragen zu reduzieren. Dieser Cache kann nicht deaktiviert werden, ist kein Übersetzungsverlauf, wird nur vorübergehend im RAM gehalten, nicht dauerhaft gespeichert und beim Schließen des Browsers gelöscht. Details finden Sie in der Privacy Policy.",
+      "Shows a translate control next to focused text fields. If it conflicts with a site or another extension, change the style, position, or site rules.": "Zeigt ein Übersetzungs-Steuerelement neben fokussierten Textfeldern. Bei Konflikten mit einer Website oder Erweiterung ändern Sie Stil, Position oder Website-Regeln.",
       "Very small models may behave inconsistently with this feature.": "Sehr kleine Modelle können sich mit dieser Funktion inkonsistent verhalten.",
       "Adjust this only if you know what you are doing.": "Ändern Sie dies nur, wenn Sie genau wissen, was Sie tun.",
       "Lower this value if your provider rejects requests during heavy translation.": "Senken Sie diesen Wert, wenn Ihr Provider bei vielen Übersetzungen Anfragen ablehnt.",
@@ -1620,7 +1652,14 @@
     "es": {
       "Help": "Ayuda",
       "Show help": "Mostrar ayuda",
-      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "La elección del modelo debe equilibrar latencia, velocidad de salida y calidad. Las tareas de traducción normalmente no necesitan el modelo más avanzado. Recomendamos un modelo con latencia inferior a 1000 ms y TPS superior a 70 tok/s, como Gemini 3.5 Flash Lite.",
+      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a non-reasoning model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "La elección del modelo debe equilibrar latencia, velocidad de salida y calidad. Las tareas de traducción normalmente no necesitan el modelo más avanzado. Recomendamos un modelo Non-Reasoning con latencia inferior a 1000 ms y TPS superior a 70 tok/s, como Gemini 3.5 Flash Lite.",
+      "When using Learning annotations mode, only words and phrases selected by your language level settings are translated. This is useful for language learners.": "En el modo Learning annotations, solo se traducen las palabras y frases seleccionadas por tu nivel de idioma. Es útil para estudiantes de idiomas.",
+      "When enabled, Topic Sensing uses more input tokens, but caching usually keeps the cost impact small. Recommended.": "Al activarlo, Topic Sensing usa más input tokens, pero la caché suele mantener bajo el impacto en el coste. Recomendado.",
+      "Starts lookup after you hover a word for 300 ms.": "La consulta empieza tras mantener el cursor sobre una palabra durante 300 ms.",
+      "If you hide the player button, you can still use bilingual subtitles from the context menu.": "Si ocultas el botón del reproductor, aún puedes usar subtítulos bilingües desde el menú contextual.",
+      "The input button translates focused editable text in place.": "El botón de entrada traduce en el sitio el texto editable enfocado.",
+      "MelonTranslate caches translation results to improve responsiveness and reduce duplicate requests. This cache cannot be disabled, is not translation history, is kept only temporarily in RAM, is not persisted, and is cleared when the browser closes. For details, see Privacy Policy.": "MelonTranslate almacena resultados de traducción en caché para mejorar la respuesta y reducir solicitudes duplicadas. Esta caché no se puede desactivar, no es el historial de traducción, se conserva solo temporalmente en RAM, no se guarda de forma persistente y se borra al cerrar el navegador. Para más detalles, consulta Privacy Policy.",
+      "Shows a translate control next to focused text fields. If it conflicts with a site or another extension, change the style, position, or site rules.": "Muestra un control de traducción junto a los campos de texto enfocados. Si entra en conflicto con un sitio u otra extensión, cambia el estilo, la posición o las reglas del sitio.",
       "Very small models may behave inconsistently with this feature.": "Los modelos muy pequeños pueden comportarse de forma inestable con esta función.",
       "Adjust this only if you know what you are doing.": "Ajusta esto solo si sabes lo que estás haciendo.",
       "Lower this value if your provider rejects requests during heavy translation.": "Reduce este valor si tu provider rechaza solicitudes durante traducciones intensivas.",
@@ -1629,7 +1668,14 @@
     "ru": {
       "Help": "Справка",
       "Show help": "Показать справку",
-      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "При выборе модели нужно учитывать задержку, скорость вывода и качество. Для перевода обычно не нужна самая передовая модель. Рекомендуется модель с задержкой менее 1000 ms и TPS выше 70 tok/s, например Gemini 3.5 Flash Lite.",
+      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a non-reasoning model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "При выборе модели нужно учитывать задержку, скорость вывода и качество. Для перевода обычно не нужна самая передовая модель. Рекомендуется Non-Reasoning модель с задержкой менее 1000 ms и TPS выше 70 tok/s, например Gemini 3.5 Flash Lite.",
+      "When using Learning annotations mode, only words and phrases selected by your language level settings are translated. This is useful for language learners.": "В режиме Learning annotations переводятся только слова и фразы, выбранные по настройкам языкового уровня. Это полезно для изучающих язык.",
+      "When enabled, Topic Sensing uses more input tokens, but caching usually keeps the cost impact small. Recommended.": "При включении Topic Sensing использует больше input tokens, но кэширование обычно незначительно влияет на стоимость. Рекомендуется.",
+      "Starts lookup after you hover a word for 300 ms.": "Поиск начинается после наведения на слово на 300 ms.",
+      "If you hide the player button, you can still use bilingual subtitles from the context menu.": "Если скрыть кнопку плеера, двуязычные субтитры всё равно доступны из контекстного меню.",
+      "The input button translates focused editable text in place.": "Кнопка ввода переводит активный редактируемый текст на месте.",
+      "MelonTranslate caches translation results to improve responsiveness and reduce duplicate requests. This cache cannot be disabled, is not translation history, is kept only temporarily in RAM, is not persisted, and is cleared when the browser closes. For details, see Privacy Policy.": "MelonTranslate кэширует результаты перевода, чтобы улучшить отклик и уменьшить повторные запросы. Этот кэш нельзя отключить, это не история переводов; он временно хранится только в RAM, не сохраняется постоянно и очищается при закрытии браузера. Подробнее см. Privacy Policy.",
+      "Shows a translate control next to focused text fields. If it conflicts with a site or another extension, change the style, position, or site rules.": "Показывает элемент перевода рядом с активными текстовыми полями. Если он конфликтует с сайтом или другим расширением, измените стиль, позицию или правила сайта.",
       "Very small models may behave inconsistently with this feature.": "Модели с очень малым числом параметров могут работать с этой функцией нестабильно.",
       "Adjust this only if you know what you are doing.": "Изменяйте это только если понимаете, что делаете.",
       "Lower this value if your provider rejects requests during heavy translation.": "Уменьшите это значение, если provider отклоняет запросы при большом объеме перевода.",
@@ -1638,7 +1684,14 @@
     "pt": {
       "Help": "Ajuda",
       "Show help": "Mostrar ajuda",
-      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "A escolha do modelo deve equilibrar latência, velocidade de saída e qualidade. Tradução normalmente não precisa do modelo mais avançado. Recomendamos um modelo com latência abaixo de 1000 ms e TPS acima de 70 tok/s, como Gemini 3.5 Flash Lite.",
+      "Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a non-reasoning model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.": "A escolha do modelo deve equilibrar latência, velocidade de saída e qualidade. Tradução normalmente não precisa do modelo mais avançado. Recomendamos um modelo Non-Reasoning com latência abaixo de 1000 ms e TPS acima de 70 tok/s, como Gemini 3.5 Flash Lite.",
+      "When using Learning annotations mode, only words and phrases selected by your language level settings are translated. This is useful for language learners.": "No modo Learning annotations, apenas palavras e frases selecionadas pelas configurações de nível do idioma são traduzidas. É útil para estudantes de idiomas.",
+      "When enabled, Topic Sensing uses more input tokens, but caching usually keeps the cost impact small. Recommended.": "Quando ativado, Topic Sensing usa mais input tokens, mas o cache geralmente mantém baixo o impacto no custo. Recomendado.",
+      "Starts lookup after you hover a word for 300 ms.": "A consulta começa após passar o mouse sobre uma palavra por 300 ms.",
+      "If you hide the player button, you can still use bilingual subtitles from the context menu.": "Se você ocultar o botão do player, ainda poderá usar legendas bilíngues pelo menu de contexto.",
+      "The input button translates focused editable text in place.": "O botão de entrada traduz no lugar o texto editável em foco.",
+      "MelonTranslate caches translation results to improve responsiveness and reduce duplicate requests. This cache cannot be disabled, is not translation history, is kept only temporarily in RAM, is not persisted, and is cleared when the browser closes. For details, see Privacy Policy.": "O MelonTranslate armazena resultados de tradução em cache para melhorar a resposta e reduzir solicitações duplicadas. Esse cache não pode ser desativado, não é histórico de tradução, fica apenas temporariamente na RAM, não é persistido e é apagado ao fechar o navegador. Para detalhes, consulte Privacy Policy.",
+      "Shows a translate control next to focused text fields. If it conflicts with a site or another extension, change the style, position, or site rules.": "Mostra um controle de tradução ao lado de campos de texto focados. Se houver conflito com um site ou outra extensão, altere o estilo, a posição ou as regras do site.",
       "Very small models may behave inconsistently with this feature.": "Modelos muito pequenos podem se comportar de forma instável com este recurso.",
       "Adjust this only if you know what you are doing.": "Ajuste isso apenas se você souber o que está fazendo.",
       "Lower this value if your provider rejects requests during heavy translation.": "Reduza este valor se seu provider rejeitar solicitações durante traduções intensas.",
@@ -1863,6 +1916,61 @@
 
   Object.keys(inputButtonPositionTranslations).forEach(function(localeKey) {
     Object.assign(translations[localeKey], inputButtonPositionTranslations[localeKey]);
+  });
+
+  const projectInfoTranslations = {
+    "ja": {
+      "About": "概要",
+      "Project": "プロジェクト",
+      "Source code, issues, and releases are available on GitHub.": "ソースコード、Issue、リリースは GitHub で確認できます。",
+      "Open GitHub repository": "GitHub リポジトリを開く"
+    },
+    "zh-CN": {
+      "About": "关于",
+      "Project": "项目",
+      "Source code, issues, and releases are available on GitHub.": "源代码、Issue 和发布版本可在 GitHub 查看。",
+      "Open GitHub repository": "打开 GitHub 仓库"
+    },
+    "zh-TW": {
+      "About": "關於",
+      "Project": "專案",
+      "Source code, issues, and releases are available on GitHub.": "原始碼、Issue 和發行版本可在 GitHub 查看。",
+      "Open GitHub repository": "開啟 GitHub 倉庫"
+    },
+    "fr": {
+      "About": "À propos",
+      "Project": "Projet",
+      "Source code, issues, and releases are available on GitHub.": "Le code source, les issues et les releases sont disponibles sur GitHub.",
+      "Open GitHub repository": "Ouvrir le dépôt GitHub"
+    },
+    "de": {
+      "About": "Info",
+      "Project": "Projekt",
+      "Source code, issues, and releases are available on GitHub.": "Quellcode, Issues und Releases sind auf GitHub verfügbar.",
+      "Open GitHub repository": "GitHub-Repository öffnen"
+    },
+    "es": {
+      "About": "Acerca de",
+      "Project": "Proyecto",
+      "Source code, issues, and releases are available on GitHub.": "El código fuente, los issues y las releases están disponibles en GitHub.",
+      "Open GitHub repository": "Abrir repositorio de GitHub"
+    },
+    "ru": {
+      "About": "О проекте",
+      "Project": "Проект",
+      "Source code, issues, and releases are available on GitHub.": "Исходный код, issues и releases доступны на GitHub.",
+      "Open GitHub repository": "Открыть репозиторий GitHub"
+    },
+    "pt": {
+      "About": "Sobre",
+      "Project": "Projeto",
+      "Source code, issues, and releases are available on GitHub.": "Código-fonte, issues e releases estão disponíveis no GitHub.",
+      "Open GitHub repository": "Abrir repositório no GitHub"
+    }
+  };
+
+  Object.keys(projectInfoTranslations).forEach(function(localeKey) {
+    Object.assign(translations[localeKey], projectInfoTranslations[localeKey]);
   });
 
   function normalizeKey(value) {

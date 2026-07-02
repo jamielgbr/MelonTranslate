@@ -263,6 +263,12 @@ textarea:focus {
   line-height: 1.55;
 }
 
+.setting-help-popover a {
+  color: var(--accent-dark);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
 .setting-help-popover::before {
   content: "";
   position: absolute;
@@ -334,6 +340,13 @@ textarea:focus {
 .settings-row-data-actions .settings-control {
   display: flex;
   justify-content: flex-end;
+}
+
+.project-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .choice-list {

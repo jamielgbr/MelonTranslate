@@ -36,12 +36,13 @@
                 <a href="#translation-defaults">Language &amp; model</a>
                 <a href="#selection">Selection</a>
                 <a href="#immersive-translation">Immersive</a>
-                <a href="#video-subtitles">Video subtitles</a>
                 <a href="#site-rules-section">Site rules</a>
+                <a href="#video-subtitles">Video subtitles</a>
                 <a href="#input-button">Input button</a>
                 <a href="#providers-section">Providers</a>
                 <a href="#model-parameters-section">Model parameters</a>
                 <a href="#data-history">Data &amp; history</a>
+                <a href="#about-section">About</a>
             </nav>
             <div class="settings-content">
                 <section id="site-access-section" class="panel settings-section site-access-section hidden"
@@ -68,7 +69,7 @@
                                 <div class="setting-title">
                                     <label for="default-translation-model">Default model</label>
                                     <button class="setting-help" type="button" aria-label="Show help" title="Help"
-                                        data-help="Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.">?</button>
+                                        data-help="Model choice should balance latency, output speed, and quality. Translation usually does not need the most advanced model. We recommend a non-reasoning model with latency under 1000 ms and TPS above 70 tok/s, such as Gemini 3.5 Flash Lite.">?</button>
                                 </div>
                                 <p class="setting-desc">Used by the select to translate.</p>
                             </div>
@@ -252,6 +253,17 @@
                         </div>
                     </div>
                 </section>
+                <section id="site-rules-section" class="panel settings-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">Scope</p>
+                            <h2>Site rules</h2>
+                        </div>
+                    </div>
+                    <p class="hint">Rules created by the page area picker limit immersive translation to selected page
+                        regions.</p>
+                    <div id="site-rules" class="site-rules"></div>
+                </section>
                 <section id="video-subtitles" class="panel settings-section">
                     <div class="section-header">
                         <div>
@@ -273,7 +285,11 @@
                         </div>
                         <div class="settings-row">
                             <div class="settings-copy">
-                                <label for="video-subtitles-mode">Subtitle mode</label>
+                                <div class="setting-title">
+                                    <label for="video-subtitles-mode">Subtitle mode</label>
+                                    <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                        data-help="When using Learning annotations mode, only words and phrases selected by your language level settings are translated. This is useful for language learners.">?</button>
+                                </div>
                                 <p class="setting-desc">Choose Full translation, Learning annotations, or Manual.</p>
                             </div>
                             <div class="settings-control">
@@ -282,7 +298,11 @@
                         </div>
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
-                                <label for="video-subtitles-topic-context">Topic Sensing</label>
+                                <div class="setting-title">
+                                    <label for="video-subtitles-topic-context">Topic Sensing</label>
+                                    <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                        data-help="When enabled, Topic Sensing uses more input tokens, but caching usually keeps the cost impact small. Recommended.">?</button>
+                                </div>
                                 <p class="setting-desc">Analyze a subtitle sample first for better terminology and tone.
                                     Uses one extra AI request per video.</p>
                             </div>
@@ -294,9 +314,12 @@
                         </div>
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
-                                <label for="video-subtitles-word-lookup">Hover word lookup</label>
-                                <p class="setting-desc">Hover a subtitle word for a contextual explanation. Works in all
-                                    modes.</p>
+                                <div class="setting-title">
+                                    <label for="video-subtitles-word-lookup">Hover word lookup</label>
+                                    <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                        data-help="Starts lookup after you hover a word for 300 ms.">?</button>
+                                </div>
+                                <p class="setting-desc">Hover a subtitle word for a contextual explanation.</p>
                             </div>
                             <label class="provider-switch" for="video-subtitles-word-lookup"
                                 aria-label="Hover word lookup">
@@ -363,7 +386,11 @@
                         </div>
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
-                                <label for="video-subtitles-show-player-button">YouTube player button</label>
+                                <div class="setting-title">
+                                    <label for="video-subtitles-show-player-button">YouTube player button</label>
+                                    <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                        data-help="If you hide the player button, you can still use bilingual subtitles from the context menu.">?</button>
+                                </div>
                                 <p class="setting-desc">Show the subtitle toggle in YouTube controls.</p>
                             </div>
                             <label class="provider-switch" for="video-subtitles-show-player-button"
@@ -374,7 +401,11 @@
                         </div>
                         <div class="settings-row">
                             <div class="settings-copy">
-                                <label for="video-subtitles-max-concurrent-batches">Parallel subtitle requests</label>
+                                <div class="setting-title">
+                                    <label for="video-subtitles-max-concurrent-batches">Parallel subtitle requests</label>
+                                    <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                        data-help="Adjust this only if you know what you are doing.">?</button>
+                                </div>
                                 <p class="setting-desc">Limit simultaneous subtitle translation requests.</p>
                             </div>
                             <div class="settings-control">
@@ -388,13 +419,21 @@
                     <div class="section-header">
                         <div>
                             <p class="eyebrow">Writing</p>
-                            <h2>Input button</h2>
+                            <div class="setting-title setting-title-heading">
+                                <h2>Input button</h2>
+                                <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                    data-help="The input button translates focused editable text in place.">?</button>
+                            </div>
                         </div>
                     </div>
                     <div class="settings-group">
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
-                                <label for="input-inline-button-enabled">Show input translation button</label>
+                                <div class="setting-title">
+                                    <label for="input-inline-button-enabled">Show input translation button</label>
+                                    <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                        data-help="Shows a translate control next to focused text fields. If it conflicts with a site or another extension, change the style, position, or site rules.">?</button>
+                                </div>
                                 <p class="setting-desc">Show the translate button while editable text fields are focused.</p>
                             </div>
                             <label class="provider-switch" for="input-inline-button-enabled"
@@ -481,17 +520,6 @@
                         </div>
                     </div>
                 </section>
-                <section id="site-rules-section" class="panel settings-section">
-                    <div class="section-header">
-                        <div>
-                            <p class="eyebrow">Scope</p>
-                            <h2>Site rules</h2>
-                        </div>
-                    </div>
-                    <p class="hint">Rules created by the page area picker limit immersive translation to selected page
-                        regions.</p>
-                    <div id="site-rules" class="site-rules"></div>
-                </section>
                 <section id="providers-section" class="panel settings-section">
                     <div class="section-header">
                         <div>
@@ -519,7 +547,13 @@
                     <div class="section-header">
                         <div>
                             <p class="eyebrow">Local data</p>
-                            <h2>Data &amp; history</h2>
+                            <div class="setting-title setting-title-heading">
+                                <h2>Data &amp; history</h2>
+                                <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                    data-help="MelonTranslate caches translation results to improve responsiveness and reduce duplicate requests. This cache cannot be disabled, is not translation history, is kept only temporarily in RAM, is not persisted, and is cleared when the browser closes. For details, see Privacy Policy."
+                                    data-help-link-url="https://github.com/jamielgbr/MelonTranslate/blob/main/PRIVACY_POLICY.md"
+                                    data-help-link-label="Privacy Policy">?</button>
+                            </div>
                         </div>
                         <button id="clear-history" class="secondary icon-action-button" type="button"
                             aria-label="Clear history" title="Clear">
@@ -573,6 +607,26 @@
                     <div class="history-section">
                         <h3 class="settings-group-title">Translation history</h3>
                         <div id="history" class="history"></div>
+                    </div>
+                </section>
+                <section id="about-section" class="panel settings-section">
+                    <div class="section-header">
+                        <div>
+                            <p class="eyebrow">Project</p>
+                            <h2>About</h2>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <div class="settings-row settings-row-data-actions">
+                            <div class="settings-copy">
+                                <label>MelonTranslate</label>
+                                <p class="setting-desc">Source code, issues, and releases are available on GitHub.</p>
+                            </div>
+                            <div class="settings-control settings-actions">
+                                <a class="secondary project-link" href="https://github.com/jamielgbr/MelonTranslate"
+                                    target="_blank" rel="noopener noreferrer" aria-label="Open GitHub repository">GitHub</a>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </div>
