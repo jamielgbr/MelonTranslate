@@ -929,7 +929,7 @@
         : current.videoBilingualSubtitlesWordLookupEnabled !== false,
       videoBilingualSubtitlesTopicContextEnabled: incoming.videoBilingualSubtitlesTopicContextEnabled !== undefined
         ? !!incoming.videoBilingualSubtitlesTopicContextEnabled
-        : !!current.videoBilingualSubtitlesTopicContextEnabled,
+        : current.videoBilingualSubtitlesTopicContextEnabled !== false,
       videoBilingualSubtitlesSkipDefaultTargetSource: incoming.videoBilingualSubtitlesSkipDefaultTargetSource !== undefined
         ? !!incoming.videoBilingualSubtitlesSkipDefaultTargetSource
         : current.videoBilingualSubtitlesSkipDefaultTargetSource !== false,
@@ -1817,7 +1817,7 @@
     document.getElementById("immersive-min-text-length").value = clampNumber(state.settings.immersiveTranslationMinTextLength, 32, 8, 500);
     document.getElementById("immersive-max-concurrent").value = clampNumber(state.settings.immersiveTranslationMaxConcurrent, 2, 1, 4);
     document.getElementById("video-subtitles-auto").checked = !!state.settings.videoBilingualSubtitlesAutoTranslate;
-    document.getElementById("video-subtitles-topic-context").checked = !!state.settings.videoBilingualSubtitlesTopicContextEnabled;
+    document.getElementById("video-subtitles-topic-context").checked = state.settings.videoBilingualSubtitlesTopicContextEnabled !== false;
     document.getElementById("video-subtitles-word-lookup").checked = state.settings.videoBilingualSubtitlesWordLookupEnabled !== false;
     document.getElementById("video-subtitles-skip-default-target-source").checked = state.settings.videoBilingualSubtitlesSkipDefaultTargetSource !== false;
     document.getElementById("video-subtitles-show-player-button").checked = state.settings.videoBilingualSubtitlesShowPlayerButton !== false;

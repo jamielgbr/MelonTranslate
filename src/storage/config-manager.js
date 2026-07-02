@@ -128,7 +128,7 @@
       videoBilingualSubtitlesLearningAnnotationTypes: normalizeVideoSubtitleAnnotationTypes(merged.videoBilingualSubtitlesLearningAnnotationTypes),
       videoBilingualSubtitlesLearningMaxItems: clampInteger(merged.videoBilingualSubtitlesLearningMaxItems, 4, 1, 8),
       videoBilingualSubtitlesWordLookupEnabled: merged.videoBilingualSubtitlesWordLookupEnabled !== false,
-      videoBilingualSubtitlesTopicContextEnabled: !!merged.videoBilingualSubtitlesTopicContextEnabled,
+      videoBilingualSubtitlesTopicContextEnabled: merged.videoBilingualSubtitlesTopicContextEnabled !== false,
       videoBilingualSubtitlesSiteRules: normalizeVideoSubtitleSiteRules(merged.videoBilingualSubtitlesSiteRules)
     });
   }
@@ -181,7 +181,7 @@
       videoBilingualSubtitlesLearningAnnotationTypes: ["any"],
       videoBilingualSubtitlesLearningMaxItems: 4,
       videoBilingualSubtitlesWordLookupEnabled: true,
-      videoBilingualSubtitlesTopicContextEnabled: false,
+      videoBilingualSubtitlesTopicContextEnabled: true,
       videoBilingualSubtitlesSkipDefaultTargetSource: true,
       videoBilingualSubtitlesShowPlayerButton: true,
       videoBilingualSubtitlesMaxConcurrentBatches: 2,

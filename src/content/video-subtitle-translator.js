@@ -140,7 +140,7 @@
       videoBilingualSubtitlesLearningAnnotationTypes: annotationTypes,
       videoBilingualSubtitlesLearningMaxItems: maxLearningItems,
       videoBilingualSubtitlesWordLookupEnabled: cfg.videoBilingualSubtitlesWordLookupEnabled !== false,
-      videoBilingualSubtitlesTopicContextEnabled: !!cfg.videoBilingualSubtitlesTopicContextEnabled,
+      videoBilingualSubtitlesTopicContextEnabled: cfg.videoBilingualSubtitlesTopicContextEnabled !== false,
       videoBilingualSubtitlesSkipDefaultTargetSource: cfg.videoBilingualSubtitlesSkipDefaultTargetSource !== false,
       videoBilingualSubtitlesShowPlayerButton: cfg.videoBilingualSubtitlesShowPlayerButton !== false,
       videoBilingualSubtitlesMaxConcurrentBatches: maxConcurrent,
