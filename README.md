@@ -11,7 +11,7 @@ Bring your own API key to translate web pages inline or selected text on demand.
 - **Immersive page translation** — translate full pages inline while preserving layout.
 - **Select-to-translate** — highlight text to translate, compare, copy, or read aloud.
 - **Input translation button** — translate text fields in place.
-- **Bilingual video subtitles** — show translated subtitles alongside the original, with learning annotations and hover word lookup.
+- **Bilingual video subtitles** — show translated subtitles alongside the original, with learning annotations and hover word lookup. By using surrounding subtitle context and Topic Sensing, MelonTranslate can produce more accurate translations than similar tools on the same model.
 - **Multiple providers** — use OpenAI, Anthropic, Gemini, DeepSeek, Groq, Google Translate, or any OpenAI-compatible provider.
 
 ---
