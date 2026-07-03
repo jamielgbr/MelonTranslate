@@ -28,6 +28,8 @@
   const ACTIVE_CUE_TRAIL_SECONDS = 0.1;
   const YOUTUBE_CONTEXT_WAIT_MS = 4500;
   const YOUTUBE_CONTEXT_POLL_MS = 120;
+  const YOUTUBE_METADATA_WAIT_MS = 2400;
+  const YOUTUBE_METADATA_POLL_MS = 120;
   const MERGED_CUE_SOFT_DURATION_SECONDS = 8;
   const MERGED_CUE_SOFT_CHARS = 180;
   const MERGED_CUE_HARD_DURATION_SECONDS = 22;
@@ -61,6 +63,7 @@
     error: "",
     video: null,
     videoId: "",
+    videoTitle: "",
     track: null,
     cues: [],
     targetLanguage: "",
@@ -105,7 +108,9 @@
     domCommittedAtMs: 0,
     domSourceById: new Map(),
     youtubeTimedTextEntries: [],
-    autoAttemptKey: ""
+    autoAttemptKey: "",
+    lastYouTubeMetadataVideoId: "",
+    lastYouTubeMetadataTitle: ""
   };
 
   function isSupportedPage() {
@@ -682,6 +687,92 @@
     return "";
   }
 
+  function getYouTubePlayerResponseTitle(playerResponse, videoId) {
+    const details = playerResponse && playerResponse.videoDetails && typeof playerResponse.videoDetails === "object"
+      ? playerResponse.videoDetails
+      : {};
+    const responseVideoId = String(details.videoId || "").trim();
+    const currentVideoId = String(videoId || "").trim();
+    if (currentVideoId && responseVideoId !== currentVideoId) {
+      return "";
+    }
+    return String(details.title || "").replace(/\s+/g, " ").trim();
+  }
+
+  function getYouTubePlayerResponseKeywords(playerResponse, videoId) {
+    const details = playerResponse && playerResponse.videoDetails && typeof playerResponse.videoDetails === "object"
+      ? playerResponse.videoDetails
+      : {};
+    const responseVideoId = String(details.videoId || "").trim();
+    const currentVideoId = String(videoId || "").trim();
+    if (currentVideoId && responseVideoId !== currentVideoId) {
+      return "";
+    }
+    const keywords = Array.isArray(details.keywords) ? details.keywords : [];
+    return keywords.map((item) => String(item || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(", ");
+  }
+
+  function getYouTubeDomTitle() {
+    const domTitleElement = document.querySelector("ytd-watch-metadata h1 yt-formatted-string, ytd-watch-metadata h1, h1.title");
+    return String(domTitleElement && (domTitleElement.textContent || "") || "").replace(/\s+/g, " ").trim();
+  }
+
+  function getYouTubeDocumentTitle() {
+    return String(document.title || "")
+      .replace(/\s*-\s*YouTube\s*$/i, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function titleMatchesPreviousYouTubeVideo(title, videoId) {
+    const value = String(title || "").replace(/\s+/g, " ").trim();
+    if (!value || !videoId || !state.lastYouTubeMetadataVideoId || !state.lastYouTubeMetadataTitle) {
+      return false;
+    }
+    return state.lastYouTubeMetadataVideoId !== videoId
+      && state.lastYouTubeMetadataTitle === value;
+  }
+
+  function readYouTubePageMetadata(videoId, response) {
+    const currentVideoId = String(videoId || "").trim();
+    const pageVideoId = getCurrentYouTubeVideoId();
+    const canUsePageDomMetadata = !currentVideoId || !pageVideoId || pageVideoId === currentVideoId;
+    const playerResponse = response || readYouTubePlayerResponse();
+    const responseTitle = getYouTubePlayerResponseTitle(playerResponse, currentVideoId);
+    const responseTitleIsPrevious = titleMatchesPreviousYouTubeVideo(responseTitle, currentVideoId);
+    const responseKeywords = responseTitleIsPrevious
+      ? ""
+      : getYouTubePlayerResponseKeywords(playerResponse, currentVideoId);
+    const titleCandidates = canUsePageDomMetadata
+      ? [responseTitle, getYouTubeDomTitle(), getYouTubeDocumentTitle()]
+      : [responseTitle];
+    const title = titleCandidates
+      .map((item) => String(item || "").replace(/\s+/g, " ").trim())
+      .find((item) => item && !titleMatchesPreviousYouTubeVideo(item, currentVideoId))
+      || "";
+    return {
+      title,
+      pageKeywords: responseTitleIsPrevious ? "" : responseKeywords
+    };
+  }
+
+  async function waitForYouTubePageMetadata(videoId, response) {
+    const currentVideoId = String(videoId || "").trim();
+    const startedAt = Date.now();
+    let latest = readYouTubePageMetadata(currentVideoId, response);
+    if (latest.title || latest.pageKeywords) {
+      return latest;
+    }
+    while (Date.now() - startedAt < YOUTUBE_METADATA_WAIT_MS) {
+      await new Promise((resolve) => setTimeout(resolve, YOUTUBE_METADATA_POLL_MS));
+      latest = readYouTubePageMetadata(currentVideoId);
+      if (latest.title || latest.pageKeywords) {
+        return latest;
+      }
+    }
+    return latest;
+  }
+
   function getBaseLanguage(tag) {
     const pu = namespace.pageUtils;
     if (pu && typeof pu.getBaseLanguage === "function") {
@@ -1212,6 +1303,9 @@
     const video = context.video;
     const track = context.track;
     const videoId = context.videoId || getCurrentYouTubeVideoId(context.response);
+    const metadata = await waitForYouTubePageMetadata(videoId, context.response);
+    const title = metadata.title || "";
+    const pageKeywords = metadata.pageKeywords || "";
     if (!video) {
       throw new Error(t("YouTube player not found."));
     }
@@ -1233,6 +1327,8 @@
         video,
         track,
         videoId,
+        title,
+        pageKeywords,
         cues,
         sourceLanguage: track.languageCode
       };
@@ -1246,6 +1342,8 @@
             video,
             track,
             videoId,
+            title,
+            pageKeywords,
             cues,
             sourceLanguage: track.languageCode
           };
@@ -1287,6 +1385,8 @@
         video,
         track,
         videoId,
+        title,
+        pageKeywords,
         cues,
         sourceLanguage: track.languageCode
       };
@@ -1296,6 +1396,8 @@
       video,
       track,
       videoId,
+      title,
+      pageKeywords,
       cues: [],
       sourceLanguage: track.languageCode
     };
@@ -1787,6 +1889,21 @@
     state.renderedOverlayHidden = null;
   }
 
+  function refreshCurrentYouTubeMetadataState() {
+    if (!isYouTubeSubtitleMode() || !state.videoId) {
+      return;
+    }
+    const metadata = readYouTubePageMetadata(state.videoId);
+    if (!state.videoTitle && metadata.title) {
+      state.videoTitle = metadata.title;
+      state.lastYouTubeMetadataVideoId = state.videoId;
+      state.lastYouTubeMetadataTitle = metadata.title;
+    }
+    if (state.subtitleAutoCorrectionEnabled && !state.pageKeywords && metadata.pageKeywords) {
+      state.pageKeywords = metadata.pageKeywords;
+    }
+  }
+
   function applyWordLookupOverlayPositionFreeze() {
     if (!state.wordLookupActiveElement || !state.overlay || !state.overlay.isConnected) {
       return;
@@ -1856,6 +1973,7 @@
   function clearRuntimeState() {
     state.video = null;
     state.videoId = "";
+    state.videoTitle = "";
     state.track = null;
     state.cues = [];
     state.targetLanguage = "";
@@ -2105,13 +2223,26 @@
   }
 
   function getVideoTopicTitle() {
-    return String(document.title || "")
-      .replace(/\s*-\s*YouTube\s*$/i, "")
+    const stateTitle = String(state.videoTitle || "").replace(/\s+/g, " ").trim();
+    if (stateTitle) {
+      return stateTitle;
+    }
+    if (isYouTubeSubtitleMode()) {
+      const metadata = readYouTubePageMetadata(state.videoId);
+      if (metadata.title) {
+        return metadata.title;
+      }
+      return "";
+    }
+    return getYouTubeDocumentTitle()
       .replace(/\s+/g, " ")
       .trim();
   }
 
   function getPageKeywordContext() {
+    if (isYouTubeSubtitleMode()) {
+      return readYouTubePageMetadata(state.videoId).pageKeywords || "";
+    }
     const selectors = [
       "meta[itemprop='keywords']",
       "meta[name='keywords']",
@@ -2863,6 +2994,7 @@
       return;
     }
     ensureActiveOverlayHost();
+    refreshCurrentYouTubeMetadataState();
     if (isYouTubeSubtitleMode() && state.videoId) {
       const currentVideoId = getCurrentYouTubeVideoId();
       if (currentVideoId && currentVideoId !== state.videoId) {
@@ -2950,6 +3082,11 @@
     state.settings = settings;
     state.video = source.video;
     state.videoId = String(source.videoId || "");
+    state.videoTitle = String(source.title || "").replace(/\s+/g, " ").trim();
+    if (state.videoId && state.videoTitle) {
+      state.lastYouTubeMetadataVideoId = state.videoId;
+      state.lastYouTubeMetadataTitle = state.videoTitle;
+    }
     state.track = source.track;
     state.cues = source.kind === "youtube" || source.kind === "generic" ? segmentSubtitleCues(source.cues) : source.cues;
     state.targetLanguage = decision.targetLanguage;
@@ -2958,7 +3095,9 @@
     state.subtitleMode = source.kind;
     state.subtitleAutoGenerated = isYouTubeSubtitleSourceKind(source.kind) && isYouTubeAutoGeneratedTrack(source.track);
     state.subtitleAutoCorrectionEnabled = settings.videoBilingualSubtitlesAutoCorrectAsr === true && state.subtitleAutoGenerated;
-    state.pageKeywords = state.subtitleAutoCorrectionEnabled ? getPageKeywordContext() : "";
+    state.pageKeywords = state.subtitleAutoCorrectionEnabled
+      ? [source.pageKeywords, getPageKeywordContext()].filter(Boolean).join(", ")
+      : "";
     state.translations = new Map();
     state.pendingIds = new Set();
     state.failedIds = new Set();
