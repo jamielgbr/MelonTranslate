@@ -43,6 +43,7 @@
       "src/providers/provider-registry.js",
       "src/shared/page-utils.js",
       "src/shared/video-subtitle-utils.js",
+      "src/background/content-script-messenger.js",
       "src/background/service-worker.js"
     ]
   },

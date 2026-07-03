@@ -20,5 +20,6 @@ importScripts(
   '../providers/provider-registry.js',
   '../shared/page-utils.js',
   '../shared/video-subtitle-utils.js',
+  './content-script-messenger.js',
   './service-worker.js'
 );
