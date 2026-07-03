@@ -98,12 +98,7 @@
     return {
       getFrameOptions,
       sendContentMessage,
-      sendContextMenuMessage,
-      _test: {
-        getContentScriptFiles,
-        getScriptTarget,
-        isMissingReceiverError
-      }
+      sendContextMenuMessage
     };
   }
 

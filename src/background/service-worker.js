@@ -1646,10 +1646,6 @@
       case messageTypes.clearHistory:
         await namespace.configManager.clearHistory();
         return namespace.messages.ok();
-      case messageTypes.getHistory: {
-        const history = await namespace.configManager.getHistory();
-        return namespace.messages.ok({ history });
-      }
       default:
         return namespace.messages.error("Unknown message type.");
     }

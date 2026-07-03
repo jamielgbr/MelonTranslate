@@ -12,7 +12,6 @@
     "volcengine", "minimax", "minimax-cn", "sicflow",
     "ollama", "lmstudio"
   ]);
-  const APP_LOGO_PATH = "assets/publish/logo.svg";
   var appLogoInlineId = 0;
 
   function escapeHtml(str) {
@@ -216,12 +215,6 @@
       .slice(0, 2) || "P";
   }
 
-  function getAppLogoHtml(imgClassName) {
-    var src = api.runtime.getURL(APP_LOGO_PATH);
-    var cls = imgClassName ? ' class="' + escapeHtml(imgClassName) + '"' : "";
-    return '<img src="' + escapeHtml(src) + '" alt="" aria-hidden="true" decoding="async"' + cls + '>';
-  }
-
   function getAppLogoInlineHtml(svgClassName) {
     var cls = svgClassName ? ' class="' + escapeHtml(svgClassName) + '"' : "";
     var suffix = String(++appLogoInlineId);
@@ -325,7 +318,6 @@
     getInputContextStyle: getInputContextStyle,
     isHostAllowedForInputButton: isHostAllowedForInputButton,
     getProviderIconHtml: getProviderIconHtml,
-    getAppLogoHtml: getAppLogoHtml,
     getAppLogoInlineHtml: getAppLogoInlineHtml,
     t: i18n.t,
     renderLanguageDropdown: renderLanguageDropdown,

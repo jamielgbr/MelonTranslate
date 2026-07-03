@@ -26,8 +26,7 @@
       saveSiteRuleFromPicker: "SAVE_SITE_RULE_FROM_PICKER",
       deleteSiteRule: "DELETE_SITE_RULE",
       openComparePage: "OPEN_COMPARE_PAGE",
-      clearHistory: "CLEAR_HISTORY",
-      getHistory: "GET_HISTORY"
+      clearHistory: "CLEAR_HISTORY"
     },
     ok(data) {
       return { ok: true, data: data || null };

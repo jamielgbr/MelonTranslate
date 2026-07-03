@@ -277,21 +277,7 @@
     return Array.from(new Set(roots));
   }
 
-  function elementMatchesAnySelector(element, selectors) {
-    if (!element || !Array.isArray(selectors) || !selectors.length) {
-      return false;
-    }
-    return selectors.some(function(selector) {
-      try {
-        return !!element.closest(selector);
-      } catch (_) {
-        return false;
-      }
-    });
-  }
-
   namespace.siteRuleEngine = {
-    elementMatchesAnySelector: elementMatchesAnySelector,
     getHostFromUrl: getHostFromUrl,
     getImmersiveScope: getImmersiveScope,
     getIncludeRoots: getIncludeRoots,
