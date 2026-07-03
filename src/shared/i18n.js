@@ -714,6 +714,9 @@
     "Video element not found.": "未找到视频元素。",
     "Could not toggle bilingual subtitles.": "无法切换双语字幕。",
     "Saved.": "已保存。",
+    "Correct auto-generated captions": "纠正自动生成字幕",
+    "Use topic context to fix clear ASR errors while translating.": "翻译时使用主题上下文修正明确的 ASR 错误。",
+    "Only applies to YouTube auto-generated captions. The translator may silently fix obvious transcription mistakes when the topic and nearby subtitles make a phonetically similar term clear.": "仅适用于 YouTube 自动生成字幕。当主题和相邻字幕能明确指向发音相近的正确词时，翻译器可能会静默修正明显听写错误。",
     "Could not create a selector for this element.": "无法为此元素创建选择器。",
     "Could not save site rule.": "无法保存站点规则。"
   });

@@ -218,6 +218,21 @@
       return `Video topic context for subtitle translation: ${value} Use it only to resolve terminology, proper nouns, domain-specific meaning, and tone; do not add facts that are not present in the source subtitle.`;
     }
 
+    buildSubtitleAutoCorrectionHint(request) {
+      if (!request || (request.autoCorrectSubtitleText !== true && request.correctSubtitleTranscription !== true)) {
+        return "";
+      }
+      const pageKeywords = String(request.pageKeywords || "").replace(/\s+/g, " ").trim().slice(0, 1000);
+      return [
+        "The current subtitle comes from YouTube auto-generated speech recognition captions.",
+        pageKeywords ? `Page keywords for ASR correction: ${pageKeywords}` : "",
+        "Correct high-confidence ASR mistakes only when the previous subtitle, next subtitle, and video topic context make a phonetically similar intended word or proper noun clear.",
+        "Focus on topic-relevant near-homophones, names, technical terms, product names, person names, place names, abbreviations, and jargon.",
+        "Do not rewrite, embellish, or guess uncertain words. If a correction is uncertain, translate the current subtitle as written.",
+        "Do not mention corrections or include alternatives."
+      ].filter(Boolean).join(" ");
+    }
+
     buildSubtitleTranslationPrompt(request) {
       const sourceLanguage = String(request.sourceLanguage || "").trim();
       const sourceHint = sourceLanguage && sourceLanguage.toLowerCase() !== "auto"
@@ -234,6 +249,7 @@
         previousText ? `Previous subtitle context: ${previousText}` : "",
         nextText ? `Next subtitle context: ${nextText}` : "",
         this.buildSubtitleContextHint(request.subtitleContext),
+        this.buildSubtitleAutoCorrectionHint(request),
         styleHint,
         "Use the previous subtitle, next subtitle, and video topic context only to resolve pronouns, ellipsis, terminology, proper nouns, domain-specific meaning, and tone.",
         "Translate only the current subtitle text provided by the user message.",
@@ -253,7 +269,7 @@
         `The subtitles will be translated from ${sourceLanguage} into ${targetLanguage}.`,
         "Read the provided video title, page metadata, and subtitle sample.",
         "Return one concise English context note for later subtitle translation.",
-        "Include the likely topic/domain, product/person/place names, specialized terms, tone/register, and any translation choices that would help avoid ambiguity.",
+        "Include the likely topic/domain, product/person/place names, specialized terms, tone/register, topic-specific words that could be confused with similar-sounding words, and any translation choices that would help avoid ambiguity.",
         "Do not translate the subtitle sample.",
         "Do not invent facts beyond the title or subtitles.",
         "Return plain text only, no headings, no bullets, no JSON.",

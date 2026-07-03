@@ -799,6 +799,7 @@
       videoBilingualSubtitlesLearningMaxItems: clampNumber(document.getElementById("video-subtitles-learning-max-items").value, 4, 1, 8),
       videoBilingualSubtitlesWordLookupEnabled: document.getElementById("video-subtitles-word-lookup").checked,
       videoBilingualSubtitlesTopicContextEnabled: document.getElementById("video-subtitles-topic-context").checked,
+      videoBilingualSubtitlesAutoCorrectAsr: document.getElementById("video-subtitles-auto-correct-asr").checked,
       videoBilingualSubtitlesSkipDefaultTargetSource: document.getElementById("video-subtitles-skip-default-target-source").checked,
       videoBilingualSubtitlesShowPlayerButton: document.getElementById("video-subtitles-show-player-button").checked,
       videoBilingualSubtitlesMaxConcurrentBatches: clampNumber(document.getElementById("video-subtitles-max-concurrent-batches").value, 2, 1, 4),
@@ -930,6 +931,9 @@
       videoBilingualSubtitlesTopicContextEnabled: incoming.videoBilingualSubtitlesTopicContextEnabled !== undefined
         ? !!incoming.videoBilingualSubtitlesTopicContextEnabled
         : current.videoBilingualSubtitlesTopicContextEnabled !== false,
+      videoBilingualSubtitlesAutoCorrectAsr: incoming.videoBilingualSubtitlesAutoCorrectAsr !== undefined
+        ? !!incoming.videoBilingualSubtitlesAutoCorrectAsr
+        : current.videoBilingualSubtitlesAutoCorrectAsr === true,
       videoBilingualSubtitlesSkipDefaultTargetSource: incoming.videoBilingualSubtitlesSkipDefaultTargetSource !== undefined
         ? !!incoming.videoBilingualSubtitlesSkipDefaultTargetSource
         : current.videoBilingualSubtitlesSkipDefaultTargetSource !== false,
@@ -1818,6 +1822,7 @@
     document.getElementById("immersive-max-concurrent").value = clampNumber(state.settings.immersiveTranslationMaxConcurrent, 2, 1, 4);
     document.getElementById("video-subtitles-auto").checked = !!state.settings.videoBilingualSubtitlesAutoTranslate;
     document.getElementById("video-subtitles-topic-context").checked = state.settings.videoBilingualSubtitlesTopicContextEnabled !== false;
+    document.getElementById("video-subtitles-auto-correct-asr").checked = state.settings.videoBilingualSubtitlesAutoCorrectAsr === true;
     document.getElementById("video-subtitles-word-lookup").checked = state.settings.videoBilingualSubtitlesWordLookupEnabled !== false;
     document.getElementById("video-subtitles-skip-default-target-source").checked = state.settings.videoBilingualSubtitlesSkipDefaultTargetSource !== false;
     document.getElementById("video-subtitles-show-player-button").checked = state.settings.videoBilingualSubtitlesShowPlayerButton !== false;

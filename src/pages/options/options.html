@@ -315,6 +315,21 @@
                         <div class="settings-row settings-row-switch">
                             <div class="settings-copy">
                                 <div class="setting-title">
+                                    <label for="video-subtitles-auto-correct-asr">Correct auto-generated captions</label>
+                                    <button class="setting-help" type="button" aria-label="Show help" title="Help"
+                                        data-help="Only applies to YouTube auto-generated captions. The translator may silently fix obvious transcription mistakes when the topic and nearby subtitles make a phonetically similar term clear.">?</button>
+                                </div>
+                                <p class="setting-desc">Use topic context to fix clear ASR errors while translating.</p>
+                            </div>
+                            <label class="provider-switch" for="video-subtitles-auto-correct-asr"
+                                aria-label="Correct auto-generated captions">
+                                <input id="video-subtitles-auto-correct-asr" type="checkbox">
+                                <span class="provider-switch-track"><span class="provider-switch-thumb"></span></span>
+                            </label>
+                        </div>
+                        <div class="settings-row settings-row-switch">
+                            <div class="settings-copy">
+                                <div class="setting-title">
                                     <label for="video-subtitles-word-lookup">Hover word lookup</label>
                                     <button class="setting-help" type="button" aria-label="Show help" title="Help"
                                         data-help="Starts lookup after you hover a word for 300 ms.">?</button>
