@@ -83,6 +83,7 @@
     renderedOverlayHidden: null,
     button: null,
     wordLookupTimer: 0,
+    wordLookupOverlayFreezeFrame: 0,
     wordLookupRequestId: 0,
     wordLookupActiveElement: null,
     wordLookupPopup: null,
@@ -1766,6 +1767,44 @@
     state.renderedOverlayHidden = null;
   }
 
+  function applyWordLookupOverlayPositionFreeze() {
+    if (!state.wordLookupActiveElement || !state.overlay || !state.overlay.isConnected) {
+      return;
+    }
+    if (!isYouTubeSubtitleMode() || !state.overlay.classList.contains("is-takeover")) {
+      return;
+    }
+    state.overlay.style.bottom = "";
+    const bottom = window.getComputedStyle(state.overlay).bottom;
+    if (bottom && bottom !== "auto") {
+      state.overlay.style.bottom = bottom;
+    }
+  }
+
+  function freezeWordLookupOverlayPosition() {
+    if (state.wordLookupOverlayFreezeFrame) {
+      window.cancelAnimationFrame(state.wordLookupOverlayFreezeFrame);
+      state.wordLookupOverlayFreezeFrame = 0;
+    }
+    if (!isYouTubeSubtitleMode() || !state.overlay || !state.overlay.isConnected) {
+      return;
+    }
+    state.wordLookupOverlayFreezeFrame = window.requestAnimationFrame(() => {
+      state.wordLookupOverlayFreezeFrame = 0;
+      applyWordLookupOverlayPositionFreeze();
+    });
+  }
+
+  function releaseWordLookupOverlayPosition() {
+    if (state.wordLookupOverlayFreezeFrame) {
+      window.cancelAnimationFrame(state.wordLookupOverlayFreezeFrame);
+      state.wordLookupOverlayFreezeFrame = 0;
+    }
+    if (state.overlay) {
+      state.overlay.style.bottom = "";
+    }
+  }
+
   function hideWordLookupPopup() {
     if (state.wordLookupPopup) {
       state.wordLookupPopup.classList.add("is-hidden");
@@ -1782,6 +1821,7 @@
       state.wordLookupActiveElement.classList.remove("is-selected", "is-loading");
     }
     state.wordLookupActiveElement = null;
+    releaseWordLookupOverlayPosition();
     hideWordLookupPopup();
   }
 
@@ -2589,6 +2629,7 @@
     state.wordLookupActiveElement = anchor;
     const requestId = state.wordLookupRequestId;
     anchor.classList.add("is-selected");
+    freezeWordLookupOverlayPosition();
     state.wordLookupTimer = setTimeout(() => {
       state.wordLookupTimer = 0;
       startWordLookupTranslation(anchor, requestId);
