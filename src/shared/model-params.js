@@ -171,14 +171,9 @@
 
   namespace.modelParams = {
     normalizeTemperature: normalizeTemperature,
-    normalizeTemperatureMap: normalizeTemperatureMap,
     normalizeReasoningEffort: normalizeReasoningEffort,
     normalizeModelParameterEntry: normalizeModelParameterEntry,
-    normalizeModelParameters: normalizeModelParameters,
-    mergeLegacyModelTemperatures: mergeLegacyModelTemperatures,
     getProviderModelParameters: getProviderModelParameters,
-    resolveModelTemperature: resolveModelTemperature,
-    resolveModelReasoningEffort: resolveModelReasoningEffort,
     resolveProviderTemperature: resolveProviderTemperature,
     resolveProviderReasoningEffort: resolveProviderReasoningEffort
   };

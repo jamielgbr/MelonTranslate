@@ -2248,11 +2248,7 @@
   namespace.i18n = {
     get locale() { return currentLocale; },
     get localePreference() { return localePreference; },
-    browserLocale,
-    supportedLocales: SUPPORTED.slice(),
     normalizeLocale,
-    resolveLocale,
-    setLocale,
     applySettings,
     t,
     localize

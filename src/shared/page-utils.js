@@ -305,7 +305,6 @@
 
   namespace.pageUtils = {
     escapeHtml: escapeHtml,
-    availableLanguageOptions: availableLanguageOptions,
     languageCodes: languageCodes,
     providerIsConfigured: providerIsConfigured,
     estimateOutputTokens: estimateOutputTokens,
@@ -316,7 +315,6 @@
     parseDefaultModelKey: parseDefaultModelKey,
     buildDefaultModelKey: buildDefaultModelKey,
     normalizeModels: normalizeModels,
-    normalizeLanguageTag: normalizeLanguageTag,
     getBaseLanguage: getBaseLanguage,
     detectTextLanguage: detectTextLanguage,
     resolveInputTargetLanguage: resolveInputTargetLanguage,

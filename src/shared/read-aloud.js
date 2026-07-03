@@ -124,9 +124,6 @@
   namespace.readAloud = {
     SPEAK_SVG,
     STOP_SVG,
-    decodeAudioBase64,
-    getClipBytes,
-    playClip,
     playReadAloudClips,
     stopAudioState,
     updateButton

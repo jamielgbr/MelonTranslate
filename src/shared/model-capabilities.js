@@ -681,8 +681,6 @@
     isTogetherReasoningControlModel,
     describeModelCapabilities,
     formatModelOptionLabel,
-    modelHasInput,
-    modelHasOutput,
     modelHasFeature
   };
 }(globalThis));

@@ -39,7 +39,6 @@
   }
 
   namespace.hostPermissions = {
-    allSitesPermission,
     canCheck,
     canRequest,
     containsAllSites,

@@ -429,10 +429,6 @@
     return !!node && node.nodeType === Node.ELEMENT_NODE && node.matches(BLOCK_CHILD_SEGMENT_SELECTOR);
   }
 
-  function isEmptyBlockChildSegment(node) {
-    return isBlockChildSegment(node) && !normalizeText(node.textContent || "");
-  }
-
   function isStandaloneInlineChildSegment(node, parent) {
     if (!node || node.nodeType !== Node.ELEMENT_NODE || !node.matches(STANDALONE_INLINE_SEGMENT_SELECTOR)) {
       return false;

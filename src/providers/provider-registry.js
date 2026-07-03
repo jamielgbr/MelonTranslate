@@ -147,39 +147,44 @@
     };
   }
 
+  function listProviders() {
+    return namespace.providerCatalog.slice();
+  }
+
+  async function buildConfiguredProviders() {
+    const catalogMap = getCatalogMap();
+    const providerConfigs = await namespace.configManager.getDecryptedProviderConfigs();
+    return Object.values(providerConfigs).map((config) => {
+      const catalogEntry = catalogMap[config.id];
+      return Object.assign({}, config, {
+        displayName: catalogEntry ? catalogEntry.displayName : config.id,
+        reason: catalogEntry ? catalogEntry.reason : "",
+        requiresApiKey: catalogEntry ? catalogEntry.requiresApiKey !== false : true,
+        supportsReadAloud: !!(catalogEntry && catalogEntry.supportsReadAloud),
+        extraHeaders: config.extraHeaders || (catalogEntry ? catalogEntry.extraHeaders || {} : {})
+      });
+    });
+  }
+
+  async function resolveSelection(providerIds, modelOverrides, temperatureOverrides, configuredProviders) {
+    const availableProviders = Array.isArray(configuredProviders)
+      ? configuredProviders
+      : await buildConfiguredProviders();
+    const overrides = modelOverrides || {};
+    const tempOverrides = temperatureOverrides || {};
+    const enabledProviders = availableProviders.filter((provider) => providerIsConfigured(provider));
+    const selection = providerIds && providerIds.length
+      ? enabledProviders.filter((provider) => providerIds.includes(provider.id))
+      : enabledProviders.slice(0, 1);
+    return { selection, overrides, tempOverrides };
+  }
+
   namespace.providerRegistry = {
     providerIsConfigured,
-    listProviders() {
-      return namespace.providerCatalog.slice();
-    },
-    async _resolveSelection(providerIds, modelOverrides, temperatureOverrides, configuredProviders) {
-      const availableProviders = Array.isArray(configuredProviders)
-        ? configuredProviders
-        : await this.buildConfiguredProviders();
-      const overrides = modelOverrides || {};
-      const tempOverrides = temperatureOverrides || {};
-      const enabledProviders = availableProviders.filter((provider) => providerIsConfigured(provider));
-      const selection = providerIds && providerIds.length
-        ? enabledProviders.filter((provider) => providerIds.includes(provider.id))
-        : enabledProviders.slice(0, 1);
-      return { selection, overrides, tempOverrides };
-    },
-    async buildConfiguredProviders() {
-      const catalogMap = getCatalogMap();
-      const providerConfigs = await namespace.configManager.getDecryptedProviderConfigs();
-      return Object.values(providerConfigs).map((config) => {
-        const catalogEntry = catalogMap[config.id];
-        return Object.assign({}, config, {
-          displayName: catalogEntry ? catalogEntry.displayName : config.id,
-          reason: catalogEntry ? catalogEntry.reason : "",
-          requiresApiKey: catalogEntry ? catalogEntry.requiresApiKey !== false : true,
-          supportsReadAloud: !!(catalogEntry && catalogEntry.supportsReadAloud),
-          extraHeaders: config.extraHeaders || (catalogEntry ? catalogEntry.extraHeaders || {} : {})
-        });
-      });
-    },
+    listProviders,
+    buildConfiguredProviders,
     async translate(request, providerIds, modelOverrides, temperatureOverrides, configuredProviders) {
-      const { selection, overrides, tempOverrides } = await this._resolveSelection(
+      const { selection, overrides, tempOverrides } = await resolveSelection(
         providerIds,
         modelOverrides,
         temperatureOverrides,
@@ -204,7 +209,7 @@
       return Promise.all(tasks);
     },
     async streamTranslate(request, providerIds, modelOverrides, onEvent, temperatureOverrides, signal, configuredProviders) {
-      const { selection, overrides, tempOverrides } = await this._resolveSelection(
+      const { selection, overrides, tempOverrides } = await resolveSelection(
         providerIds,
         modelOverrides,
         temperatureOverrides,
