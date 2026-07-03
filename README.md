@@ -1,5 +1,9 @@
 # MelonTranslate
 
+[![Firefox Add-ons](https://img.shields.io/badge/Firefox_Add--ons-Install-FF7139?logo=firefoxbrowser&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/melontranslate/)
+[![Microsoft Edge Add-ons](https://img.shields.io/badge/Microsoft_Edge_Add--ons-Install-0078D7?logo=microsoftedge&logoColor=white)](https://microsoftedge.microsoft.com/addons/detail/melontranslate/ffelhncbjmlinodcegdfoekmckdkgkpn)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/melontranslate/cmebcigpfdaclakfhndclmjjobjjibpg)
+
 ![MelonTranslate header](assets/publish/header.png)
 
 Bring your own API key to translate web pages inline or selected text on demand.
