@@ -317,11 +317,6 @@
         transition: opacity 0.12s ease, transform 0.12s ease, visibility 0.12s ease;
         pointer-events: none;
       }
-      .mt-video-subtitle-menu-title {
-        margin: 0 0 8px;
-        color: rgba(255, 255, 255, 0.9);
-        font-weight: 700;
-      }
       .mt-video-subtitle-menu-row {
         display: grid;
         grid-template-columns: 1fr auto;
@@ -362,13 +357,38 @@
         cursor: not-allowed;
         opacity: 0.48;
       }
+      .mt-video-subtitle-debug-panel {
+        margin-top: 10px;
+        padding-top: 9px;
+        border-top: 1px solid rgba(255, 255, 255, 0.14);
+      }
+      .mt-video-subtitle-debug-panel summary {
+        display: flex;
+        align-items: center;
+        min-height: 24px;
+        color: rgba(255, 255, 255, 0.74);
+        font-weight: 700;
+        cursor: pointer;
+        user-select: none;
+      }
+      .mt-video-subtitle-debug-panel summary::-webkit-details-marker {
+        display: none;
+      }
+      .mt-video-subtitle-debug-panel summary::before {
+        content: ">";
+        display: inline-block;
+        margin-right: 6px;
+        transform: rotate(0deg);
+        transition: transform 0.12s ease;
+      }
+      .mt-video-subtitle-debug-panel[open] summary::before {
+        transform: rotate(90deg);
+      }
       .mt-video-subtitle-debug {
         display: grid;
         grid-template-columns: auto 1fr;
         gap: 3px 8px;
-        margin-top: 10px;
-        padding-top: 9px;
-        border-top: 1px solid rgba(255, 255, 255, 0.14);
+        margin-top: 8px;
         color: rgba(255, 255, 255, 0.72);
       }
       .mt-video-subtitle-debug dt {
@@ -813,7 +833,7 @@
     const toggleButton = menu.querySelector('button[data-menu-action="toggle-subtitles"]');
     if (toggleButton) {
       const toggleLabel = state.active
-        ? t("Hide bilingual subtitles")
+        ? t("Turn off bilingual subtitles")
         : state.status === "loading"
           ? t("Loading subtitles")
           : t("Show bilingual subtitles");
@@ -874,11 +894,7 @@
     menu.addEventListener("pointerdown", (event) => event.stopPropagation());
     menu.addEventListener("keydown", (event) => event.stopPropagation());
 
-    const title = document.createElement("div");
-    title.className = "mt-video-subtitle-menu-title";
-    title.textContent = "MelonTranslate subtitles";
     menu.append(
-      title,
       createMenuSlider({
         label: "Font size",
         outputRole: "font-size-value",
@@ -926,9 +942,18 @@
       exportSubtitleDebugPackage();
     });
     actions.appendChild(toggleSubtitlesButton);
-    actions.appendChild(exportButton);
     menu.appendChild(actions);
 
+    const debugPanel = document.createElement("details");
+    debugPanel.className = "mt-video-subtitle-debug-panel";
+    debugPanel.addEventListener("toggle", positionButtonMenu);
+    const debugSummary = document.createElement("summary");
+    debugSummary.textContent = "Debug";
+    debugPanel.appendChild(debugSummary);
+    const debugActions = document.createElement("div");
+    debugActions.className = "mt-video-subtitle-menu-actions";
+    debugActions.appendChild(exportButton);
+    debugPanel.appendChild(debugActions);
     const debug = document.createElement("dl");
     debug.className = "mt-video-subtitle-debug";
     [
@@ -939,7 +964,8 @@
       createDebugItem("Cues", "debug-cues"),
       createDebugItem("Queue", "debug-queue")
     ].forEach((nodes) => debug.append(...nodes));
-    menu.appendChild(debug);
+    debugPanel.appendChild(debug);
+    menu.appendChild(debugPanel);
     return menu;
   }
 

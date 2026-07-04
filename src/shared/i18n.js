@@ -222,6 +222,7 @@
       "Toggle bilingual subtitles": "バイリンガル字幕を切り替え",
       "Select inline translation area": "インライン翻訳領域を選択",
       "Show bilingual subtitles": "バイリンガル字幕を表示",
+      "Turn off bilingual subtitles": "バイリンガル字幕をオフにする",
       "Hide bilingual subtitles": "バイリンガル字幕を非表示",
       "Loading subtitles": "字幕を読み込み中",
       "Bilingual subtitles unavailable": "バイリンガル字幕は利用できません",
@@ -445,6 +446,7 @@
       "Toggle bilingual subtitles": "切换双语字幕",
       "Select inline translation area": "选择页面内翻译区域",
       "Show bilingual subtitles": "显示双语字幕",
+      "Turn off bilingual subtitles": "关闭双语字幕",
       "Hide bilingual subtitles": "隐藏双语字幕",
       "Loading subtitles": "正在加载字幕",
       "Bilingual subtitles unavailable": "双语字幕不可用",
@@ -560,6 +562,7 @@
     "Retry": "重試",
     "Cancel": "取消",
     "Show bilingual subtitles": "顯示雙語字幕",
+    "Turn off bilingual subtitles": "關閉雙語字幕",
     "Hide bilingual subtitles": "隱藏雙語字幕",
     "Loading subtitles": "正在載入字幕",
     "Bilingual subtitles unavailable": "雙語字幕無法使用"
