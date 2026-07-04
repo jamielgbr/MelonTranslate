@@ -38,6 +38,11 @@
     return normalizeChoice(value, modes, "translation");
   }
 
+  function normalizeVideoSubtitleSegmentationMode(value) {
+    const modes = (namespace.constants.videoSubtitleSegmentationModes || []).map((item) => item.id);
+    return normalizeChoice(value, modes, "auto");
+  }
+
   function normalizeInputButtonStyle(value) {
     const styles = (namespace.constants.inputButtonStyles || []).map((item) => item.id);
     return normalizeChoice(value, styles, "auto");
@@ -122,6 +127,7 @@
       inputInlineButtonTabPosition: normalizeInputButtonTabPosition(merged.inputInlineButtonTabPosition),
       inputInlineButtonHorizontalOffset: normalizeInputButtonHorizontalOffset(merged.inputInlineButtonHorizontalOffset),
       videoBilingualSubtitlesMode: normalizeVideoSubtitleDisplayMode(merged.videoBilingualSubtitlesMode),
+      videoBilingualSubtitlesSegmentationMode: normalizeVideoSubtitleSegmentationMode(merged.videoBilingualSubtitlesSegmentationMode),
       videoBilingualSubtitlesLearningEnglishLevel: normalizeVideoSubtitleLearningLevel("english", merged.videoBilingualSubtitlesLearningEnglishLevel, "B1"),
       videoBilingualSubtitlesLearningJapaneseLevel: normalizeVideoSubtitleLearningLevel("japanese", merged.videoBilingualSubtitlesLearningJapaneseLevel, "N3"),
       videoBilingualSubtitlesLearningChineseLevel: normalizeVideoSubtitleLearningLevel("chinese", merged.videoBilingualSubtitlesLearningChineseLevel, "HSK3"),
@@ -176,6 +182,7 @@
       immersiveTranslationContextStyle: "auto",
       videoBilingualSubtitlesAutoTranslate: true,
       videoBilingualSubtitlesMode: "translation",
+      videoBilingualSubtitlesSegmentationMode: "auto",
       videoBilingualSubtitlesLearningEnglishLevel: "B1",
       videoBilingualSubtitlesLearningJapaneseLevel: "N3",
       videoBilingualSubtitlesLearningChineseLevel: "HSK3",

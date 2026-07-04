@@ -1,6 +1,56 @@
 (function initVideoSubtitleUtils(root) {
   const namespace = root.MelonTranslate = root.MelonTranslate || {};
   const commonEnglishAbbreviations = new Set(["mr", "mrs", "ms", "dr", "prof", "sr", "jr", "vs", "etc", "e.g", "i.e"]);
+  const SPACE_SCRIPT_STRONG_CLAUSE_OPENERS = [
+    "but", "however", "so", "because", "although", "though", "while", "when", "if", "then", "now",
+    "therefore", "meanwhile", "otherwise", "instead", "still", "yet", "also", "plus", "let's",
+    "not to mention",
+    "mais", "donc", "alors", "cependant", "pourtant", "parce que", "quand", "ensuite",
+    "pero", "entonces", "aunque", "porque", "cuando", "sin embargo", "ademas", "además", "luego",
+    "aber", "jedoch", "deshalb", "deswegen", "weil", "wenn", "während", "waehrend", "dann",
+    "mas", "porém", "porem", "então", "entao", "porque", "quando",
+    "ma", "però", "pero", "quindi", "tuttavia", "perché", "perche", "quando",
+    "но", "однако", "поэтому", "если", "когда", "потому что", "затем"
+  ];
+  const SPACE_SCRIPT_WEAK_CLAUSE_OPENERS = ["and", "or", "und", "et", "y", "e", "и"];
+  const SPACE_SCRIPT_LIST_OPENERS = [
+    "step one", "step two", "step three", "step four", "step five",
+    "first", "second", "third", "fourth", "fifth", "firstly", "secondly", "next"
+  ];
+  const SPACE_SCRIPT_CORRECTION_LIST_OPENERS = [
+    "no step one", "no step two", "no step three", "no step four", "no step five"
+  ];
+  const SPACE_SCRIPT_PRIORITY_CLAUSE_OPENERS = [
+    "not to mention", "then i'll", "then i’ll", "then i will"
+  ];
+  const SPACE_SCRIPT_DIALOGUE_RESPONSE_OPENERS = [
+    "oh really", "oh wow", "oh okay", "oh yeah", "oh no", "wait what"
+  ];
+  const COMPACT_SCRIPT_CLAUSE_OPENERS = [
+    "但是", "不过", "然而", "所以", "因此", "然后", "如果", "因为", "虽然", "另外", "还有", "其实", "只是",
+    "但是呢", "不过呢", "可是", "接着", "于是",
+    "でも", "しかし", "だから", "なので", "ただ", "一方", "もし", "そして", "それで", "ところが", "けれど",
+    "그런데", "하지만", "그래서", "그러나", "그리고", "만약", "다만", "한편"
+  ];
+  const COMPACT_SCRIPT_LIST_OPENERS = [
+    "第一步", "第二步", "第三步", "第四步", "第五步", "首先", "其次", "接下来",
+    "まず", "次に", "第一に", "第二に", "첫째", "둘째", "다음"
+  ];
+  const ENGLISH_PRONOUN_CLAUSE_START_PATTERN = /^(?:i['’](?:m|ve|ll|d)|you['’](?:re|ve|ll|d)|he['’](?:s|ll|d)|she['’](?:s|ll|d)|it['’](?:s|ll|d)|we['’](?:re|ll|d)|they['’](?:re|ve|ll|d)|there['’](?:s|re))\b/i;
+  const ENGLISH_BARE_I_CLAUSE_START_PATTERN = /^i\s+(?:am|was|feel|felt|think|thought|know|knew|have|had|can|will|would|should|could|might|must|want|need|got|get|look|guess|say)\b/i;
+  const ENGLISH_WEAK_PRONOUN_CLAUSE_START_PATTERN = /^(?:that['’]s|that is|that\s+(?:is|was|will|would|should|could|might|must|has|had))\b/i;
+  const ENGLISH_PREDICATE_CLAUSE_START_PATTERN = /^(?:has|have|had|is|are|was|were|can|will|would|should|could|might|must)\b/i;
+  const NUMERIC_UNIT_START_PATTERN = /^(?:g|kg|mg|lb|lbs|oz|mm|cm|m|km|ft|in|hz|khz|mhz|ghz|v|w|kw|wh|mah|ah|gb|mb|tb|fps|k|c|f|°c|°f)\b/i;
+  const WORD_LIKE_CHAR_PATTERN = /[\p{L}\p{N}_'’]/u;
+  const PROTECTED_BOUNDARY_BEFORE_WORDS = new Set([
+    "a", "an", "the", "to", "of", "with", "for", "in", "on", "at", "by", "from", "into", "onto", "about"
+  ]);
+  const QUANTIFIED_SUBJECT_HEADS = new Set([
+    "all", "both", "each", "either", "every", "few", "many", "most", "neither", "none", "one", "several", "some"
+  ]);
+  const OBJECT_PRONOUN_SUBJECT_TAILS = new Set(["him", "her", "it", "me", "them", "these", "those", "us", "you"]);
+  const PREDICATE_SUBJECT_BLOCKERS = new Set(["i", "you", "he", "she", "it", "we", "they", "this", "that", "these", "those", "what", "who", "which"]);
+  const PREDICATE_PREPOSITION_ALLOWLIST = new Set(["on", "in", "with", "for", "to", "of", "by", "about", "from", "over", "under"]);
 
   function decodeHtmlEntities(text) {
     const named = {
@@ -36,6 +86,269 @@
       .replace(/\n[ \t]+/g, "\n")
       .replace(/[ \t]{2,}/g, " ")
       .trim();
+  }
+
+  function isWordLikeChar(value) {
+    return WORD_LIKE_CHAR_PATTERN.test(String(value || ""));
+  }
+
+  function textStartsWithBoundaryPhrase(text, phrase) {
+    const source = String(text || "").trimStart().toLocaleLowerCase();
+    const target = String(phrase || "").toLocaleLowerCase();
+    if (!target || !source.startsWith(target)) {
+      return false;
+    }
+    const next = source.charAt(target.length);
+    return !next || !isWordLikeChar(next);
+  }
+
+  function textStartsWithAnyBoundaryPhrase(text, phrases) {
+    return (Array.isArray(phrases) ? phrases : []).some((phrase) => textStartsWithBoundaryPhrase(text, phrase));
+  }
+
+  function textEndsWithBoundaryPhrase(text, phrase) {
+    const source = String(text || "").trimEnd().toLocaleLowerCase();
+    const target = String(phrase || "").toLocaleLowerCase();
+    if (!target || !source.endsWith(target)) {
+      return false;
+    }
+    const previous = source.charAt(source.length - target.length - 1);
+    return !previous || !isWordLikeChar(previous);
+  }
+
+  function textEndsWithAnyBoundaryPhrase(text, phrases) {
+    return (Array.isArray(phrases) ? phrases : []).some((phrase) => textEndsWithBoundaryPhrase(text, phrase));
+  }
+
+  function textStartsWithCompactBoundaryPhrase(text) {
+    const source = String(text || "").trimStart();
+    return COMPACT_SCRIPT_CLAUSE_OPENERS.concat(COMPACT_SCRIPT_LIST_OPENERS)
+      .some((phrase) => source.startsWith(phrase));
+  }
+
+  function isNumericUnitBoundary(beforeText, afterText) {
+    const before = String(beforeText || "").trimEnd();
+    const after = String(afterText || "").trimStart();
+    return /(?:^|[\s(])\d+(?:[.,]\d+)?$/.test(before)
+      && NUMERIC_UNIT_START_PATTERN.test(after);
+  }
+
+  function hasEnoughTextForPredicateBoundary(beforeText, afterText) {
+    return String(beforeText || "").trim().length >= 24
+      && String(afterText || "").trim().length >= 24;
+  }
+
+  function getTrailingSpaceScriptWords(text, count) {
+    const words = String(text || "").toLocaleLowerCase().match(/[a-z]+(?:['’][a-z]+)?/g) || [];
+    return words.slice(Math.max(0, words.length - count));
+  }
+
+  function getLeadingSpaceScriptWords(text, count) {
+    const words = String(text || "").toLocaleLowerCase().match(/[a-z]+(?:['’][a-z]+)?/g) || [];
+    return words.slice(0, Math.max(0, count));
+  }
+
+  function isLikelyNounCompoundBoundary(beforeWord, afterWord) {
+    const left = String(beforeWord || "");
+    const right = String(afterWord || "");
+    if (/['’]/.test(left) || /['’]/.test(right)) {
+      return false;
+    }
+    if (!/^[a-z][a-z'-]{2,}$/.test(left) || !/^[a-z][a-z'-]{3,}$/.test(right)) {
+      return false;
+    }
+    if (PROTECTED_BOUNDARY_BEFORE_WORDS.has(left) || PROTECTED_BOUNDARY_BEFORE_WORDS.has(right)) {
+      return false;
+    }
+    return /s$/.test(right) && !/(?:ss|us)$/.test(right);
+  }
+
+  function isProtectedStructuralBoundary(beforeText, afterText) {
+    const beforeWords = getTrailingSpaceScriptWords(beforeText, 4);
+    const afterWords = getLeadingSpaceScriptWords(afterText, 4);
+    const lastBeforeWord = beforeWords[beforeWords.length - 1] || "";
+    const firstAfterWord = afterWords[0] || "";
+    if (PROTECTED_BOUNDARY_BEFORE_WORDS.has(lastBeforeWord)) {
+      return true;
+    }
+    if (PROTECTED_BOUNDARY_BEFORE_WORDS.has(firstAfterWord)) {
+      return true;
+    }
+    if (isLikelyNounCompoundBoundary(lastBeforeWord, firstAfterWord)) {
+      return true;
+    }
+    return false;
+  }
+
+  function textEndsWithBarePredicateSubject(text) {
+    const words = getTrailingSpaceScriptWords(text, 4);
+    const last = words[words.length - 1] || "";
+    const previous = words[words.length - 2] || "";
+    const quantifier = words[words.length - 3] || "";
+    if (OBJECT_PRONOUN_SUBJECT_TAILS.has(last)
+      && previous === "of"
+      && QUANTIFIED_SUBJECT_HEADS.has(quantifier)) {
+      return true;
+    }
+    return PREDICATE_SUBJECT_BLOCKERS.has(last)
+      && !PREDICATE_PREPOSITION_ALLOWLIST.has(previous);
+  }
+
+  function getSoftSubtitleBoundaryScore(beforeText, afterText) {
+    const before = String(beforeText || "").trimEnd();
+    const after = String(afterText || "").trimStart();
+    if (!before || !after) {
+      return 0;
+    }
+    if (isNumericUnitBoundary(before, after)) {
+      return -90;
+    }
+    if (isProtectedStructuralBoundary(before, after)) {
+      return -80;
+    }
+    if (ENGLISH_PREDICATE_CLAUSE_START_PATTERN.test(after)
+      && textEndsWithBarePredicateSubject(before)) {
+      return -80;
+    }
+    if (textEndsWithAnyBoundaryPhrase(before, SPACE_SCRIPT_STRONG_CLAUSE_OPENERS.concat(SPACE_SCRIPT_WEAK_CLAUSE_OPENERS))) {
+      return 0;
+    }
+    let score = /[,，:：、]\s*$/.test(before) ? 62 : 0;
+    if (textStartsWithCompactBoundaryPhrase(after)) {
+      score = Math.max(score, 92);
+    }
+    if (textStartsWithAnyBoundaryPhrase(after, SPACE_SCRIPT_PRIORITY_CLAUSE_OPENERS)) {
+      score = Math.max(score, 98);
+    }
+    if (textStartsWithAnyBoundaryPhrase(after, SPACE_SCRIPT_DIALOGUE_RESPONSE_OPENERS)) {
+      score = Math.max(score, 94);
+    }
+    if (textStartsWithAnyBoundaryPhrase(after, SPACE_SCRIPT_CORRECTION_LIST_OPENERS)) {
+      score = Math.max(score, 98);
+    }
+    if (textStartsWithAnyBoundaryPhrase(after, SPACE_SCRIPT_LIST_OPENERS)) {
+      score = Math.max(score, 94);
+    }
+    if (textStartsWithAnyBoundaryPhrase(after, SPACE_SCRIPT_STRONG_CLAUSE_OPENERS)
+      || ENGLISH_PRONOUN_CLAUSE_START_PATTERN.test(after)
+      || ENGLISH_BARE_I_CLAUSE_START_PATTERN.test(after)) {
+      score = Math.max(score, 88);
+    }
+    if (ENGLISH_WEAK_PRONOUN_CLAUSE_START_PATTERN.test(after)) {
+      score = Math.max(score, 24);
+    }
+    if (hasEnoughTextForPredicateBoundary(before, after)
+      && !textEndsWithBarePredicateSubject(before)
+      && ENGLISH_PREDICATE_CLAUSE_START_PATTERN.test(after)) {
+      score = Math.max(score, 88);
+    }
+    if (textStartsWithAnyBoundaryPhrase(after, SPACE_SCRIPT_WEAK_CLAUSE_OPENERS)) {
+      score = Math.max(score, 42);
+    }
+    return score;
+  }
+
+  function addSubtitleSplitCandidate(candidates, boundary, score, sourceLength) {
+    const index = Number(boundary);
+    if (!Number.isFinite(index) || index <= 0 || index >= sourceLength) {
+      return;
+    }
+    const previous = candidates.get(index) || 0;
+    candidates.set(index, Math.max(previous, score));
+  }
+
+  function getReadableSubtitleSplitBoundaries(text) {
+    const source = String(text || "");
+    const candidates = new Map();
+    source.replace(/\s+/g, (match, offset) => {
+      const score = getSoftSubtitleBoundaryScore(
+        source.slice(0, offset),
+        source.slice(offset + match.length)
+      );
+      if (score >= 0) {
+        addSubtitleSplitCandidate(candidates, offset, Math.max(10, score), source.length);
+      }
+      return match;
+    });
+    source.replace(/[,，:：、]/g, (match, offset) => {
+      const boundary = offset + match.length;
+      const score = Math.max(62, getSoftSubtitleBoundaryScore(source.slice(0, boundary), source.slice(boundary)));
+      addSubtitleSplitCandidate(candidates, boundary, score, source.length);
+      return match;
+    });
+    COMPACT_SCRIPT_CLAUSE_OPENERS.forEach((phrase) => {
+      let offset = source.indexOf(phrase);
+      while (offset >= 0) {
+        addSubtitleSplitCandidate(candidates, offset, 92, source.length);
+        offset = source.indexOf(phrase, offset + phrase.length);
+      }
+    });
+    COMPACT_SCRIPT_LIST_OPENERS.forEach((phrase) => {
+      let offset = source.indexOf(phrase);
+      while (offset >= 0) {
+        addSubtitleSplitCandidate(candidates, offset, 94, source.length);
+        offset = source.indexOf(phrase, offset + phrase.length);
+      }
+    });
+    SPACE_SCRIPT_CORRECTION_LIST_OPENERS.forEach((phrase) => {
+      let searchFrom = 0;
+      const lowerSource = source.toLocaleLowerCase();
+      while (searchFrom < source.length) {
+        const offset = lowerSource.indexOf(phrase, searchFrom);
+        if (offset < 0) {
+          break;
+        }
+        addSubtitleSplitCandidate(candidates, offset, 98, source.length);
+        searchFrom = offset + phrase.length;
+      }
+    });
+    return Array.from(candidates.entries())
+      .map(([index, score]) => ({ index, score }))
+      .sort((left, right) => left.index - right.index);
+  }
+
+  function getSubtitleSplitBoundaryIndex(candidate) {
+    if (typeof candidate === "number") {
+      return candidate;
+    }
+    return Number(candidate && (candidate.index !== undefined ? candidate.index : candidate.boundary));
+  }
+
+  function getSubtitleSplitBoundaryScore(candidate) {
+    if (typeof candidate === "number") {
+      return 10;
+    }
+    const score = Number(candidate && candidate.score);
+    return Number.isFinite(score) ? score : 10;
+  }
+
+  function chooseReadableSubtitleSplitBoundary(boundaries, ideal, min, max) {
+    const lower = Number(min);
+    const upper = Number(max);
+    const target = Number(ideal);
+    const candidates = (Array.isArray(boundaries) ? boundaries : [])
+      .map((candidate) => ({
+        index: getSubtitleSplitBoundaryIndex(candidate),
+        score: getSubtitleSplitBoundaryScore(candidate)
+      }))
+      .filter((candidate) => (
+        Number.isFinite(candidate.index)
+          && candidate.index >= lower
+          && candidate.index <= upper
+      ));
+    if (!candidates.length) {
+      return Math.max(lower, Math.min(upper, target));
+    }
+    const span = Math.max(1, upper - lower);
+    const ranked = candidates.reduce((best, candidate) => {
+      const distance = Math.abs(candidate.index - target);
+      const rank = candidate.score - (distance / span) * 48;
+      if (!best || rank > best.rank || (rank === best.rank && distance < best.distance)) {
+        return { index: candidate.index, distance, rank };
+      }
+      return best;
+    }, null);
+    return ranked ? ranked.index : candidates[0].index;
   }
 
   function isStrongSentenceBoundaryChar(value) {
@@ -306,13 +619,101 @@
       if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || !text) {
         return null;
       }
-      return {
+      const normalized = {
         id: String(value.id || index),
         start,
         end,
         text
       };
+      if (value.forceBoundaryAfter) {
+        normalized.forceBoundaryAfter = true;
+      }
+      if (value.hasSegmentTiming) {
+        normalized.hasSegmentTiming = true;
+      }
+      return normalized;
     }).filter(Boolean).sort((a, b) => a.start - b.start || a.end - b.end);
+  }
+
+  function readJson3SegmentOffsetMs(segment) {
+    const offset = Number(segment && segment.tOffsetMs);
+    return Number.isFinite(offset) && offset >= 0 ? offset : null;
+  }
+
+  function readJson3SegmentText(segment) {
+    return String(segment && segment.utf8 || "");
+  }
+
+  function getJson3EventDurationMs(event, segments) {
+    const duration = Number(event && event.dDurationMs);
+    const maxOffset = (Array.isArray(segments) ? segments : [])
+      .map(readJson3SegmentOffsetMs)
+      .filter((offset) => offset !== null)
+      .reduce((max, offset) => Math.max(max, offset), 0);
+    if (Number.isFinite(duration) && duration > maxOffset) {
+      return duration;
+    }
+    return maxOffset > 0 ? maxOffset + 2000 : 2000;
+  }
+
+  function getJson3SegmentRangeText(segments, startIndex, endIndex) {
+    return normalizeCueText((Array.isArray(segments) ? segments : [])
+      .slice(Math.max(0, startIndex), Math.max(0, endIndex) + 1)
+      .map(readJson3SegmentText)
+      .join(""));
+  }
+
+  function getJson3TimedSegmentRanges(segments, durationMs) {
+    const timedSegments = (Array.isArray(segments) ? segments : [])
+      .map((segment, index) => ({
+        index,
+        offset: readJson3SegmentOffsetMs(segment)
+      }))
+      .filter((segment) => segment.offset !== null)
+      .sort((left, right) => left.index - right.index);
+    if (timedSegments.length < 2) {
+      return [];
+    }
+    return timedSegments.map((segment, timedIndex) => {
+      const next = timedSegments[timedIndex + 1];
+      const startIndex = timedIndex === 0 ? 0 : segment.index;
+      const endIndex = next ? next.index - 1 : segments.length - 1;
+      const startOffset = Math.max(0, segment.offset);
+      const endOffset = Math.max(startOffset + 50, next ? next.offset : durationMs);
+      return {
+        startIndex,
+        endIndex,
+        startOffset,
+        endOffset
+      };
+    });
+  }
+
+  function splitJson3SegmentsByTiming(event, index) {
+    const startMs = Number(event && event.tStartMs);
+    const segments = Array.isArray(event && event.segs) ? event.segs : [];
+    const fullText = normalizeCueText(segments.map(readJson3SegmentText).join(""));
+    const durationMs = getJson3EventDurationMs(event, segments);
+    const baseId = String(event && event.id || index);
+    const baseCue = {
+      id: baseId,
+      start: Number.isFinite(startMs) ? startMs / 1000 : NaN,
+      end: Number.isFinite(startMs) ? (startMs + durationMs) / 1000 : NaN,
+      text: fullText,
+      hasSegmentTiming: segments.some((segment) => readJson3SegmentOffsetMs(segment) !== null)
+    };
+    const ranges = getJson3TimedSegmentRanges(segments, durationMs);
+    if (!fullText || !ranges.length) {
+      return [baseCue];
+    }
+
+    return ranges.map((range, rangeIndex) => ({
+      id: `${baseId}:seg:${rangeIndex}`,
+      start: Number.isFinite(startMs) ? (startMs + range.startOffset) / 1000 : NaN,
+      end: Number.isFinite(startMs) ? (startMs + range.endOffset) / 1000 : NaN,
+      text: getJson3SegmentRangeText(segments, range.startIndex, range.endIndex),
+      hasSegmentTiming: true
+    }));
   }
 
   function parseYouTubeJson3(body) {
@@ -322,20 +723,7 @@
     const events = json && Array.isArray(json.events)
       ? json.events
       : findJson3Events(json);
-    return normalizeCueList(events.map((event, index) => {
-      const startMs = Number(event && event.tStartMs);
-      const durationMs = Number(event && event.dDurationMs);
-      const segs = Array.isArray(event && event.segs) ? event.segs : [];
-      const text = segs.map((seg) => String(seg && seg.utf8 || "")).join("");
-      const start = Number.isFinite(startMs) ? startMs / 1000 : NaN;
-      const duration = Number.isFinite(durationMs) && durationMs > 0 ? durationMs / 1000 : 2;
-      return {
-        id: String(event && event.id || index),
-        start,
-        end: start + duration,
-        text
-      };
-    }));
+    return normalizeCueList(events.flatMap(splitJson3SegmentsByTiming));
   }
 
   function findJson3Events(value) {
@@ -1003,6 +1391,9 @@
     decodeHtmlEntities,
     normalizeCueText,
     splitTextBySentenceBoundaries,
+    getReadableSubtitleSplitBoundaries,
+    chooseReadableSubtitleSplitBoundary,
+    getSoftSubtitleBoundaryScore,
     extractCaptionTracks,
     isYouTubeAutoGeneratedTrack,
     parseYouTubePlayerResponseFromText,

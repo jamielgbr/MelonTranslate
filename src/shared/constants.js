@@ -75,6 +75,11 @@
       { id: "learning", label: "Learning annotations" },
       { id: "manual", label: "Manual" }
     ],
+    videoSubtitleSegmentationModes: [
+      { id: "auto", label: "Auto (seg timing only)" },
+      { id: "enabled", label: "Enabled" },
+      { id: "disabled", label: "Disabled" }
+    ],
     videoSubtitleLearningLevels: {
       english: ["A1", "A2", "B1", "B2", "C1", "C2"],
       japanese: ["N5", "N4", "N3", "N2", "N1"],

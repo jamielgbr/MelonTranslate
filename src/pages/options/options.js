@@ -251,6 +251,12 @@
     return modes.some((item) => item.id === normalized) ? normalized : "translation";
   }
 
+  function normalizeVideoSubtitleSegmentationMode(value) {
+    const modes = namespace.constants.videoSubtitleSegmentationModes || [];
+    const normalized = String(value || "").trim();
+    return modes.some((item) => item.id === normalized) ? normalized : "auto";
+  }
+
   function normalizeInputButtonStyle(value) {
     const styles = namespace.constants.inputButtonStyles || [];
     const normalized = String(value || "").trim();
@@ -792,6 +798,7 @@
       immersiveTranslationContextStyle: "auto",
       videoBilingualSubtitlesAutoTranslate: document.getElementById("video-subtitles-auto").checked,
       videoBilingualSubtitlesMode: normalizeVideoSubtitleDisplayMode(document.getElementById("video-subtitles-mode").value),
+      videoBilingualSubtitlesSegmentationMode: normalizeVideoSubtitleSegmentationMode(document.getElementById("video-subtitles-segmentation-mode").value),
       videoBilingualSubtitlesLearningEnglishLevel: normalizeVideoSubtitleLearningLevel("english", document.getElementById("video-subtitles-learning-english-level").value, "B1"),
       videoBilingualSubtitlesLearningJapaneseLevel: normalizeVideoSubtitleLearningLevel("japanese", document.getElementById("video-subtitles-learning-japanese-level").value, "N3"),
       videoBilingualSubtitlesLearningChineseLevel: normalizeVideoSubtitleLearningLevel("chinese", document.getElementById("video-subtitles-learning-chinese-level").value, "HSK3"),
@@ -897,6 +904,9 @@
         ? !!incoming.videoBilingualSubtitlesAutoTranslate
         : !!current.videoBilingualSubtitlesAutoTranslate,
       videoBilingualSubtitlesMode: normalizeVideoSubtitleDisplayMode(incoming.videoBilingualSubtitlesMode || current.videoBilingualSubtitlesMode),
+      videoBilingualSubtitlesSegmentationMode: normalizeVideoSubtitleSegmentationMode(
+        incoming.videoBilingualSubtitlesSegmentationMode || current.videoBilingualSubtitlesSegmentationMode
+      ),
       videoBilingualSubtitlesLearningEnglishLevel: normalizeVideoSubtitleLearningLevel(
         "english",
         incoming.videoBilingualSubtitlesLearningEnglishLevel || current.videoBilingualSubtitlesLearningEnglishLevel,
@@ -1230,6 +1240,17 @@
         })),
         selected: "translation",
         onChange: updateVideoSubtitleLearningVisibility
+      }
+    );
+    state.dropdowns["video-subtitles-segmentation-mode"] = namespace.customDropdown.create(
+      document.getElementById("video-subtitles-segmentation-mode-wrap"),
+      {
+        id: "video-subtitles-segmentation-mode",
+        items: (namespace.constants.videoSubtitleSegmentationModes || []).map((item) => ({
+          value: item.id,
+          label: t(item.label)
+        })),
+        selected: "auto"
       }
     );
     state.dropdowns["video-subtitles-learning-english-level"] = namespace.customDropdown.create(
@@ -1799,6 +1820,7 @@
     state.dropdowns["input-context-style"].setValue(pu.getInputContextStyle(state.settings.defaultInputContextStyle));
     state.dropdowns["immersive-display-mode"].setValue(normalizeImmersiveDisplayMode(state.settings.immersiveTranslationDisplayMode));
     state.dropdowns["video-subtitles-mode"].setValue(normalizeVideoSubtitleDisplayMode(state.settings.videoBilingualSubtitlesMode));
+    state.dropdowns["video-subtitles-segmentation-mode"].setValue(normalizeVideoSubtitleSegmentationMode(state.settings.videoBilingualSubtitlesSegmentationMode));
     state.dropdowns["video-subtitles-learning-english-level"].setValue(normalizeVideoSubtitleLearningLevel("english", state.settings.videoBilingualSubtitlesLearningEnglishLevel, "B1"));
     state.dropdowns["video-subtitles-learning-japanese-level"].setValue(normalizeVideoSubtitleLearningLevel("japanese", state.settings.videoBilingualSubtitlesLearningJapaneseLevel, "N3"));
     state.dropdowns["video-subtitles-learning-chinese-level"].setValue(normalizeVideoSubtitleLearningLevel("chinese", state.settings.videoBilingualSubtitlesLearningChineseLevel, "HSK3"));
